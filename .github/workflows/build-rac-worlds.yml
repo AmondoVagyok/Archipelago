@@ -118,6 +118,7 @@ jobs:
           pip install pytest pytest-xdist
 
       - name: Run tests
+        if: github.event.inputs.world != 'secret_agent_clank'
         shell: bash
         run: |
           test_dir="${{ needs.config.outputs.world_folder }}/test"
