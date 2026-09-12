@@ -1,0 +1,100 @@
+"""String constants for Gadgetbot Challenge locations. Not every case has
+Gadgetbot Challenges -- only Gadgetbots-operative cases do, and only some
+of those have a confirmed address so far (see GADGETBOT_CHALLENGES below).
+
+All of a case's challenges live in ONE shared, irregularly-packed struct
+across the whole game -- NOT a fixed-stride per-case record (confirmed:
+the byte gaps between Rooftop Deathtrap's, Inside the A-Eye's, and
+Bulkhead Lock's completed-flag runs aren't uniform) -- so addresses are
+recorded individually per entry rather than computed from a base+offset
+formula. Each is a plain 0/1 byte, not a shared bitmask -- event_flag is
+always 0x01 (bit 0) for these."""
+
+from dataclasses import dataclass
+
+from .planets import SACCases
+from .types import CaseStructure, group_by_case
+
+
+@dataclass(frozen=True)
+class SACGadgetbotChallenges:
+    """String constants for Gadgetbot Challenge event titles (short form
+    only -- see GADGETBOT_CHALLENGES below for which case/address each
+    belongs to)."""
+
+    RESCUE_CLANK = "Rescue Clank"
+    WORKING_DOWN = "Working Down"
+    GREAT_DIVIDE = "Great Divide"
+
+    VAULTBREAKERS = "Vaultbreakers"
+    DARK_HELMET = "Dark Helmet"
+    GO_LONG = "Go Long"
+
+    KNOCKIN_ON_KLUNKS_DOOR = "Knockin' on Klunk's Door"
+    MISSION_POSSIBLE = "Mission: Possible"
+
+
+_CATEGORY = "Gadgetbot Challenge"
+
+GADGETBOT_CHALLENGES: tuple[CaseStructure, ...] = (
+    CaseStructure(
+        SACCases.ROOFTOP_DEATHTRAP, SACGadgetbotChallenges.RESCUE_CLANK, _CATEGORY,
+        event_flag=0b00000001, event_address=0x206C7A,
+    ),
+    CaseStructure(
+        SACCases.ROOFTOP_DEATHTRAP, SACGadgetbotChallenges.WORKING_DOWN, _CATEGORY,
+        event_flag=0b00000001, event_address=0x206C7B,
+    ),
+    CaseStructure(
+        SACCases.ROOFTOP_DEATHTRAP, SACGadgetbotChallenges.GREAT_DIVIDE, _CATEGORY,
+        event_flag=0b00000001, event_address=0x206C7C,
+    ),
+    CaseStructure(
+        SACCases.INSIDE_THE_A_EYE, SACGadgetbotChallenges.VAULTBREAKERS, _CATEGORY,
+        event_flag=0b00000001, event_address=0x206C7F,
+    ),
+    CaseStructure(
+        SACCases.INSIDE_THE_A_EYE, SACGadgetbotChallenges.DARK_HELMET, _CATEGORY,
+        event_flag=0b00000001, event_address=0x206C80,
+    ),
+    CaseStructure(
+        SACCases.INSIDE_THE_A_EYE, SACGadgetbotChallenges.GO_LONG, _CATEGORY,
+        event_flag=0b00000001, event_address=0x206C81,
+    ),
+    CaseStructure(
+        SACCases.BULKHEAD_LOCK, SACGadgetbotChallenges.KNOCKIN_ON_KLUNKS_DOOR, _CATEGORY,
+        event_flag=0b00000001, event_address=0x206C83,
+    ),
+    CaseStructure(
+        SACCases.BULKHEAD_LOCK, SACGadgetbotChallenges.MISSION_POSSIBLE, _CATEGORY,
+        event_flag=0b00000001, event_address=0x206C84,
+    ),
+)
+
+# Case.name -> its known Gadgetbot Challenges' full display names, derived
+# from GADGETBOT_CHALLENGES above. Order is declaration order
+# (display/iteration convenience) -- it does NOT imply anything about
+# address layout.
+GADGETBOT_CHALLENGES_BY_CASE: dict[str, tuple[str, ...]] = group_by_case(GADGETBOT_CHALLENGES)
+
+
+@dataclass(frozen=True)
+class SACGadgetbotChallengeLocations:
+    """One named constant per Gadgetbot Challenge location -- each value is
+    the exact full display name GADGETBOT_CHALLENGES above builds via
+    CaseStructure.__str__, spelled out here so rules/<case>.py can
+    reference an individual location directly -- same one-name-per-location
+    layout as constants/weapons.py's SACRatchetWeapons."""
+
+    ROOFTOP_DEATHTRAP_RESCUE_CLANK = "Gadgetbots: Rooftop Deathtrap: Gadgetbot Challenge: Rescue Clank"
+    ROOFTOP_DEATHTRAP_WORKING_DOWN = "Gadgetbots: Rooftop Deathtrap: Gadgetbot Challenge: Working Down"
+    ROOFTOP_DEATHTRAP_GREAT_DIVIDE = "Gadgetbots: Rooftop Deathtrap: Gadgetbot Challenge: Great Divide"
+    INSIDE_THE_A_EYE_VAULTBREAKERS = "Gadgetbots: Inside the A-Eye: Gadgetbot Challenge: Vaultbreakers"
+    INSIDE_THE_A_EYE_DARK_HELMET = "Gadgetbots: Inside the A-Eye: Gadgetbot Challenge: Dark Helmet"
+    INSIDE_THE_A_EYE_GO_LONG = "Gadgetbots: Inside the A-Eye: Gadgetbot Challenge: Go Long"
+    BULKHEAD_LOCK_KNOCKIN_ON_KLUNKS_DOOR = "Gadgetbots: Bulkhead Lock: Gadgetbot Challenge: Knockin' on Klunk's Door"
+    BULKHEAD_LOCK_MISSION_POSSIBLE = "Gadgetbots: Bulkhead Lock: Gadgetbot Challenge: Mission: Possible"
+
+assert {v for k, v in vars(SACGadgetbotChallengeLocations).items() if not k.startswith("_")} == set(
+    str(entry) for entry in GADGETBOT_CHALLENGES
+), "SACGadgetbotChallengeLocations drifted out of sync with GADGETBOT_CHALLENGES -- regenerate its literals"

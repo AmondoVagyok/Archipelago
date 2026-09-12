@@ -1,0 +1,99 @@
+"""String constants for Special Challenge locations -- the Special
+Missions-operative counterpart to constants/gadgetbot_challenges.py's
+Gadgetbot Challenges (same structural pattern: addresses recorded
+individually, each a plain 0/1 byte -- see SPECIAL_CHALLENGES below,
+CONFIRMED live for every entry so far)."""
+
+from dataclasses import dataclass
+
+from .planets import SACCases
+from .types import CaseStructure, group_by_case
+
+
+@dataclass(frozen=True)
+class SACSpecialChallenges:
+    """String constants for Special Challenge event titles (short form
+    only -- see SPECIAL_CHALLENGES below for which case/address each
+    belongs to)."""
+
+    VEHICLE_GREAT_ESCAPE = "Vehicle: Great Escape"
+    VEHICLE_SPEEDBOATING = "Vehicle: Speedboating"
+    VEHICLE_THREADING_THE_NEEDLE = "Vehicle: Threading the Needle"
+
+    VEHICLE_CHASING_A_LEAD = "Vehicle: Chasing a Lead"
+    VEHICLE_RUSH_HOUR = "Vehicle: Rush Hour"
+    VEHICLE_DRIVING_TEST = "Vehicle: Driving Test"
+
+    VEHICLE_VILLA_ESCAPE = "Vehicle: Villa Escape"
+    VEHICLE_BLACK_DIAMOND = "Vehicle: Black Diamond"
+    VEHICLE_GO_FOR_THE_GOLD = "Vehicle: Go for the Gold"
+
+
+_CATEGORY = "Special Challenge"
+
+SPECIAL_CHALLENGES: tuple[CaseStructure, ...] = (
+    CaseStructure(
+        SACCases.VENANTONIO_CANALS, SACSpecialChallenges.VEHICLE_GREAT_ESCAPE, _CATEGORY,
+        event_flag=0b00000001, event_address=0x206C9E,
+    ),
+    CaseStructure(
+        SACCases.VENANTONIO_CANALS, SACSpecialChallenges.VEHICLE_SPEEDBOATING, _CATEGORY,
+        event_flag=0b00000001, event_address=0x206C9F,
+    ),
+    CaseStructure(
+        SACCases.VENANTONIO_CANALS, SACSpecialChallenges.VEHICLE_THREADING_THE_NEEDLE, _CATEGORY,
+        event_flag=0b00000001, event_address=0x206CA0,
+    ),
+    CaseStructure(
+        SACCases.DAMS_EDGE_HYDRANO, SACSpecialChallenges.VEHICLE_CHASING_A_LEAD, _CATEGORY,
+        event_flag=0b00000001, event_address=0x206CA1,
+    ),
+    CaseStructure(
+        SACCases.DAMS_EDGE_HYDRANO, SACSpecialChallenges.VEHICLE_RUSH_HOUR, _CATEGORY,
+        event_flag=0b00000001, event_address=0x206CA2,
+    ),
+    CaseStructure(
+        SACCases.DAMS_EDGE_HYDRANO, SACSpecialChallenges.VEHICLE_DRIVING_TEST, _CATEGORY,
+        event_flag=0b00000001, event_address=0x206CA3,
+    ),
+    CaseStructure(
+        SACCases.GLACIARA_SKI_SLOPES, SACSpecialChallenges.VEHICLE_VILLA_ESCAPE, _CATEGORY,
+        event_flag=0b00000001, event_address=0x206C9B,
+    ),
+    CaseStructure(
+        SACCases.GLACIARA_SKI_SLOPES, SACSpecialChallenges.VEHICLE_BLACK_DIAMOND, _CATEGORY,
+        event_flag=0b00000001, event_address=0x206C9C,
+    ),
+    CaseStructure(
+        SACCases.GLACIARA_SKI_SLOPES, SACSpecialChallenges.VEHICLE_GO_FOR_THE_GOLD, _CATEGORY,
+        event_flag=0b00000001, event_address=0x206C9D,
+    ),
+)
+
+# Case.name -> its known Special Challenges' full display names, derived
+# from SPECIAL_CHALLENGES above. Order is declaration order (display/
+# iteration convenience) -- it does NOT imply anything about address layout.
+SPECIAL_CHALLENGES_BY_CASE: dict[str, tuple[str, ...]] = group_by_case(SPECIAL_CHALLENGES)
+
+
+@dataclass(frozen=True)
+class SACSpecialChallengeLocations:
+    """One named constant per Special Challenge location -- each value is
+    the exact full display name SPECIAL_CHALLENGES above builds via
+    CaseStructure.__str__, spelled out here so rules/<case>.py can
+    reference an individual location directly -- same one-name-per-location
+    layout as constants/weapons.py's SACRatchetWeapons."""
+
+    VENANTONIO_CANALS_VEHICLE_GREAT_ESCAPE = "Special Missions: Venantonio Canals: Special Challenge: Vehicle: Great Escape"
+    VENANTONIO_CANALS_VEHICLE_SPEEDBOATING = "Special Missions: Venantonio Canals: Special Challenge: Vehicle: Speedboating"
+    VENANTONIO_CANALS_VEHICLE_THREADING_THE_NEEDLE = "Special Missions: Venantonio Canals: Special Challenge: Vehicle: Threading the Needle"
+    DAMS_EDGE_HYDRANO_VEHICLE_CHASING_A_LEAD = "Special Missions: Dam's Edge, Hydrano: Special Challenge: Vehicle: Chasing a Lead"
+    DAMS_EDGE_HYDRANO_VEHICLE_RUSH_HOUR = "Special Missions: Dam's Edge, Hydrano: Special Challenge: Vehicle: Rush Hour"
+    DAMS_EDGE_HYDRANO_VEHICLE_DRIVING_TEST = "Special Missions: Dam's Edge, Hydrano: Special Challenge: Vehicle: Driving Test"
+    GLACIARA_SKI_SLOPES_VEHICLE_VILLA_ESCAPE = "Special Missions: Glaciara, Ski Slopes: Special Challenge: Vehicle: Villa Escape"
+    GLACIARA_SKI_SLOPES_VEHICLE_BLACK_DIAMOND = "Special Missions: Glaciara, Ski Slopes: Special Challenge: Vehicle: Black Diamond"
+    GLACIARA_SKI_SLOPES_VEHICLE_GO_FOR_THE_GOLD = "Special Missions: Glaciara, Ski Slopes: Special Challenge: Vehicle: Go for the Gold"
+
+assert {v for k, v in vars(SACSpecialChallengeLocations).items() if not k.startswith("_")} == set(
+    str(entry) for entry in SPECIAL_CHALLENGES
+), "SACSpecialChallengeLocations drifted out of sync with SPECIAL_CHALLENGES -- regenerate its literals"

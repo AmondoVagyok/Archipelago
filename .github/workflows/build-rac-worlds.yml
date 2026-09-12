@@ -12,6 +12,7 @@ on:
           - rac_size_matters_psp
           - rac_odd_couple
           - dynamicpine
+          - secret_agent_clank
       prerelease:
         description: "Is this a pre-release?"
         type: boolean
@@ -71,6 +72,13 @@ jobs:
               echo "game_name=Dynamic Pine"                                  >> "$GITHUB_OUTPUT"
               echo "tag_prefix=dynamicpine/v"                                >> "$GITHUB_OUTPUT"
               echo "display_name=Dynamic Pine"                               >> "$GITHUB_OUTPUT"
+              ;;
+            secret_agent_clank)
+              echo "world_folder=worlds/secret_agent_clank"                  >> "$GITHUB_OUTPUT"
+              echo "apworld_file=secret_agent_clank.apworld"                 >> "$GITHUB_OUTPUT"
+              echo "game_name=Secret Agent Clank"                            >> "$GITHUB_OUTPUT"
+              echo "tag_prefix=secret-agent-clank/v"                         >> "$GITHUB_OUTPUT"
+              echo "display_name=Secret Agent Clank"                         >> "$GITHUB_OUTPUT"
               ;;
           esac
 
