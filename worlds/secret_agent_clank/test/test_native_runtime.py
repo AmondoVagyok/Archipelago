@@ -39,14 +39,14 @@ class NativeRuntimeTests(unittest.TestCase):
         self.runtime.progression = Mock(ng_plus=1)
         self.runtime.progression.prepare.return_value = []
         self.hooks.patches = []
-        with patch('sac.core.native_runtime.RuntimeSymbols'):
+        with patch('worlds.secret_agent_clank.core.native_runtime.RuntimeSymbols'):
             self.assertFalse(self.runtime.service(set(), {}))
         self.assertEqual(self.hooks.prepare.call_args.kwargs['vendor_locations'], {})
         self.assertFalse(self.runtime.progression.prepare.call_args.kwargs['vendor_enabled'])
         self.hooks.install_at_loader_gate.assert_called_once()
 
     def setUp(self):
-        travel = patch('sac.core.mission_travel.prepare_mission_travel', return_value=[])
+        travel = patch('worlds.secret_agent_clank.core.mission_travel.prepare_mission_travel', return_value=[])
         travel.start()
         self.addCleanup(travel.stop)
         self.p = Memory()
@@ -108,7 +108,7 @@ class NativeRuntimeTests(unittest.TestCase):
         calls = []
         self.hooks.install_at_loader_gate.side_effect = lambda g: calls.append('install')
         gate.release.side_effect = lambda: calls.append('release')
-        with patch('sac.core.native_runtime.RuntimeSymbols'):
+        with patch('worlds.secret_agent_clank.core.native_runtime.RuntimeSymbols'):
             self.assertFalse(self.runtime.service({'throwTie'}, {11: True}))
         self.assertEqual(calls, ['install', 'release'])
         self.assertTrue(self.runtime.awaiting_start)
@@ -128,7 +128,7 @@ class NativeRuntimeTests(unittest.TestCase):
     def test_failed_install_releases_loader(self):
         self.runtime.gate.held_module.return_value = 1
         self.hooks.prepare.side_effect = ValueError('signature')
-        with patch('sac.core.native_runtime.RuntimeSymbols'), self.assertRaises(ValueError):
+        with patch('worlds.secret_agent_clank.core.native_runtime.RuntimeSymbols'), self.assertRaises(ValueError):
             self.runtime.service(set(), {})
         self.runtime.gate.release.assert_called_once()
 
