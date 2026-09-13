@@ -52,7 +52,7 @@ for _name in (
     BULKHEAD_LOCK_LOCATIONS[_name] = SACLocationData(_take_id(), _CASE_NAME)
 
 BULKHEAD_LOCK_MISSION_LOCATIONS: dict[str, SACLocationData] = {
-    f"{_CASE_NAME} Complete": SACLocationData(_take_id(), _CASE_NAME),
+    f"Mission: {_CASE_NAME} Complete": SACLocationData(_take_id(), _CASE_NAME),
 }
 
 BULKHEAD_LOCK_ALL_MISSIONS_LOCATIONS: dict[str, SACLocationData] = all_mission_locations(_CASE_NAME, _take_id)

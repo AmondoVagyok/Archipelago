@@ -123,7 +123,7 @@ class SecretAgentClankWorld(World):
         pool += [mod.name for mod in self.weapon_mod_catalog]
         ratchet_enabled = SACOperatives.RATCHET in self.options.operatives.value
         clank_enabled = SACOperatives.CLANK in self.options.operatives.value
-        if ratchet_enabled:
+        if ratchet_enabled and self.options.progressive_wrench:
             pool += ['Progressive Wrench'] * 5
         from .constants.weapon_progression import PROGRESSIVE_TO_INTERNAL, UNLOCK_TO_PROGRESSIVE, max_level
         # WEAPON_ITEM_TABLE mixes Ratchet's own weapons with the WEAPON_ORDER-
@@ -249,7 +249,7 @@ class SecretAgentClankWorld(World):
             "all_keycards": bool(self.options.all_keycards.value),
             "all_alien_codes": bool(self.options.all_alien_codes.value),
             "goal": self.options.goal.value,
-            "progressive_wrench": True,
+            "progressive_wrench": bool(self.options.progressive_wrench.value),
             "progressive_weapons": bool(self.options.progressive_weapons.value),
             "weapon_xp_multiplier": self.options.weapon_xp_multiplier.value,
             "health_xp_multiplier": self.options.health_xp_multiplier.value,

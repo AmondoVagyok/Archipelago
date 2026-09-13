@@ -28,6 +28,14 @@ if TYPE_CHECKING:
 _CHAPTER_TABLE_OFFSET = 0
 _CHAPTER_TABLE_SLOTS = 33
 _TASK_ENTRY_SIZE = 0x60        # bytes per task entry within a chapter's task array
+
+# Every mission AP location (both granularities) is prefixed "Mission: "
+# (see constants/missions.py's SACMissionLocations) -- internal bookkeeping
+# below (self.completed/self._reported) stays keyed by the RAW native name
+# throughout (matches core/core.py's own raw entry.name lookups), and this
+# prefix is applied/stripped only at the two boundaries that actually talk
+# to AP: check()'s return value and confirm()/sync_from_ap()'s input.
+_AP_LOCATION_PREFIX = 'Mission: '
 _TASK_STATE_OFFSET = 0xC       # state field within a task entry (same field CHAPTER_ENTRIES
                                 # addresses point at; 1 byte, MissionFlag-valued)
 
@@ -162,9 +170,12 @@ class MissionInventory:
         self._resolved_title_ids = {}
 
     def sync_from_ap(self, checked_location_names: set[str]) -> None:
-        self._reported.update(checked_location_names)
+        self._reported.update(
+            name.removeprefix(_AP_LOCATION_PREFIX) for name in checked_location_names
+            if name.startswith(_AP_LOCATION_PREFIX)
+        )
         for _, entry in ALL_CHAPTER_ENTRIES:
-            if entry.name in checked_location_names:
+            if _AP_LOCATION_PREFIX + entry.name in checked_location_names:
                 self.completed[entry.name] = True
 
     def invalidate_resolved_addresses(self) -> None:
@@ -242,7 +253,7 @@ class MissionInventory:
             story = self._story_addresses.get(current_case.name, ())
             name = f'{current_case.name} Complete'
             if story and name not in self._reported and self.pine.read_int32(story[-1]) == 3:
-                return [name]
+                return [_AP_LOCATION_PREFIX + name]
             return []
         entries = CHAPTER_ENTRIES.get(current_case.name)
         if not entries:
@@ -257,7 +268,7 @@ class MissionInventory:
             self.completed[entry.name] = now or self.completed.get(entry.name, False)
             if not flipped:
                 continue
-            newly.append(entry.name)
+            newly.append(_AP_LOCATION_PREFIX + entry.name)
         return newly
 
     def confirm(self, name: str) -> None:
@@ -266,7 +277,7 @@ class MissionInventory:
         CaseEventInventory.confirm() for why this must wait for
         Core.send_location(name) to return True rather than happening
         unconditionally inside check()."""
-        self._reported.add(name)
+        self._reported.add(name.removeprefix(_AP_LOCATION_PREFIX))
 
     def enforce_owned_first_missions(self, owned_cases: "set[str]") -> int:
         """Continuously self-heals every AP-owned case's first

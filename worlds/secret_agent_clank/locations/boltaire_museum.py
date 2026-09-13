@@ -58,7 +58,7 @@ for _name in (
     BOLTAIRE_MUSEUM_LOCATIONS[_name] = SACLocationData(_take_id(), _CASE_NAME)
 
 BOLTAIRE_MUSEUM_MISSION_LOCATIONS: dict[str, SACLocationData] = {
-    f"{_CASE_NAME} Complete": SACLocationData(_take_id(), _CASE_NAME),
+    f"Mission: {_CASE_NAME} Complete": SACLocationData(_take_id(), _CASE_NAME),
 }
 
 BOLTAIRE_MUSEUM_ALL_MISSIONS_LOCATIONS: dict[str, SACLocationData] = all_mission_locations(_CASE_NAME, _take_id)

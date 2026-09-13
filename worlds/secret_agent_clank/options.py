@@ -137,6 +137,12 @@ class ProgressiveWeapons(Toggle):
     display_name = "Progressive Weapons"
 
 
+class ProgressiveWrench(Toggle):
+    """Adds 5 Progressive Wrench items to the pool (Ratchet only) -- each
+    copy upgrades the wrench a level. Off by default."""
+    display_name = "Progressive Wrench"
+
+
 class WeaponXPMultiplier(Range):
     """Combat weapon XP multiplier. Inactive with Progressive Weapons on."""
     display_name = "Weapon XP Multiplier"
@@ -238,6 +244,7 @@ class SecretAgentClankOptions(PerGameCommonOptions):
     operatives: Operatives
     ng_plus: NgPlus
     progressive_weapons: ProgressiveWeapons
+    progressive_wrench: ProgressiveWrench
     weapon_xp_multiplier: WeaponXPMultiplier
     health_xp_multiplier: HealthXPMultiplier
     bolt_multiplier: BoltMultiplier
@@ -252,6 +259,7 @@ class SecretAgentClankOptions(PerGameCommonOptions):
 sac_option_groups = [
     OptionGroup("SAC Item Options", [
         ProgressiveWeapons,
+        ProgressiveWrench,
         WeaponXPMultiplier,
         HealthXPMultiplier,
         BoltMultiplier,

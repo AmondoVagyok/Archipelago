@@ -180,6 +180,7 @@ class Core:
         self.missions.table_base = None
         self.notifications.binding = None
         self.alien_codes.valid = False
+        self.ratchet_challenges.invalidate()
         self.titanium_bolts.valid = False
         self.keycards.flags.pointer_address = None
         self.keycards.root_pointer = None
@@ -357,6 +358,7 @@ class Core:
             self.ratchet_challenges.sync()
             self.alien_codes.sync()
             self.alien_codes.bind(self.case.symbols)
+            self.ratchet_challenges.bind(self.case.symbols)
             self.titanium_bolts.bind(self.case.symbols)
             if not self.notifications.bind(self.case.symbols):
                 self._log("[SAC] Native receipt HUD layout could not be validated for this module.")

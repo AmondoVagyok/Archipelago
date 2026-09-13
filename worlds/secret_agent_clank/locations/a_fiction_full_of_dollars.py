@@ -52,7 +52,7 @@ for _name in (
     A_FICTION_FULL_OF_DOLLARS_LOCATIONS[_name] = SACLocationData(_take_id(), _CASE_NAME)
 
 A_FICTION_FULL_OF_DOLLARS_MISSION_LOCATIONS: dict[str, SACLocationData] = {
-    f"{_CASE_NAME} Complete": SACLocationData(_take_id(), _CASE_NAME),
+    f"Mission: {_CASE_NAME} Complete": SACLocationData(_take_id(), _CASE_NAME),
 }
 
 A_FICTION_FULL_OF_DOLLARS_ALL_MISSIONS_LOCATIONS: dict[str, SACLocationData] = all_mission_locations(_CASE_NAME, _take_id)

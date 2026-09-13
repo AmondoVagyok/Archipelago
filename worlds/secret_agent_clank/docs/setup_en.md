@@ -51,8 +51,9 @@ the delivery journal. Existing seeds can use this bolt reward fix.
 All Keycards and All Alien Codes only add optional AP reward locations. They do not change the selected goal.
 
 
-Progressive Wrench requires a new seed. Five copies are generated when
-Ratchet is enabled: normal wrench, Fire-Bomb, Triple Wave, Crystalix, and
+Progressive Wrench is off by default; enable it via the Progressive Wrench
+option. It requires a new seed. Five copies are generated when both it and
+Ratchet are enabled: normal wrench, Fire-Bomb, Triple Wave, Crystalix, and
 Wild Burst. Tier zero blocks Ratchet's wrench input; the first copy restores
 all standard wrench attacks together. Later copies cumulatively unlock
 native mods for selection in the wrench menu. Other characters' attacks

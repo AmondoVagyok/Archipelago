@@ -1,17 +1,10 @@
-"""String constants for Ratchet Challenge locations -- the Ratchet-operative
-counterpart to constants/gadgetbot_challenges.py's Gadgetbot Challenges and
-constants/special_challenges.py's Special Challenges (same "completed" flag
-per challenge, addresses recorded individually -- see RATCHET_CHALLENGES
-below). No unlock address given for any of these cases yet, unlike the
-other two challenge types.
+"""Ratchet arena challenge names in native per-case challenge order.
 
-All 5 Ratchet-operative cases (see the Operatives-menu screenshots) now
-have their full challenge list -- Prison Breakout!, The Exercise Yard, The
-Mess Hall, and The Showers all have confirmed addresses, each a 5-byte run
-(one plain 0x01 flag per challenge, back to back). Only Max-Security
-Cells' challenges are still name-only, recorded ahead of their addresses
-(event_flag/event_address left at the CaseStructure defaults, same as
-Bulkhead Lock's Gadgetbot Challenges was for a while)."""
+Completion is an unsigned win count, not a bit flag. The runtime reader in
+core/ratchet_challenges.py resolves the arena table and current save pointer.
+Legacy absolute addresses below document the original capture only.
+Max-Security Cells uses GLOBAL flags 0x54..0x58 (save + 0x534..0x538).
+"""
 
 from dataclasses import dataclass
 
@@ -154,7 +147,7 @@ RATCHET_CHALLENGES: tuple[CaseStructure, ...] = (
 
 # Case.name -> its known Ratchet Challenges' full display names, derived
 # from RATCHET_CHALLENGES above. Order is declaration order (display/
-# iteration convenience) -- it does NOT imply anything about address layout.
+# iteration order) and matches native challenge indices within each case.
 RATCHET_CHALLENGES_BY_CASE: dict[str, tuple[str, ...]] = group_by_case(RATCHET_CHALLENGES)
 
 

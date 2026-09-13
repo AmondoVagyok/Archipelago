@@ -2,6 +2,7 @@
 import hashlib
 import json
 from pathlib import Path
+from Utils import user_path
 from .address_maps import BOLTS_ADDRESS
 
 def reward_balance(balance, count):
@@ -28,7 +29,13 @@ class BoltRewards:
         self.starting_bolts = starting_bolts
         if seed is None or team is None or slot is None:
             return
-        directory = Path(directory) if directory is not None else Path(__file__).resolve().parents[1] / '.client_state'
+        # Utils.user_path(), not Path(__file__) -- __file__ resolves inside
+        # the packaged .apworld's own zip path when installed as a single
+        # file (not an unpacked folder), and mkdir(parents=True) would then
+        # try to create a real directory at that exact zip's path, failing
+        # with WinError 183 (cannot create a file that already exists) since
+        # the .apworld itself already occupies that path.
+        directory = Path(directory) if directory is not None else Path(user_path('client_state', 'secret_agent_clank'))
         key = hashlib.sha256(json.dumps([seed, team, slot]).encode()).hexdigest()
         path = directory / (key + '.json')
         if path == self.path:

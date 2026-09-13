@@ -23,8 +23,18 @@ VENDOR_LOCATIONS = {
 PICKUP_LOCATIONS = {
     2: 'blaster', 3: 'shardgun', 4: 'beemineglove', 6: 'walloper',
     9: 'minelauncher', 11: 'throwTie', 12: 'CuffLink', 13: 'TangleVine',
-    15: 'FlamethrowerPen', 17: 'Black Out Pen (Pickup)', 23: 'ratchetpda',
-    24: 'holomonocle', 27: 'bolttransfer', 32: 'jetboots', 33: 'omnikey',
+    15: 'FlamethrowerPen', 17: 'Black Out Pen (Pickup)',
+    # No 23 (ratchetpda): granted as the reward for The Showers' "No good
+    # deed goes unpunished." Ratchet Challenge, not a separate native pickup
+    # event -- that challenge's own location already covers this moment
+    # (see constants/weapons.py's WEAPONS_BY_CASE, which no longer places
+    # RATCHETPDA in any case).
+    # No 27 (bolttransfer): granted as the reward for one of Prison
+    # Breakout!'s Ratchet Challenges, not a separate native pickup event --
+    # that challenge's own location already covers this moment (see
+    # constants/weapons.py's WEAPONS_BY_CASE, which no longer places
+    # BOLTTRANSFER in any case).
+    24: 'holomonocle', 32: 'jetboots', 33: 'omnikey',
 }
 
 

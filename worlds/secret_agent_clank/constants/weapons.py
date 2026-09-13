@@ -226,7 +226,6 @@ WEAPONS_BY_CASE: dict[str, tuple[str, ...]] = {
     ),
     "Max-Security Cells": (
         SACRatchetWeapons.SHARDGUN, SACRatchetWeapons.WALLOPER,
-        SACRatchetWeapons.RATCHETPDA, SACRatchetWeapons.BOLTTRANSFER,
     ),
     "Rooftop Deathtrap": (
         SACRatchetWeapons.MINELAUNCHER, SACRatchetWeapons.OMNIKEY,

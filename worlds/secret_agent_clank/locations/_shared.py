@@ -36,6 +36,6 @@ def all_mission_locations(
     level_completion). Empty dict if case_name has no CHAPTER_ENTRIES
     (none currently, but tolerated rather than assumed)."""
     return {
-        entry.name: SACLocationData(take_id(), case_name)
+        f"Mission: {entry.name}": SACLocationData(take_id(), case_name)
         for entry in CHAPTER_ENTRIES.get(case_name, ())
     }
