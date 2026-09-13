@@ -15,6 +15,7 @@ from rule_builder.rules import True_
 from ..constants.cutscenes import SACCutsceneLocations
 from ..constants.missions import SACMissionLocations
 from ..constants.skillpoints import SACSkillPointLocations
+from ..constants.clank_gadgets import SACClankWeapons
 from ..constants.weapons import SACRatchetWeapons
 from ..options import Missions
 
@@ -28,7 +29,7 @@ def set_klunks_lair_rules(world: "SecretAgentClankWorld") -> None:
 
     # Always-on
     world.set_rule(mw.get_location(SACRatchetWeapons.RYNO, player), True_())
-    world.set_rule(mw.get_location(SACRatchetWeapons.KICKSPLOSION, player), True_())
+    world.set_rule(mw.get_location(SACClankWeapons.KICKSPLOSION, player), True_())
 
     # Story mission (Missions)
     if world.options.all_missions.value == Missions.option_all:

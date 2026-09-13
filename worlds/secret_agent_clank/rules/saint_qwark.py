@@ -34,7 +34,6 @@ def set_saint_qwark_rules(world: "SecretAgentClankWorld") -> None:
     # Cutscene (AllCutscenes)
     if world.options.all_cutscenes:
         world.set_rule(mw.get_location(SACCutsceneLocations.SAINT_QWARK_ENTERE_CUTSCENE, player), True_())
-        world.set_rule(mw.get_location(SACCutsceneLocations.SAINT_QWARK_COMPLETE_CUTSCENE, player), True_())
 
     # Skill point (SkillPoints)
     if world.options.skill_points:

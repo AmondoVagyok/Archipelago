@@ -7,8 +7,9 @@ from .clank_gadgets import (
     GADGET_PICKUP_BY_CASE,
     THERM_OPTIC_SHADES,
     SACClankGadgets,
+    SACClankWeapons,
     SACGadgetPickupLocations,
-    SACProgressiveClankGadgets,
+    SACProgressiveClankWeapons,
 )
 from .cutscenes import CUTSCENE_TO_CASE, CUTSCENES_BY_CASE, SACCutsceneLocations, SACCutscenes
 from .gadgetbot_challenges import GADGETBOT_CHALLENGES_BY_CASE, SACGadgetbotChallengeLocations, SACGadgetbotChallenges
@@ -100,6 +101,7 @@ __all__ = [
     "SACCases",
     "SACCheats",
     "SACClankGadgets",
+    "SACClankWeapons",
     "SACCutsceneLocations",
     "SACCutscenes",
     "SACGadgetbotChallengeLocations",
@@ -110,7 +112,7 @@ __all__ = [
     "SACMissions",
     "SACOperatives",
     "SACPlanets",
-    "SACProgressiveClankGadgets",
+    "SACProgressiveClankWeapons",
     "SACProgressiveRatchetWeapons",
     "SACQwarkWeapons",
     "SACRatchetChallengeLocations",

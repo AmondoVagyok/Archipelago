@@ -9,7 +9,7 @@ load (see core/planets.py's CaseInventory.set_case())."""
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from ..pypine import Pine
+    from ...pypine import Pine
 
 
 class ItemInventory:

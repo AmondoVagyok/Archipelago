@@ -14,15 +14,15 @@ import struct
 from typing import TYPE_CHECKING, NamedTuple, Sequence
 
 from .address_maps.ps2 import (
-    VENDOR_ITEM_MAX_COUNT,
-    VENDOR_ITEM_STRIDE,
     _ITEM_OFFSET_ACTIVE,
     _ITEM_OFFSET_ICON,
     _ITEM_OFFSET_MOD_ID,
     _ITEM_OFFSET_NODE_TYPE,
     _ITEM_OFFSET_WEAPON_ID,
+    VENDOR_ITEM_MAX_COUNT,
+    VENDOR_ITEM_STRIDE,
 )
-from .weapons import WEAPON_ORDER
+from .inventories.weapons import WEAPON_ORDER
 
 if TYPE_CHECKING:
     from ..pypine import Pine
@@ -251,20 +251,6 @@ class VendorState:
         icon: int = 51,
         active: bool = True,
     ) -> None:
-        """Directly write one node's fields (see module docstring point 2)
-        -- CONFIRMED live: the vendor's on-screen list picks this up
-        immediately with the menu already open, no refresh/reopen/
-        repopulate step needed. Defaults (node_type=3, icon=51) match the
-        weapon-mod rows seen in the live capture; pass different values for
-        other node types (0/2/4 -- weapon/ammo-bundle/titan-weapon, per
-        FUN_003d2b28's other call sites) once their icon/field conventions
-        are confirmed too. index must be < VENDOR_ITEM_MAX_COUNT; writing
-        active=False turns a node into the "stop here" padding marker
-        read_items() looks for, effectively removing it (and everything
-        that used to be visible after it, since read_items() stops at the
-        first inactive node -- reuse or shift trailing nodes if you need to
-        remove one from the middle of a longer list). No-op if unbound
-        (items_addr is None)."""
         if self.header_addr is not None:
             header = self._native_header()
             if header is None:
@@ -283,27 +269,6 @@ class VendorState:
         )))
 
     def force_roster(self, offers: Sequence["VendorOffer"]) -> None:
-        """The "set" step of purchase set/strip/detect (see module
-        docstring point 3): append every offer in `offers` whose weapon
-        the vendor ISN'T already natively showing, onto the end of its
-        real item list -- never touches/overwrites an existing row, so
-        this can never clobber something the game's own native vendor
-        logic already populated (or a previous force_roster() call).
-        No-op if unbound (items_addr is None) or `offers` is empty.
-
-        Silently skips (does not raise, does not consume a slot for):
-          - any offer whose weapon_name isn't a real WEAPON_ORDER name.
-          - any offer whose weapon is already present in the vendor's
-            current list (native or previously forced) -- checked by
-            weapon_id, via one read_items() call up front.
-          - anything once the list reaches VENDOR_ITEM_MAX_COUNT.
-
-        Call once per case-ready (see core/core.py's tick()), not every
-        tick -- CONFIRMED live that a written row stays visible with no
-        refresh needed (see module docstring point 2), so there's nothing
-        to gain from repeating this every tick, only risk (redundant
-        writes racing a real purchase's own in-place update of the same
-        row)."""
         if self.items_addr is None or not offers:
             return
         current = self.read_items()

@@ -1,21 +1,3 @@
-"""Shared vendor access rules. Edit VENDOR_REQUIREMENTS below.
-
-Each entry is the extra requirement for reaching that case's vendor. Case,
-planet and operative access are automatically checked through its region.
-True_() preserves the existing no-extra-items rule; it is NOT a researched
-claim that the vendor is at the spawn. Use False_() for a case with no vendor.
-For item gates, replace True_() with e.g. HasGadget(SACClankGadgets.JETBOOTS)
-or combine requirements with & (all) and | (alternatives).
-
-Titan checks require access to the original purchase/pickup location plus
-any accessible vendor. This includes the original location's full item rules.
-Purchases never require owning the randomized weapon itself.
-
-A normal purchase remains in its original case region: that region and its
-per-location rule determine when the offer becomes available. The physical
-purchase can then happen at ANY reachable vendor, including another case.
-False_() means no vendor in that case, not that its weapon offers are disabled.
-"""
 from rule_builder.rules import CanReachLocation, CanReachRegion, False_, Has, True_
 from worlds.generic.Rules import add_rule
 
@@ -25,16 +7,9 @@ from ..constants.weapons import (
     RATCHET_WEAPON_DISPLAY_TO_INTERNAL, GADGET_DISPLAY_TO_INTERNAL,
 )
 from ..constants.weapon_progression import TITAN_LOCATIONS
-from ..core.location_hooks import VENDOR_LOCATIONS
+from ..core.patches import VENDOR_LOCATIONS
 from .rule_helpers import HasGadget, HasWeapon
 
-# Display names whose ONLY native source is the vendor -- the vendor itself
-# is only ever reachable from Clank's pause-menu screen (see
-# VENDOR_REQUIREMENTS below), so these are unobtainable, and excluded from
-# both locations (regions.py) and the item pool (world.py's create_items()),
-# whenever Clank is disabled -- regardless of whether the weapon's own case
-# belongs to a different, still-enabled operative (e.g. Inside the A-Eye's
-# SHOCKROCKET/BOLTGRABBER, a Gadgetbots case).
 VENDOR_ONLY_ITEM_NAMES: frozenset[str] = frozenset(
     name for name, internal in {**RATCHET_WEAPON_DISPLAY_TO_INTERNAL, **GADGET_DISPLAY_TO_INTERNAL}.items()
     if internal in VENDOR_LOCATIONS.values()
@@ -48,9 +23,7 @@ VENDOR_REQUIREMENTS = {
     SACCases.ROOFTOP_DEATHTRAP: False_(),
     SACCases.ASYANICA_ROOFTOPS: True_(),
     SACCases.LARGER_THAN_LIFE: False_(),
-    # Only Clank's pause-menu screen has a vendor -- Countess's Villa is a
-    # Special Missions case, so it has none despite the earlier guess here.
-    SACCases.COUNTESS_VILLA: False_(),
+    SACCases.COUNTESS_VILLA: False_(), # this is disabled until rules are fully sorted for planets it is possible to access if special missions are enabled
     SACCases.GLACIARA_SKI_SLOPES: False_(),
     SACCases.THE_MESS_HALL: False_(),
     SACCases.AZCOTAL_ALLEY: True_(),

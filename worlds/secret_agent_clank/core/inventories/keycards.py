@@ -1,7 +1,8 @@
 """Native keycard bits and the actual keycard door opening in Treehouse."""
 import struct
-from ..constants.keycards import KEYCARDS
-from .global_flags import GlobalFlags
+
+from ...constants.keycards import KEYCARDS
+from ..global_flags import GlobalFlags
 
 
 class KeycardInventory:

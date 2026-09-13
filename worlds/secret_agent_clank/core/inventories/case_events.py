@@ -8,10 +8,10 @@ CaseStructure tuple it tracks. See core/missions.py etc. for the thin
 per-category subclasses."""
 from typing import TYPE_CHECKING
 
-from ..constants.types import CaseStructure
+from ...constants.types import CaseStructure
 
 if TYPE_CHECKING:
-    from ..pypine import Pine
+    from ...pypine import Pine
 
 
 def read_flag(pine: "Pine", entry: CaseStructure) -> bool:

@@ -2,14 +2,14 @@ import struct
 import unittest
 from unittest.mock import Mock
 
-from ..core.symbols import RuntimeSymbols
-from ..core.weapons import WeaponInventory
-from ..core.vendor import VendorState
-from ..core.planets import CaseInventory
-from ..core.missions import MissionInventory
-from ..core.core import Core
 from ..constants.planets import CASE_ID_TO_CASE
 from ..core.address_maps import CURRENT_CASE_ADDRESS, FORCE_CASE_ADDRESS
+from ..core.core import Core
+from ..core.inventories.missions import MissionInventory
+from ..core.inventories.planets import CaseInventory
+from ..core.inventories.weapons import WeaponInventory
+from ..core.symbols import RuntimeSymbols
+from ..core.vendor import VendorState
 
 
 class Memory:

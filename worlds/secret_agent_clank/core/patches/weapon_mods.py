@@ -1,8 +1,9 @@
 """Vendor transaction flags are independent of AP mod ownership."""
-from .location_hooks import Patch, packed, jump
+from ...constants.weapon_mods import WEAPON_MODS, enabled_mods
+from ..inventories.weapons import WEAPON_ORDER
+from ..symbols import require
+from .asm import Patch, jump, packed
 from .gain_storage import prepare_gain_storage
-from .weapons import WEAPON_ORDER
-from ..constants.weapon_mods import WEAPON_MODS, enabled_mods
 
 
 class WeaponMods:
@@ -27,12 +28,11 @@ class WeaponMods:
         if not self.enabled or not vendor_enabled:
             return []
         p = self.pine
-        buy = symbols.get('SCRNVENDOR_ProcessPurchase__Fv')
-        install = symbols.get('GADGET_InstallMod__FUiUi')
-        installed = symbols.get('GADGET_IsModInstalled__FUiUi')
-        alternate = symbols.get('SCRNMODVENDOR_ProcessPurchase__Fv')
-        browse = symbols.get('SCRNMODVENDOR_UpdateBrowseState__Fv')
-        if None in (buy, install, installed, alternate, browse, self.base, self.mod_list):
+        buy, install, installed, alternate, browse = require(
+            symbols, 'SCRNVENDOR_ProcessPurchase__Fv', 'GADGET_InstallMod__FUiUi', 'GADGET_IsModInstalled__FUiUi',
+            'SCRNMODVENDOR_ProcessPurchase__Fv', 'SCRNMODVENDOR_UpdateBrowseState__Fv',
+        )
+        if self.base is None or self.mod_list is None:
             raise RuntimeError('Missing native weapon-mod exports')
         if (p.read_bytes(buy + 0x138, 12) != packed([0x8E450014, jump(install, True), 0x8E440010])
                 or p.read_bytes(buy + 0x14C, 8) != packed([0x1000007D, 0])

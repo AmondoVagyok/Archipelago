@@ -1,9 +1,11 @@
 """Native AP weapon tiers and gain multipliers, installed at the loader gate."""
 import struct
 from collections import Counter
-from .location_hooks import Patch, packed, jump
-from .weapons import WEAPON_ORDER
-from ..constants.weapon_progression import PROGRESSIVE_TO_INTERNAL, TITAN_LOCATIONS, max_level
+
+from ...constants.weapon_progression import PROGRESSIVE_TO_INTERNAL, TITAN_LOCATIONS, max_level
+from ..inventories.weapons import WEAPON_ORDER
+from ..symbols import require
+from .asm import Patch, jump, packed
 
 
 def gain_wrapper(target, original, register, multiplier):
@@ -54,9 +56,7 @@ class Progression:
         self.pending_definitions = ()
         self.module = module
         self.base = symbols.get('GADGET_g_GadgetList')
-        replay = symbols.get('GLOBALVARS_IsInReplayMode__Fv')
-        if replay is None:
-            raise RuntimeError('Missing native NG+ getter')
+        replay = require(symbols, 'GLOBALVARS_IsInReplayMode__Fv')
         a, b, c, d = struct.unpack('<4I', p.read_bytes(replay + 0x1C, 16))
         if (a & 0xFFFF0000 != 0x3C020000 or b & 0xFFFF0000 != 0x8C440000
                 or c != 0x8C830ED4 or d != 0x0003182B):
@@ -71,8 +71,8 @@ class Progression:
         if self.enabled or self.ng_plus:
             if self.base is None:
                 raise RuntimeError('Missing native gadget list')
-            get = symbols.get('GADGET_GetCurrentPowerLevel__FUi')
-            if get is None or p.read_int32(get + 0x20) != 0x8C42005C:
+            get = require(symbols, 'GADGET_GetCurrentPowerLevel__FUi')
+            if p.read_int32(get + 0x20) != 0x8C42005C:
                 raise RuntimeError('Weapon level getter layout changed')
             self.pending_definitions = tuple(self.levels if self.enabled else TITAN_LOCATIONS)
         ranges = list(getattr(hooks, 'extra_ranges', ()))
@@ -82,9 +82,9 @@ class Progression:
         if buy is not None:
             ranges.append((buy + 0x1FC, buy + 0x338))
         edits = []
-        xp = symbols.get('GADGET_GetsXP__FUiUib')
         if self.enabled or (module == 31 and self.ng_plus):
-            if xp is None or p.read_bytes(xp, 8) != packed([0x27BDFFB0, 0xFFB30028]):
+            xp = require(symbols, 'GADGET_GetsXP__FUiUib')
+            if p.read_bytes(xp, 8) != packed([0x27BDFFB0, 0xFFB30028]):
                 raise RuntimeError('Weapon XP entry changed')
             edits.append(Patch(xp, p.read_bytes(xp, 8), packed([0x03E00008, 0x00001021])))
             # AP tiers bypass XP. Treehouse has no combat XP sources and
@@ -124,9 +124,7 @@ class Progression:
         for name, multiplier, register, first, second in targets:
             if multiplier == 1:
                 continue
-            target = symbols.get(name)
-            if target is None:
-                raise RuntimeError(f'Missing gain routine: {name}')
+            target = require(symbols, name)
             original = p.read_bytes(target, 8)
             a, b = struct.unpack('<2I', original)
             if a != first or (b != second if second is not None else b & 0xFFFF0000 != 0x3C020000):

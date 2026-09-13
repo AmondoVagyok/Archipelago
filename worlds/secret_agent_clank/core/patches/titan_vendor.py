@@ -1,14 +1,13 @@
 """Separate Titan transactions from gameplay levels at native vendor call sites."""
-from .location_hooks import Patch, packed, jump
-from .weapons import WEAPON_ORDER
-from ..constants.weapon_progression import TITAN_LOCATIONS
+from ...constants.weapon_progression import TITAN_LOCATIONS
+from ..inventories.weapons import WEAPON_ORDER
+from ..symbols import require
+from .asm import Patch, jump, packed
 
 
 def prepare_disable_titan_offers(p, symbols):
     """NG+ 0: skip both Titan offer rows regardless of the loaded save's tier."""
-    buy = symbols.get('SCRNVENDOR_ProcessPurchase__Fv')
-    if buy is None:
-        raise RuntimeError('Missing native vendor purchase export')
+    buy = require(symbols, 'SCRNVENDOR_ProcessPurchase__Fv')
     call = p.read_int32(buy + 0x338)
     if call >> 26 != 3:
         raise RuntimeError('Native vendor builder call changed')
@@ -25,21 +24,20 @@ def prepare_disable_titan_offers(p, symbols):
 
 
 def prepare_titan_vendor(p, symbols, hooks, checked):
-    buy = symbols.get('SCRNVENDOR_ProcessPurchase__Fv')
+    buy, set_power, get_def = require(
+        symbols, 'SCRNVENDOR_ProcessPurchase__Fv', 'GADGET_SetPowerLevel__FUiUib', 'GADGET_GetDefAtLevel__FUiUi',
+    )
     # Resolve the exact functions from verified existing call sites instead
     # of relying on optional export aliases.
     original = p.read_bytes(buy + 0x164, 0x70)
     assert p.read_int32(buy + 0x168) == 0x8E440010
     assert p.read_int32(buy + 0x178) == 0x8E05005C
-    assert p.read_int32(buy + 0x184) == jump(symbols.get('GADGET_SetPowerLevel__FUiUib'), True)
+    assert p.read_int32(buy + 0x184) == jump(set_power, True)
     assert p.read_int32(buy + 0x188) == 0x24A50001
     assert p.read_int32(buy + 0x160) == 0
     builder_call = p.read_int32(buy + 0x338)
     assert builder_call >> 26 == 3
     builder = (builder_call & 0x3FFFFFF) << 2
-    get_def = symbols.get('GADGET_GetDefAtLevel__FUiUi')
-    if get_def is None:
-        raise RuntimeError('Missing native weapon definition getter')
     arena = buy + 0x164
     table, reader, recorder = arena + 8, arena + 28, arena + 80
     flags = bytearray(20)
@@ -74,11 +72,9 @@ def prepare_titan_vendor(p, symbols, hooks, checked):
 
 def prepare_titan_price(p, symbols, allocate):
     """The browsing price must use V4 even if AP has granted another tier."""
-    browse = symbols.get('SCRNVENDOR_UpdateBrowseState__Fv')
-    current = symbols.get('GADGET_GetDataDef__FUi')
-    fixed = symbols.get('GADGET_GetDefAtLevel__FUiUi')
-    if None in (browse, current, fixed):
-        raise RuntimeError('Missing native Titan pricing exports')
+    browse, current, fixed = require(
+        symbols, 'SCRNVENDOR_UpdateBrowseState__Fv', 'GADGET_GetDataDef__FUi', 'GADGET_GetDefAtLevel__FUiUi',
+    )
     site = browse + 0x178
     original = p.read_bytes(site, 8)
     assert p.read_int32(site) == jump(current, True)

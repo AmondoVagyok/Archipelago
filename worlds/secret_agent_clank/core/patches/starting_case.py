@@ -4,9 +4,9 @@ Wrap frontend new-game initialization and memory-card new-game travel.
 Load Game, Continue and gameplay resets never call these wrappers. Verified retail
 debug-print stubs (already no-ops) provide storage for the wrapper bodies.
 """
-from ..constants.native_modules import CASE_MODULES
-from ..constants.planets import ALL_CASES, SACCases
-from .location_hooks import Patch, jump, packed
+from ...constants.native_modules import CASE_MODULES
+from ...constants.planets import ALL_CASES, SACCases
+from .asm import Patch, jump, packed
 
 
 class StartingCase:

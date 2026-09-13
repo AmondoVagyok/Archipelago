@@ -1,5 +1,5 @@
 """Resident title-module detection; CURRENT_CASE stays stale on the title screen."""
-from .loader_gate import LoaderGate
+from .patches.loader_gate import LoaderGate
 
 
 def is_main_menu(pine):

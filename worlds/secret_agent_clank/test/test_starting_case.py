@@ -2,13 +2,15 @@ import struct
 import unittest
 from pathlib import Path
 
-from test.general import setup_multiworld, gen_steps
+from test.general import gen_steps, setup_multiworld
+
 from worlds.AutoWorld import call_all
-from ..world import SecretAgentClankWorld
+
 from ..constants import ALL_CASES, CASE_NAME_TO_INFOBOT
 from ..constants.native_modules import CASE_MODULES
-from ..core.starting_case import StartingCase
-from ..core.location_hooks import jump, packed
+from ..core.patches import jump, packed
+from ..core.patches.starting_case import StartingCase
+from ..world import SecretAgentClankWorld
 from .test_runtime import Memory
 
 

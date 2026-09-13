@@ -1,12 +1,12 @@
 """Use the native end-of-level map instead of forced next-planet travel."""
-from .location_hooks import Patch, packed, jump, branch
+from ..symbols import require
+from .asm import Patch, branch, jump, packed
 
 
 def prepare_mission_travel(pine, symbols):
-    function = symbols.get('UPDATE_ChangeToLevelOrMapIfAlreadyCompleted__Fi')
-    map_ender = symbols.get('SCRNGALACTICMAP_SetLevelEnder__Fv')
-    if function is None or map_ender is None:
-        raise RuntimeError('Missing mission-end travel exports')
+    function, map_ender = require(symbols,
+        'UPDATE_ChangeToLevelOrMapIfAlreadyCompleted__Fi', 'SCRNGALACTICMAP_SetLevelEnder__Fv',
+    )
     if (pine.read_bytes(function, 12) != packed([0x27BDFFF0, 0xFFB00000, 0xFFBF0008])
             or pine.read_bytes(function + 0x14, 12) != packed([0x0050102B, 0x14400010, 0x0200202D])
             or pine.read_int32(function + 0x20) != jump(map_ender, True)
@@ -19,13 +19,10 @@ def prepare_mission_travel(pine, symbols):
     # Continue row has two routes: straight to the next level, or a movie
     # whose completion callback loads it. Redirect both, leaving challenge
     # selection, quitting and the Case Files launch handler alone.
-    update = symbols.get('SCRNRATCHETARENA_Update__Fv')
-    exit_screen = symbols.get('SCRNRATCHETARENA_Exit__Fv')
-    next_level = symbols.get('Arena_GetLevelToLoad__Fv')
-    set_next = symbols.get('SetNextLevel__Fi')
-    change = symbols.get('UPDATE_ChangeToLevel__Fib')
-    if None in (update, exit_screen, next_level, set_next, change):
-        raise RuntimeError('Missing Ratchet completion travel exports')
+    update, exit_screen, next_level, set_next, change = require(symbols,
+        'SCRNRATCHETARENA_Update__Fv', 'SCRNRATCHETARENA_Exit__Fv', 'Arena_GetLevelToLoad__Fv',
+        'SetNextLevel__Fi', 'UPDATE_ChangeToLevel__Fib',
+    )
     direct = update + 0x188
     callback = exit_screen + 0x38
     if (pine.read_bytes(direct, 16) != packed([

@@ -1,6 +1,8 @@
 """Ratchet-only wrench input gates and progressive native mod entitlements."""
 import struct
-from .location_hooks import Patch
+
+from ..symbols import require
+from .asm import Patch
 
 PROGRESSIVE_WRENCH = 'Progressive Wrench'
 WRENCH_MODS = ('wrenchpower_firebomb', 'wrenchpower_triplewave',
@@ -33,17 +35,15 @@ class WrenchProgression:
             ('RATCHET_CheckJumpAttack__FP7RATCHET', 0x158, 0x27BDFFE0, 0x30420020, 1),
         )
         for name, size, prologue, mask, expected in specs:
-            address = symbols.get(name)
-            if address is None or self.pine.read_int32(address) != prologue:
+            address = require(symbols, name)
+            if self.pine.read_int32(address) != prologue:
                 raise RuntimeError(f'Unrecognized Ratchet wrench gate: {name}')
             code = struct.unpack('<' + 'I' * (size // 4), self.pine.read_bytes(address, size))
             sites = [(address + i * 4, word) for i, word in enumerate(code) if word == mask]
             if len(sites) != expected:
                 raise RuntimeError(f'Ratchet wrench input layout changed: {name}')
             self.sites.extend(sites)
-        self.power_address = symbols.get('g_wrench_wrenchPower')
-        if self.power_address is None:
-            raise RuntimeError('Missing native wrench power state')
+        self.power_address = require(symbols, 'g_wrench_wrenchPower')
         return [Patch(a, struct.pack('<I', word), struct.pack('<I', word if self.count else word & 0xFFFF0000))
                 for a, word in self.sites]
 

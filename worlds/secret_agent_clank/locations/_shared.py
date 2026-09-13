@@ -4,7 +4,8 @@ from any case file) so every locations/<case>.py file can import them at
 module load time with no circular-import ordering concerns. The
 constants.missions import below is fine despite that -- constants/ never
 imports back from locations/, so it doesn't create a cycle."""
-from typing import Callable, NamedTuple
+from collections.abc import Callable
+from typing import NamedTuple
 
 from ..constants.missions import CHAPTER_ENTRIES
 

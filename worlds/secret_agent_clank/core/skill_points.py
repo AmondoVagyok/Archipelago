@@ -6,7 +6,7 @@ address/flag data is confirmed for every skill point."""
 from typing import TYPE_CHECKING
 
 from ..constants.skillpoints import SKILL_POINTS
-from .case_events import CaseEventInventory
+from .inventories.case_events import CaseEventInventory
 
 if TYPE_CHECKING:
     from ..pypine import Pine

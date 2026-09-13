@@ -1,12 +1,12 @@
 import unittest
 from pathlib import Path
 
-from .test_native_capture_plans import CaptureMemory
 from ..constants.weapon_mods import WEAPON_MODS, enabled_mods
-from ..core.weapon_mods import WeaponMods
-from ..core.weapons import WEAPON_ORDER
+from ..core.inventories.weapons import WEAPON_ORDER
+from ..core.patches import PICKUP_LOCATIONS, VENDOR_LOCATIONS, LocationHooks
+from ..core.patches.weapon_mods import WeaponMods
 from ..core.symbols import RuntimeSymbols
-from ..core.location_hooks import LocationHooks, PICKUP_LOCATIONS, VENDOR_LOCATIONS
+from .test_native_capture_plans import CaptureMemory
 
 
 class WeaponModTests(unittest.TestCase):

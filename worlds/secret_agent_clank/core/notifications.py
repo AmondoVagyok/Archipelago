@@ -1,6 +1,6 @@
 """Nonmodal AP receipt messages using SAC's native timed one-liner HUD."""
-from collections import deque
 import struct
+from collections import deque
 
 
 def receipt_text(item, sender, trap=False):

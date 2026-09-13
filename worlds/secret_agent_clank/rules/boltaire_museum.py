@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING
 from rule_builder.rules import Has, HasAll, True_
 
 from ..constants.alien_codes import SACAlienCodeLocations
-from ..constants.clank_gadgets import SACClankGadgets, SACGadgetPickupLocations
+from ..constants.clank_gadgets import SACClankGadgets, SACClankWeapons, SACGadgetPickupLocations
 from ..constants.cutscenes import SACCutsceneLocations
 from ..constants.missions import SACMissionLocations
 from ..constants.skillpoints import SACSkillPointLocations
@@ -28,13 +28,13 @@ if TYPE_CHECKING:
 def set_boltaire_museum_rules(world: "SecretAgentClankWorld") -> None:
     player = world.player
     mw = world.multiworld
-    _finish_mission = HasAll(SACClankGadgets.BLACK_OUT_PEN, SACClankGadgets.THROWTIE, SACClankGadgets.JETBOOTS)
+    _finish_mission = HasAll(SACClankGadgets.BLACK_OUT_PEN, SACClankWeapons.THROWTIE, SACClankGadgets.JETBOOTS)
     # Always-on
     world.set_rule(mw.get_location(SACRatchetWeapons.BLASTER, player), Has(SACClankGadgets.BLACK_OUT_PEN))
-    world.set_rule(mw.get_location(SACClankGadgets.THROWTIE, player), True_())
-    world.set_rule(mw.get_location(SACClankGadgets.HOLOKNUCKLES, player), True_())
+    world.set_rule(mw.get_location(SACClankWeapons.THROWTIE, player), True_())
+    world.set_rule(mw.get_location(SACClankWeapons.HOLOKNUCKLES, player), True_())
     world.set_rule(mw.get_location(SACClankGadgets.JETBOOTS, player), _finish_mission)
-    world.set_rule(mw.get_location(SACClankGadgets.SUPERKICK, player), True_())
+    world.set_rule(mw.get_location(SACClankWeapons.SUPERKICK, player), True_())
     world.set_rule(mw.get_location(SACGadgetPickupLocations.BOLTAIRE_MUSEUM, player), True_())
     world.set_rule(mw.get_location(SACTitaniumBoltLocations.BOLTAIRE_MUSEUM_1, player), Has(SACClankGadgets.JETBOOTS))
     world.set_rule(

@@ -2,7 +2,7 @@ import unittest
 
 from ..constants.planets import CASE_ID_TO_CASE, CASE_NAME_TO_INFOBOT, PLANET_ACCESS_ITEM_NAME, PLANET_NAMES, SACCases
 from ..core.address_maps import CASE_UNLOCK_BASE_ADDRESSES, CASE_UNLOCK_TABLE_OFFSETS
-from ..core.case_unlocks import CaseUnlockInventory, CaseUnlockState, resolve_owned_cases
+from ..core.inventories.case_unlocks import CaseUnlockInventory, CaseUnlockState, resolve_owned_cases
 from ..items import PROGRESSIVE_PLANET_ITEM_NAME
 
 

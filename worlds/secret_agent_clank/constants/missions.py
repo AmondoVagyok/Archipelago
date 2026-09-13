@@ -122,117 +122,117 @@ class SACMissionEntry:
 # Native case labels split shared module slots. Addresses are resolved at runtime.
 CHAPTER_ENTRIES = {
     SACCases.BOLTAIRE_MUSEUM: [
-        SACMissionEntry(name='Escape the Ravine', address=0, title_id=5501),
-        SACMissionEntry(name='Get Inside the Museum', address=0, title_id=5503),
-        SACMissionEntry(name='Not The Guided Tour', address=0, title_id=5505),
+        SACMissionEntry(name="Escape the Ravine", address=0, title_id=5501),
+        SACMissionEntry(name="Get Inside the Museum", address=0, title_id=5503),
+        SACMissionEntry(name="Not The Guided Tour", address=0, title_id=5505),
     ],
     SACCases.BOLTAIRE_GEM_WING: [
-        SACMissionEntry(name='The Night Fox', address=0, title_id=5507),
+        SACMissionEntry(name="The Night Fox", address=0, title_id=5507),
     ],
     SACCases.MAX_SECURITY_CELLS: [
-        SACMissionEntry(name='Life In Prison', address=0, title_id=5509),
-        SACMissionEntry(name='Consecutive Life Sentences', address=0, title_id=5511),
+        SACMissionEntry(name="Life In Prison", address=0, title_id=5509),
+        SACMissionEntry(name="Consecutive Life Sentences", address=0, title_id=5511),
     ],
     SACCases.ROOFTOP_DEATHTRAP: [
-        SACMissionEntry(name='Get A Clue', address=0, title_id=5513),
-        SACMissionEntry(name='Free Agent Clank!', address=0, title_id=5515),
-        SACMissionEntry(name='The Halls of Asyanica', address=0, title_id=5517),
+        SACMissionEntry(name="Get A Clue", address=0, title_id=5513),
+        SACMissionEntry(name="Free Agent Clank!", address=0, title_id=5515),
+        SACMissionEntry(name="The Halls of Asyanica", address=0, title_id=5517),
     ],
     SACCases.ASYANICA_ROOFTOPS: [
-        SACMissionEntry(name='Number Woo works for...?', address=0, title_id=5519),
+        SACMissionEntry(name="Number Woo works for...?", address=0, title_id=5519),
     ],
     SACCases.LARGER_THAN_LIFE: [
-        SACMissionEntry(name='Qwarkography, Ch. 1', address=0, title_id=5521),
+        SACMissionEntry(name="Qwarkography, Ch. 1", address=0, title_id=5521),
     ],
     SACCases.COUNTESS_VILLA: [
-        SACMissionEntry(name='Tango of 100 Sorrows', address=0, title_id=5523),
+        SACMissionEntry(name="Tango of 100 Sorrows", address=0, title_id=5523),
     ],
     SACCases.GLACIARA_SKI_SLOPES: [
-        SACMissionEntry(name='Black Diamond of Doom!', address=0, title_id=5525),
-        SACMissionEntry(name='Pro Boarding', address=0, title_id=5591),
+        SACMissionEntry(name="Black Diamond of Doom!", address=0, title_id=5525),
+        SACMissionEntry(name="Pro Boarding", address=0, title_id=5591),
     ],
     SACCases.THE_MESS_HALL: [
-        SACMissionEntry(name='No Time for Seconds', address=0, title_id=5527),
-        SACMissionEntry(name='The Lunch Menu Forever', address=0, title_id=5529),
+        SACMissionEntry(name="No Time for Seconds", address=0, title_id=5527),
+        SACMissionEntry(name="The Lunch Menu Forever", address=0, title_id=5529),
     ],
     SACCases.AZCOTAL_ALLEY: [
-        SACMissionEntry(name='The Kingpin', address=0, title_id=5531),
+        SACMissionEntry(name="The Kingpin", address=0, title_id=5531),
         SACMissionEntry(name="All The Kingpin's Men", address=0, title_id=5533),
     ],
     SACCases.GONDOLA_ASCENT: [
-        SACMissionEntry(name='Get A Lift', address=0, title_id=5535),
+        SACMissionEntry(name="Get A Lift", address=0, title_id=5535),
     ],
     SACCases.SUCK_AND_JIVE: [
         SACMissionEntry(name="Qwarkography, The Gamblin' Years", address=0, title_id=5537),
     ],
     SACCases.HIGH_ROLLERS_CASINO: [
-        SACMissionEntry(name='Explore Paradise', address=0, title_id=5539),
-        SACMissionEntry(name='Paradise Exploited', address=0, title_id=5541),
+        SACMissionEntry(name="Explore Paradise", address=0, title_id=5539),
+        SACMissionEntry(name="Paradise Exploited", address=0, title_id=5541),
     ],
     SACCases.THE_EXERCISE_YARD: [
-        SACMissionEntry(name='And the password is...', address=0, title_id=5543),
-        SACMissionEntry(name='Fight for Slim', address=0, title_id=5545),
+        SACMissionEntry(name="And the password is...", address=0, title_id=5543),
+        SACMissionEntry(name="Fight for Slim", address=0, title_id=5545),
     ],
     SACCases.HIGH_STAKES_ROOM: [
-        SACMissionEntry(name='High Risk vs. High Stakes', address=0, title_id=5547),
+        SACMissionEntry(name="High Risk vs. High Stakes", address=0, title_id=5547),
     ],
     SACCases.VENANTONIO_LABS: [
-        SACMissionEntry(name='Crashing the Party', address=0, title_id=5549),
-        SACMissionEntry(name='Out of the Frying Pan...', address=0, title_id=5551),
+        SACMissionEntry(name="Crashing the Party", address=0, title_id=5549),
+        SACMissionEntry(name="Out of the Frying Pan...", address=0, title_id=5551),
     ],
     SACCases.VENANTONIO_CANALS: [
-        SACMissionEntry(name='Danger off Starboard', address=0, title_id=5553),
-        SACMissionEntry(name='Power Jet Boating', address=0, title_id=5593),
+        SACMissionEntry(name="Danger off Starboard", address=0, title_id=5553),
+        SACMissionEntry(name="Power Jet Boating", address=0, title_id=5593),
     ],
     SACCases.MADAM_BUTTERQWARK: [
-        SACMissionEntry(name='Qwarkography, Ch. 3', address=0, title_id=5555),
+        SACMissionEntry(name="Qwarkography, Ch. 3", address=0, title_id=5555),
     ],
     SACCases.GALACTIC_BOLT_RESERVE: [
-        SACMissionEntry(name='Hard Currency', address=0, title_id=5557),
-        SACMissionEntry(name='The Big Heist', address=0, title_id=5559),
+        SACMissionEntry(name="Hard Currency", address=0, title_id=5557),
+        SACMissionEntry(name="The Big Heist", address=0, title_id=5559),
     ],
     SACCases.INSIDE_THE_A_EYE: [
         SACMissionEntry(name="Payback's a Punch", address=0, title_id=5561),
-        SACMissionEntry(name='Mye Mynde Is Going...', address=0, title_id=5597),
+        SACMissionEntry(name="Mye Mynde Is Going...", address=0, title_id=5597),
     ],
     SACCases.THE_SHOWERS: [
-        SACMissionEntry(name='Plumbing Troubles', address=0, title_id=5563),
-        SACMissionEntry(name='Rub-a-dub-death', address=0, title_id=5565),
+        SACMissionEntry(name="Plumbing Troubles", address=0, title_id=5563),
+        SACMissionEntry(name="Rub-a-dub-death", address=0, title_id=5565),
     ],
     SACCases.SPACESHIP_GRAVEYARD: [
-        SACMissionEntry(name='Tracking the Kingpin', address=0, title_id=5567),
+        SACMissionEntry(name="Tracking the Kingpin", address=0, title_id=5567),
     ],
     SACCases.SAINT_QWARK: [
-        SACMissionEntry(name='Qwarkography, Ch. 4', address=0, title_id=5569),
+        SACMissionEntry(name="Qwarkography, Ch. 4", address=0, title_id=5569),
     ],
     SACCases.THE_QUASAR_FIELDS: [
-        SACMissionEntry(name='Escape the Kudzu', address=0, title_id=5571),
+        SACMissionEntry(name="Escape the Kudzu", address=0, title_id=5571),
     ],
     SACCases.PRISON_BREAKOUT: [
-        SACMissionEntry(name='The Great Escape', address=0, title_id=5573),
-        SACMissionEntry(name='And Now... Justice For All', address=0, title_id=5575),
+        SACMissionEntry(name="The Great Escape", address=0, title_id=5573),
+        SACMissionEntry(name="And Now... Justice For All", address=0, title_id=5575),
     ],
     SACCases.DAMS_EDGE_HYDRANO: [
         SACMissionEntry(name="Ship's signal", address=0, title_id=5579),
-        SACMissionEntry(name='Follow that Car!', address=0, title_id=5577),
-        SACMissionEntry(name='The Drift King', address=0, title_id=5595),
+        SACMissionEntry(name="Follow that Car!", address=0, title_id=5577),
+        SACMissionEntry(name="The Drift King", address=0, title_id=5595),
     ],
     SACCases.A_FICTION_FULL_OF_DOLLARS: [
-        SACMissionEntry(name='Qwarkography, Ch. 5', address=0, title_id=5581),
+        SACMissionEntry(name="Qwarkography, Ch. 5", address=0, title_id=5581),
     ],
     SACCases.BULKHEAD_LOCK: [
-        SACMissionEntry(name='Underwater Base', address=0, title_id=5583),
-        SACMissionEntry(name='Locked Door', address=0, title_id=5585),
-        SACMissionEntry(name='Insult to Injury', address=0, title_id=5599),
+        SACMissionEntry(name="Underwater Base", address=0, title_id=5583),
+        SACMissionEntry(name="Locked Door", address=0, title_id=5585),
+        SACMissionEntry(name="Insult to Injury", address=0, title_id=5599),
     ],
     SACCases.UNDERWATER_BUNKER: [
-        SACMissionEntry(name='Clank under glass', address=0, title_id=5587),
+        SACMissionEntry(name="Clank under glass", address=0, title_id=5587),
     ],
     SACCases.KLUNKS_LAIR: [
-        SACMissionEntry(name='All The Marbles', address=0, title_id=5589),
+        SACMissionEntry(name="All The Marbles", address=0, title_id=5589),
     ],
     SACCases.HIGH_TREEHOUSE: [
-        SACMissionEntry(name='The HIG Treehouse', address=0, title_id=5636),
+        SACMissionEntry(name="The HIG Treehouse", address=0, title_id=5636),
     ],
 }
 

@@ -1,11 +1,3 @@
-"""Trap item effects -- force one or more vanilla cheats on for a duration
-(see constants/cheats.py's TRAP_CHEATS).
-
-TODO: CHEATS_ADDRESS's layout (see core/address_maps/ps2.py) is
-unconfirmed -- one bit per cheat? Same list order as
-constants/cheats.py's SACCheats? -- so this can't actually flip a cheat on
-in game memory yet. activate_trap() logs the attempt so the item's effect
-is at least visible/debuggable once wired up for real."""
 import logging
 from typing import TYPE_CHECKING
 

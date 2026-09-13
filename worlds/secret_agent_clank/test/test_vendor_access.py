@@ -9,7 +9,7 @@ from ..rules import vendor_access
 from ..rules.rule_helpers import HasGadget
 from ..constants.planets import SACCases, ALL_CASES
 from ..constants import CASE_NAME_TO_INFOBOT
-from ..constants.clank_gadgets import SACClankGadgets
+from ..constants.clank_gadgets import SACClankGadgets, SACClankWeapons
 from ..constants.weapons import SACRatchetWeapons
 from ..constants.weapon_progression import TITAN_LOCATIONS
 
@@ -51,7 +51,7 @@ class VendorAccessTests(unittest.TestCase):
         with patch.dict(vendor_access.VENDOR_REQUIREMENTS, requirements, clear=True):
             m = setup_vendor_world(SecretAgentClankWorld)
         state = CollectionState(m)
-        location = m.get_location(SACClankGadgets.HOLOKNUCKLES, 1)
+        location = m.get_location(SACClankWeapons.HOLOKNUCKLES, 1)
         self.assertFalse(location.can_reach(state))
         state.collect(m.worlds[1].create_item(SACClankGadgets.JETBOOTS))
         self.assertTrue(location.can_reach(state))
@@ -62,7 +62,7 @@ class VendorAccessTests(unittest.TestCase):
         with patch.dict(vendor_access.VENDOR_REQUIREMENTS, requirements, clear=True):
             m = setup_vendor_world(SecretAgentClankWorld, options={'ng_plus': 1})
         world = m.worlds[1]
-        names = (SACRatchetWeapons.SHOCKROCKET, SACRatchetWeapons.BOLTGRABBER,
+        names = (SACRatchetWeapons.SHOCKROCKET, SACClankGadgets.BOLTGRABBER,
                  TITAN_LOCATIONS['shockrocket'])
         for vendor_first in (False, True):
             state = CollectionState(m)
@@ -90,6 +90,6 @@ class VendorAccessTests(unittest.TestCase):
         m = setup_vendor_world(SecretAgentClankWorld, options={'ng_plus': 1})
         state = m.get_all_state(False)
         for name in (SACClankGadgets.CLANKPDA, SACRatchetWeapons.SHOCKROCKET,
-                     SACRatchetWeapons.BOLTGRABBER, TITAN_LOCATIONS['shockrocket']):
+                     SACClankGadgets.BOLTGRABBER, TITAN_LOCATIONS['shockrocket']):
             self.assertTrue(m.get_location(name, 1).can_reach(state), name)
         self.assertEqual(len(m.itempool), len(m.get_unfilled_locations(1)))

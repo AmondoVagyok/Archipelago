@@ -33,8 +33,17 @@ TITANIUM_BOLT_CASES = {
     25: (SACCases.PRISON_BREAKOUT, 1),
     29: (SACCases.UNDERWATER_BUNKER, 1),
 }
+# Flavor-text overrides for specific bolts -- (module, index) -> the actual
+# in-game hint/description, in place of the plain numeric index. Anything
+# not listed here just uses str(index), as before.
+TITANIUM_BOLT_DESCRIPTIONS: dict[tuple[int, int], str] = {
+    (1, 1): "JetBoot around the pillar",
+    (1, 2): "Jump over the railings",
+    (3, 1): "Complete Mega Challenge",
+}
+
 TITANIUM_BOLT_ENTRIES = {
-    (module, index): CaseStructure(case, str(index), _CATEGORY)
+    (module, index): CaseStructure(case, TITANIUM_BOLT_DESCRIPTIONS.get((module, index), str(index)), _CATEGORY)
     for module, (case, count) in TITANIUM_BOLT_CASES.items()
     for index in range(1, count + 1)
 }
@@ -53,9 +62,9 @@ class SACTitaniumBoltLocations:
     reference an individual location directly -- same one-name-per-location
     layout as constants/weapons.py's SACRatchetWeapons."""
 
-    BOLTAIRE_MUSEUM_1 = "Clank: Boltaire Museum: T-Bolt: 1"
-    BOLTAIRE_MUSEUM_2 = "Clank: Boltaire Museum: T-Bolt: 2"
-    MAX_SECURITY_CELLS_1 = "Ratchet: Max-Security Cells: T-Bolt: 1"
+    BOLTAIRE_MUSEUM_1 = "Clank: Boltaire Museum: T-Bolt: JetBoot around the pillar"
+    BOLTAIRE_MUSEUM_2 = "Clank: Boltaire Museum: T-Bolt: Jump over the railings"
+    MAX_SECURITY_CELLS_1 = "Ratchet: Max-Security Cells: T-Bolt: Complete Mega Challenge"
     ASYANICA_ROOFTOPS_1 = "Clank: Asyanica Rooftops: T-Bolt: 1"
     THE_MESS_HALL_1 = "Ratchet: The Mess Hall: T-Bolt: 1"
     AZCOTAL_ALLEY_1 = "Clank: Azcotal Alley: T-Bolt: 1"

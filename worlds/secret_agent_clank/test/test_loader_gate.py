@@ -1,7 +1,7 @@
 import struct
 import unittest
 
-from ..core.loader_gate import LoaderGate
+from ..core.patches.loader_gate import LoaderGate
 from .test_runtime import Memory
 
 

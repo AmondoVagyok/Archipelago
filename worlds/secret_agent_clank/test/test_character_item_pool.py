@@ -4,10 +4,10 @@ from BaseClasses import CollectionState
 from Fill import distribute_items_restrictive
 from test.general import setup_multiworld
 
-from ..world import SecretAgentClankWorld
 from ..constants import CASE_NAME_TO_INFOBOT, SACCases
-from ..core.case_unlocks import resolve_owned_cases
-from ..items import INFOBOT_ITEM_TABLE, WEAPON_ITEM_TABLE, GADGET_ITEM_TABLE, RATCHET_PACK_ITEM_TABLE
+from ..core.inventories.case_unlocks import resolve_owned_cases
+from ..items import GADGET_ITEM_TABLE, INFOBOT_ITEM_TABLE, RATCHET_PACK_ITEM_TABLE, WEAPON_ITEM_TABLE
+from ..world import SecretAgentClankWorld
 
 
 class CharacterItemPoolTests(unittest.TestCase):

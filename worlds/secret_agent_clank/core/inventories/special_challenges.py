@@ -4,11 +4,11 @@ see constants/special_challenges.py's SPECIAL_CHALLENGES for the
 per-challenge case/address data."""
 from typing import TYPE_CHECKING
 
-from ..constants.special_challenges import SPECIAL_CHALLENGES
+from ...constants.special_challenges import SPECIAL_CHALLENGES
 from .case_events import CaseEventInventory
 
 if TYPE_CHECKING:
-    from ..pypine import Pine
+    from ...pypine import Pine
 
 
 class SpecialChallengeInventory(CaseEventInventory):

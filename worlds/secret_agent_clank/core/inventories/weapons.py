@@ -40,10 +40,11 @@ needing to know anything about the network side.
 """
 from __future__ import annotations
 
+from enum import IntEnum
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from ..pypine import Pine
+    from ...pypine import Pine
 
 # --- Struct layout (see docs/ for the full field write-up; only the two
 # fields this module actually tracks are given names here) -----------------
@@ -117,6 +118,17 @@ WEAPON_ORDER: list[str | None] = [
     "kickblast",                   # slot 38   category 3
     "kicksplosion",                # slot 39   category 3
 ]
+
+# One member per named WEAPON_ORDER slot (the two None/blank slots have no
+# member) -- built directly from WEAPON_ORDER itself so a member can never
+# drift out of sync with the string it names. Lets callers write
+# WeaponSlot.SHOCKROCKET instead of retyping "shockrocket" by hand (see
+# patches/locations.py's VENDOR_LOCATIONS/PICKUP_LOCATIONS, previously the
+# same internal names typed out a second time with nothing tying the two
+# copies together).
+WeaponSlot = IntEnum(
+    "WeaponSlot", {name.upper(): index for index, name in enumerate(WEAPON_ORDER) if name is not None},
+)
 
 
 class WeaponInt32Field:

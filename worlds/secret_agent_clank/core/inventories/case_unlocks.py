@@ -56,23 +56,23 @@ entry is locked on the menu, so it's left alone."""
 from enum import IntEnum
 from typing import TYPE_CHECKING
 
-from ..constants.planets import (
+from ...constants.planets import (
     ALL_CASES,
-    CASES_BY_PLANET,
     CASE_ID_TO_CASE,
     CASE_NAME_TO_INFOBOT,
+    CASES_BY_PLANET,
     PLANET_ACCESS_ITEM_NAME,
     PLANET_NAMES,
 )
-from ..items import PROGRESSIVE_PLANET_ITEM_NAME
-from .address_maps import (
+from ...items import PROGRESSIVE_PLANET_ITEM_NAME
+from ..address_maps import (
     CASE_NAME_TO_UNLOCK_SLOT,
     CASE_UNLOCK_BASE_ADDRESSES,
     CASE_UNLOCK_TABLE_OFFSETS,
 )
 
 if TYPE_CHECKING:
-    from ..pypine import Pine
+    from ...pypine import Pine
 
 
 class CaseUnlockState(IntEnum):
@@ -111,8 +111,8 @@ def resolve_owned_cases(received_names: list[str], *, character_unlocks: bool = 
             owned.update(case.name for case in CASES_BY_PLANET.get(planet, ()))
 
     if character_unlocks:
-        from ..constants import CHARACTER_ITEM_NAME, PROGRESSIVE_CHARACTER_ITEM_NAME, SACOperatives
-        from ..constants.planets import CASES_BY_OPERATIVE
+        from ...constants import CHARACTER_ITEM_NAME, PROGRESSIVE_CHARACTER_ITEM_NAME, SACOperatives
+        from ...constants.planets import CASES_BY_OPERATIVE
         owned.update(case.name for case in CASES_BY_OPERATIVE[SACOperatives.SPECIAL_MISSIONS])
         for operative, item in CHARACTER_ITEM_NAME.items():
             if item in received_names:

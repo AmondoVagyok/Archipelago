@@ -110,7 +110,6 @@ CUTSCENES: tuple[CaseStructure, ...] = (
         SACCases.SPACESHIP_GRAVEYARD, SACCutscenes.COMPLETE_CUTSCENE, event_flag=0b00000010, event_address=0x206BEE,
     ),
     CaseStructure(SACCases.SAINT_QWARK, SACCutscenes.ENTERE_CUTSCENE, event_flag=0b00000100, event_address=0x206BEE),
-    CaseStructure(SACCases.SAINT_QWARK, SACCutscenes.COMPLETE_CUTSCENE, event_flag=0b00010000, event_address=0x206BEE),
     CaseStructure(SACCases.PRISON_BREAKOUT, SACCutscenes.ENTER_CUTSCENE, event_flag=0b00000001, event_address=0x206BF0),
     CaseStructure(SACCases.DAMS_EDGE_HYDRANO, SACCutscenes.ENTER_CUTSCENE, event_flag=0b00000010, event_address=0x206BF0),
     CaseStructure(
@@ -178,7 +177,6 @@ class SACCutsceneLocations:
     SPACESHIP_GRAVEYARD_ENTER_CUTSCENE = "Clank: Spaceship Graveyard: Enter Cutscene"
     SPACESHIP_GRAVEYARD_COMPLETE_CUTSCENE = "Clank: Spaceship Graveyard: Complete Cutscene"
     SAINT_QWARK_ENTERE_CUTSCENE = "Qwark: Saint Qwark: Entere Cutscene"
-    SAINT_QWARK_COMPLETE_CUTSCENE = "Qwark: Saint Qwark: Complete Cutscene"
     PRISON_BREAKOUT_ENTER_CUTSCENE = "Ratchet: Prison Breakout!: Enter Cutscene"
     DAMS_EDGE_HYDRANO_ENTER_CUTSCENE = "Special Missions: Dam's Edge, Hydrano: Enter Cutscene"
     DAMS_EDGE_HYDRANO_COMPLETE_CUTSCENE = "Special Missions: Dam's Edge, Hydrano: Complete Cutscene"

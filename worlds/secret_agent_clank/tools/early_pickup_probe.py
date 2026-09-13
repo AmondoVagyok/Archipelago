@@ -6,9 +6,9 @@ location_hook_probe.py while Case Files is open after the test.
 """
 import importlib.util
 import json
-from pathlib import Path
 import sys
 import time
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
@@ -23,10 +23,23 @@ def load(name):
     return mod
 
 
+def load_package(name):
+    """Like load(), but for a core/<name>/ package (relative imports inside
+    it need __path__ set, which a bare file load doesn't give them)."""
+    package_dir = ROOT / 'core' / name
+    spec = importlib.util.spec_from_file_location(
+        name, package_dir / '__init__.py', submodule_search_locations=[str(package_dir)],
+    )
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules[name] = mod
+    spec.loader.exec_module(mod)
+    return mod
+
+
 def main():
     Gate = load('loader_gate').LoaderGate
     Symbols = load('symbols').RuntimeSymbols
-    Hooks = load('location_hooks').LocationHooks
+    Hooks = load_package('patches').LocationHooks
     p = Pine(28011)
     p.connect()
     gate = Gate(p)

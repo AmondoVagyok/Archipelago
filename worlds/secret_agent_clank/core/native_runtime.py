@@ -1,6 +1,6 @@
 """Install native location hooks before each loaded module starts gameplay."""
-from .loader_gate import LoaderGate
-from .location_hooks import PICKUP_LOCATIONS, VENDOR_LOCATIONS
+from .patches import PICKUP_LOCATIONS, VENDOR_LOCATIONS
+from .patches.loader_gate import LoaderGate
 from .symbols import RuntimeSymbols
 
 
@@ -15,7 +15,7 @@ class NativeRuntime:
         self.progression = None
         self.weapon_mods = None
         self.vendor_modules = None
-        from .starting_case import StartingCase
+        from .patches.starting_case import StartingCase
         self.starting_case = StartingCase(pine, log)
 
     def configure_vendors(self, case_names):
@@ -69,17 +69,17 @@ class NativeRuntime:
                                    entitlements=entitlements)
                 if self.wrench is not None:
                     self.hooks.patches.extend(self.wrench.prepare(symbols, target))
-                from .mission_travel import prepare_mission_travel
+                from .patches.mission_travel import prepare_mission_travel
                 self.hooks.patches.extend(prepare_mission_travel(p, symbols))
                 if self.weapon_mods is not None:
                     self.hooks.patches.extend(self.weapon_mods.prepare(
                         symbols, self.hooks, target, checked, vendor_enabled))
                 if self.progression is not None:
                     if self.progression.ng_plus and vendor_enabled:
-                        from .titan_vendor import prepare_titan_vendor
+                        from .patches.titan_vendor import prepare_titan_vendor
                         self.hooks.patches.extend(prepare_titan_vendor(p, symbols, self.hooks, checked))
                     elif vendor_enabled:
-                        from .titan_vendor import prepare_disable_titan_offers
+                        from .patches.titan_vendor import prepare_disable_titan_offers
                         self.hooks.patches.extend(prepare_disable_titan_offers(p, symbols))
                     self.hooks.patches.extend(self.progression.prepare(
                         symbols, self.hooks, target, vendor_enabled=vendor_enabled))

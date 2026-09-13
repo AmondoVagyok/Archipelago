@@ -1,6 +1,6 @@
 import unittest
 
-from ..core.location_hooks import flag_routine, entitlement_routine, words, LocationHooks, MARKER, jump, PICKUP_LOCATIONS, VENDOR_LOCATIONS
+from ..core.patches import flag_routine, entitlement_routine, words, LocationHooks, MARKER, jump, PICKUP_LOCATIONS, VENDOR_LOCATIONS
 from .test_runtime import Memory
 
 
@@ -49,7 +49,7 @@ def run_routine(code, gadget, flag):
 
 class LocationHookTests(unittest.TestCase):
     def test_partial_installation_rolls_back_before_returning_failure(self):
-        from ..core.location_hooks import Patch
+        from ..core.patches import Patch
         mem = Memory()
         calls = []
 

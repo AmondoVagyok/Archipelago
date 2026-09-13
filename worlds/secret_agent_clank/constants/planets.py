@@ -1,26 +1,3 @@
-"""SAC's world has two independent axes over its 30 cases:
-
-  - Planet: which of the 10 planets a case takes place on. Cases are
-    grouped by CURRENT_CASE_ADDRESS/FORCE_CASE_ADDRESS at the memory
-    level (see core/address_maps/ps2.py) -- best-effort guess from
-    name/theme clues, NOT confirmed (see LOW CONFIDENCE comments below).
-
-  - Operative: which of the game's own "Operatives" menu groups a case is
-    filed under (Ratchet / Clank / Gadgetbots / Qwark / Special Missions)
-    -- CONFIRMED real for 22/30 cases from user-supplied screenshots of
-    that exact menu (see constants/operatives.py); the remaining 8 are
-    inferred from skill point flavor text (e.g. "Qwarkography Ch. 3" ->
-    Qwark, Holo-Monocle/Blackout Pen stealth -> Clank) and marked LOW
-    CONFIDENCE the same way.
-
-Every Case carries both, independently -- see the Case dataclass.
-case_id values are NOT real memory values yet -- they're just the case's
-position (1-30) in the flat Case Files list as originally given, used as a
-stable placeholder key until each case's real CURRENT_CASE_ADDRESS value
-is confirmed live and swapped in here. case_id 1 (Boltaire Museum) is the
-first one CONFIRMED live via /force_case 1 -- see the per-case comments
-below as more are verified the same way.
-"""
 from dataclasses import dataclass
 
 from .operatives import SACOperatives

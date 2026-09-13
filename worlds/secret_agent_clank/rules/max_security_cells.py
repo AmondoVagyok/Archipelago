@@ -10,7 +10,7 @@ True_() here; alien code locations additionally need Therm-Optic Shades
 on top."""
 from typing import TYPE_CHECKING
 
-from rule_builder.rules import True_, OptionFilter
+from rule_builder.rules import True_
 
 from ..constants.cutscenes import SACCutsceneLocations
 from ..constants.missions import SACMissionLocations
@@ -31,8 +31,8 @@ def set_max_security_cells_rules(world: "SecretAgentClankWorld") -> None:
     # Always-on
     world.set_rule(mw.get_location(SACRatchetWeapons.SHARDGUN, player), True_())
     world.set_rule(mw.get_location(SACRatchetWeapons.WALLOPER, player), True_())
-    
-    
+
+
     world.set_rule(mw.get_location(SACRatchetChallengeLocations.MAX_SECURITY_CELLS_KARMIC_BREAKDOWN, player), True_())
     world.set_rule(mw.get_location(SACRatchetChallengeLocations.MAX_SECURITY_CELLS_NO_SHELTER, player), True_())
     world.set_rule(mw.get_location(SACRatchetChallengeLocations.MAX_SECURITY_CELLS_PAST_DUE, player), True_())

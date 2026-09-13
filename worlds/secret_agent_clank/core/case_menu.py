@@ -4,8 +4,8 @@ The USA menu uses pointer arrays of tPAUSEMENU_NODE records. Each row has
 selectable/visible bytes at +0xCC/+0xCD and user data at +0xD0. Child user data
 is a mission pointer, whose +0x30/+0x34 identify module and operative variant.
 """
-from dataclasses import dataclass
 import struct
+from dataclasses import dataclass
 
 from ..constants.planets import SACCases
 

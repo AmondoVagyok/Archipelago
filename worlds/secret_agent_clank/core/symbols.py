@@ -48,3 +48,28 @@ class RuntimeSymbols:
 
     def get(self, name: str) -> int | None:
         return self.values.get(name)
+
+
+def require(symbols, *names: str) -> "int | tuple[int, ...]":
+    """Resolve one or more exports off `symbols` (a RuntimeSymbols instance,
+    or in tests a plain {name: address} dict -- either works, only .get()
+    is used), raising ValueError naming exactly which are missing if any
+    aren't found. Replaces the repeated `x = symbols.get(name); if x is
+    None: raise ValueError(...)` (or its `if None in (a, b, c): raise ...`
+    multi-symbol variant) littered across every patches/*.py plan builder.
+    Returns a single address for one name, or a tuple in the same order
+    for several."""
+    values = tuple(symbols.get(name) for name in names)
+    missing = [name for name, value in zip(names, values) if value is None]
+    if missing:
+        raise ValueError(f"Required native export(s) missing: {', '.join(missing)}")
+    return values[0] if len(names) == 1 else values
+
+
+def forbid(symbols, *names: str) -> None:
+    """Raise ValueError naming exactly which of these exports ARE present
+    off `symbols`, for a plan builder that needs to confirm a module lacks
+    certain code (e.g. patches/vendor_only.py's vendor-only check)."""
+    present = [name for name in names if symbols.get(name) is not None]
+    if present:
+        raise ValueError(f"Unexpected native export(s) present: {', '.join(present)}")

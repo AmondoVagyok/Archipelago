@@ -79,7 +79,7 @@ def create_regions(world: "SecretAgentClankWorld") -> None:
         enabled_mods(world.options.operatives.value, world.options.ng_plus.value) if has_vendor else ()
     )
     # Weapons/gadgets whose ONLY native source is the vendor (see
-    # core/location_hooks.py's VENDOR_LOCATIONS, applied by
+    # core/patches/locations.py's VENDOR_LOCATIONS, applied by
     # rules/vendor_access.py's set_vendor_rules()) can never be obtained at
     # all once Clank is disabled -- exclude them from generation outright
     # (same principle as the module docstring's disabled-operative case

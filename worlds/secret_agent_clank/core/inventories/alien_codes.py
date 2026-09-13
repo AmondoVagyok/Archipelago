@@ -1,7 +1,8 @@
 """Persistent Alien Code bits, independently read from native save flags."""
 import struct
-from ..constants.alien_codes import ALIEN_CODES_BY_CASE, ALIEN_CODE_MODULES
-from .global_flags import GlobalFlags
+
+from ...constants.alien_codes import ALIEN_CODE_MODULES, ALIEN_CODES_BY_CASE
+from ..global_flags import GlobalFlags
 
 
 class AlienCodeInventory:

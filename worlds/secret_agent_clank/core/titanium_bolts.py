@@ -1,7 +1,8 @@
 """Read individual persistent titanium bolt flags, never the spendable total."""
 import struct
-from .global_flags import GlobalFlags
+
 from ..constants.titanium_bolts import TITANIUM_BOLT_CASES, TITANIUM_BOLT_ENTRIES
+from .global_flags import GlobalFlags
 
 
 class TitaniumBoltState:

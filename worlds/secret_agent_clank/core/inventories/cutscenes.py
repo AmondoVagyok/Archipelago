@@ -9,11 +9,11 @@ saw it as new. TODO: means a reconnect after already seeing a cutscene
 this session re-reports it as new; not handled yet."""
 from typing import TYPE_CHECKING
 
-from ..constants.cutscenes import CUTSCENES
+from ...constants.cutscenes import CUTSCENES
 from .case_events import CaseEventInventory
 
 if TYPE_CHECKING:
-    from ..pypine import Pine
+    from ...pypine import Pine
 
 
 class CutsceneInventory(CaseEventInventory):

@@ -2,15 +2,15 @@
 import unittest
 from pathlib import Path
 
-from .test_runtime import Memory
+from ..core.patches import PICKUP_LOCATIONS, VENDOR_LOCATIONS, LocationHooks
+from ..core.patches.gain_storage import prepare_gain_storage
+from ..core.patches.mission_travel import prepare_mission_travel
+from ..core.patches.progression import Progression
+from ..core.patches.titan_vendor import prepare_disable_titan_offers, prepare_titan_vendor
+from ..core.patches.weapon_mods import WeaponMods
+from ..core.patches.wrench import WrenchProgression
 from ..core.symbols import RuntimeSymbols
-from ..core.location_hooks import LocationHooks, PICKUP_LOCATIONS, VENDOR_LOCATIONS
-from ..core.progression import Progression
-from ..core.titan_vendor import prepare_titan_vendor, prepare_disable_titan_offers
-from ..core.mission_travel import prepare_mission_travel
-from ..core.wrench import WrenchProgression
-from ..core.gain_storage import prepare_gain_storage
-from ..core.weapon_mods import WeaponMods
+from .test_runtime import Memory
 
 
 class CaptureMemory(Memory):

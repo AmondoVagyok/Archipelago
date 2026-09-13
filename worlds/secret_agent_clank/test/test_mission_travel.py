@@ -1,6 +1,7 @@
 import unittest
-from ..core.mission_travel import prepare_mission_travel
-from ..core.location_hooks import packed, jump
+
+from ..core.patches import jump, packed
+from ..core.patches.mission_travel import prepare_mission_travel
 from .test_runtime import Memory
 
 

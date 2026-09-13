@@ -1,10 +1,10 @@
 """Arena win counters resolved from the native arena table and current save."""
 import struct
 
-from ..constants.ratchet_challenges import RATCHET_CHALLENGES, RATCHET_CHALLENGES_BY_CASE
+from ...constants.ratchet_challenges import RATCHET_CHALLENGES, RATCHET_CHALLENGES_BY_CASE
+from ..case_menu import CASE_LABELS, ee_pointer
+from ..global_flags import GlobalFlags
 from .case_events import CaseEventInventory
-from .case_menu import CASE_LABELS, ee_pointer
-from .global_flags import GlobalFlags
 
 
 class RatchetChallengeInventory(CaseEventInventory):
@@ -19,11 +19,11 @@ class RatchetChallengeInventory(CaseEventInventory):
 
     def bind(self, symbols):
         self.invalidate()
-        address = symbols.get('Arena_GetWinCount__FUiUi')
-        getter = symbols.get('GLOBAL_GetFlag__FUiUc')
+        address = symbols.get("Arena_GetWinCount__FUiUi")
+        getter = symbols.get("GLOBAL_GetFlag__FUiUc")
         if address is None or getter is None or not self.flags.bind(symbols):
             return False
-        w = struct.unpack('<10I', self.pine.read_bytes(address, 40))
+        w = struct.unpack("<10I", self.pine.read_bytes(address, 40))
         if (w[:2] != (0x27BDFFF0, 0xFFBF0000) or w[2] >> 26 != 3
                 or w[3:5] != (0, 0x0040202D)
                 or w[5:] != (0x0C000000 | (getter >> 2), 0x240500FF,
@@ -32,7 +32,7 @@ class RatchetChallengeInventory(CaseEventInventory):
         index_function = (w[2] & 0x03FFFFFF) << 2
         if not ee_pointer(index_function, 60):
             return False
-        w = struct.unpack('<15I', self.pine.read_bytes(index_function, 60))
+        w = struct.unpack("<15I", self.pine.read_bytes(index_function, 60))
         if (w[:3] != (0x27BDFFF0, 0xFFB00000, 0xFFBF0008)
                 or w[3] >> 26 != 3 or w[4] != 0x00A0802D
                 or w[5] & 0xFFFF0000 != 0x3C030000 or w[6] != 0x00021140
@@ -46,7 +46,7 @@ class RatchetChallengeInventory(CaseEventInventory):
             return False
         indices = {}
         for row in range(5):
-            record = struct.unpack('<8I', self.pine.read_bytes(table + row * 32, 32))
+            record = struct.unpack("<8I", self.pine.read_bytes(table + row * 32, 32))
             names = RATCHET_CHALLENGES_BY_CASE.get(CASE_LABELS.get(record[0]))
             if names is None or len(names) != 5 or not 0x54 <= record[4] <= 0x74:
                 return False

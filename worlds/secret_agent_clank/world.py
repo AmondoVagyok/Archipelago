@@ -98,19 +98,20 @@ class SecretAgentClankWorld(World):
         set_rules(self)
 
     def create_items(self) -> None:
-        from .constants.planets import ALL_CASES, PLANET_ACCESS_ITEM_NAME
         from Options import OptionError
+
+        from .constants.planets import ALL_CASES, PLANET_ACCESS_ITEM_NAME
         region_names = {r.name for r in self.multiworld.get_regions(self.player)}
         active_cases = [case for case in ALL_CASES if case.name in region_names]
         candidates = [case for case in active_cases
                       if self.options.operatives.value.get(case.operative, 0)]
         if not candidates:
-            raise OptionError('Secret Agent Clank requires at least one enabled operative')
+            raise OptionError("Secret Agent Clank requires at least one enabled operative")
         if self.using_ut:
-            name = self.passthrough.get('starting_case', SACCases.BOLTAIRE_MUSEUM)
+            name = self.passthrough.get("starting_case", SACCases.BOLTAIRE_MUSEUM)
             starting_case = next((case for case in active_cases if case.name == name), None)
             if starting_case is None:
-                raise OptionError(f'Invalid starting case in slot data: {name}')
+                raise OptionError(f"Invalid starting case in slot data: {name}")
         else:
             starting_case = self.random.choice(candidates)
         self.starting_case = starting_case.name
@@ -124,8 +125,9 @@ class SecretAgentClankWorld(World):
         ratchet_enabled = SACOperatives.RATCHET in self.options.operatives.value
         clank_enabled = SACOperatives.CLANK in self.options.operatives.value
         if ratchet_enabled and self.options.progressive_wrench:
-            pool += ['Progressive Wrench'] * 5
+            pool += ["Progressive Wrench"] * 5
         from .constants.weapon_progression import PROGRESSIVE_TO_INTERNAL, UNLOCK_TO_PROGRESSIVE, max_level
+
         # WEAPON_ITEM_TABLE mixes Ratchet's own weapons with the WEAPON_ORDER-
         # struct half of Clank's gadgets (see items/__init__.py's docstring) --
         # a disabled character's entries are excluded from the pool entirely,
@@ -188,12 +190,12 @@ class SecretAgentClankWorld(World):
         # Choose once during generation so AP logic and every client agree.
         # Remove one pooled copy (also for progressive weapons) rather than
         # duplicating it; filler below replaces the freed location slot.
-        from .constants.weapons import RATCHET_WEAPON_DISPLAY_TO_INTERNAL, GADGET_DISPLAY_TO_INTERNAL
         from .constants.weapon_progression import LEVELLED_INTERNALS
+        from .constants.weapons import GADGET_DISPLAY_TO_INTERNAL, RATCHET_WEAPON_DISPLAY_TO_INTERNAL
         starting_groups = (
             (SACOperatives.RATCHET, self.options.starting_weapons.value,
              [name for name, internal in RATCHET_WEAPON_DISPLAY_TO_INTERNAL.items()
-              if internal in LEVELLED_INTERNALS or internal == 'hypnowatch']),
+              if internal in LEVELLED_INTERNALS or internal == "hypnowatch"]),
             (SACOperatives.CLANK, self.options.starting_gadgets.value,
              list(dict.fromkeys([*GADGET_DISPLAY_TO_INTERNAL, *GADGET_ITEM_TABLE]))),
         )
@@ -205,7 +207,7 @@ class SecretAgentClankWorld(World):
             candidates = [name for name in candidates if name in pool]
             if count > len(candidates):
                 from Options import OptionError
-                raise OptionError(f'Not enough eligible {character} starting items for {count} selections')
+                raise OptionError(f"Not enough eligible {character} starting items for {count} selections")
             for name in self.random.sample(candidates, count):
                 pool.remove(name)
                 self.multiworld.push_precollected(self.create_item(name))
@@ -214,11 +216,11 @@ class SecretAgentClankWorld(World):
         if len(pool) > unfilled:
             from Options import OptionError
             raise OptionError(
-                f'Secret Agent Clank needs {len(pool)} item locations, but only {unfilled} are enabled. '
-                f'Enable at least {len(pool) - unfilled} more optional locations (such as Missions: All, '
-                'All Cutscenes, Skill Points, Keycards or Alien Codes).'
-                + (' Progressive Weapons can also increase the required pool size.'
-                   if self.options.progressive_weapons and (ratchet_enabled or clank_enabled) else '')
+                f"Secret Agent Clank needs {len(pool)} item locations, but only {unfilled} are enabled. "
+                f"Enable at least {len(pool) - unfilled} more optional locations (such as Missions: All, "
+                "All Cutscenes, Skill Points, Keycards or Alien Codes)."
+                + (" Progressive Weapons can also increase the required pool size."
+                   if self.options.progressive_weapons and (ratchet_enabled or clank_enabled) else "")
             )
         filler_count = max(0, unfilled - len(pool))
         pool += [self.get_filler_item_name() for _ in range(filler_count)]
@@ -230,7 +232,7 @@ class SecretAgentClankWorld(World):
         return {
             "starting_case": self.starting_case,
             "infobots": self.options.infobots.value,
-            "weapon_mods": self.passthrough.get('weapon_mods', False) if self.using_ut else True,
+            "weapon_mods": self.passthrough.get("weapon_mods", False) if self.using_ut else True,
             "weapon_mod_ids": [mod.mod_id for mod in self.weapon_mod_catalog],
             # Which operatives are enabled (see options.py's Operatives) --
             # determines which cases/locations exist and which weapons/

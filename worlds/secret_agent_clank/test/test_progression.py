@@ -1,9 +1,10 @@
 import struct
 import unittest
 from types import SimpleNamespace
-from ..core.progression import Progression, gain_wrapper
-from ..core.weapons import WEAPON_ORDER
+
 from ..constants.weapon_progression import PROGRESSIVE_TO_INTERNAL
+from ..core.inventories.weapons import WEAPON_ORDER
+from ..core.patches.progression import Progression, gain_wrapper
 from .test_runtime import Memory
 
 

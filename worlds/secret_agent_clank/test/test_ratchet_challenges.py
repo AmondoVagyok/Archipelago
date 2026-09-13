@@ -1,19 +1,20 @@
 """Arena save-counter regressions using the captured Max-Security module."""
-import unittest
 import struct
+import unittest
 from pathlib import Path
-from .test_runtime import Memory
-from ..core.symbols import RuntimeSymbols
-from ..core.ratchet_challenges import RatchetChallengeInventory
-from ..constants.ratchet_challenges import RATCHET_CHALLENGES_BY_CASE
+
 from ..constants.planets import SACCases
+from ..constants.ratchet_challenges import RATCHET_CHALLENGES_BY_CASE
+from ..core.inventories.ratchet_challenges import RatchetChallengeInventory
+from ..core.symbols import RuntimeSymbols
+from .test_runtime import Memory
 
 
 class RatchetChallengeTests(unittest.TestCase):
     def setUp(self):
-        path = Path(__file__).parents[1] / '.research/ratchet_max_security_wrench.bin'
+        path = Path(__file__).parents[1] / ".research/ratchet_max_security_wrench.bin"
         if not path.exists():
-            self.skipTest('Local Max-Security capture not present')
+            self.skipTest("Local Max-Security capture not present")
         self.pine = Memory()
         self.pine.data[:] = path.read_bytes()
         self.symbols = RuntimeSymbols.parse(self.pine.data[:0x1000000], 0)
@@ -44,13 +45,13 @@ class RatchetChallengeTests(unittest.TestCase):
         other = 0x1000000
         self.pine.data[other+0x534:other+0x559] = bytes(0x25)
         self.pine.data[other+0x535] = 1
-        struct.pack_into('<I', self.pine.data, self.reader.flags.pointer_address, other)
+        struct.pack_into("<I", self.pine.data, self.reader.flags.pointer_address, other)
         self.assertEqual(self.reader.check(), [self.names[1]])
-        struct.pack_into('<I', self.pine.data, self.reader.flags.pointer_address, 0)
+        struct.pack_into("<I", self.pine.data, self.reader.flags.pointer_address, 0)
         self.assertEqual(self.reader.check(), [])
 
     def test_changed_signature_and_missing_exports_fail_closed(self):
-        address = self.symbols.get('Arena_GetWinCount__FUiUi')
+        address = self.symbols.get("Arena_GetWinCount__FUiUi")
         self.pine.data[address] ^= 1
         self.assertFalse(self.reader.bind(self.symbols))
         self.assertEqual(self.reader.check(), [])

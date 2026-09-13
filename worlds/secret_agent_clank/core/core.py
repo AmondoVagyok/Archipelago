@@ -7,32 +7,32 @@ Ownership received from AP is never evidence of a location completion.
 import logging
 from collections.abc import Callable, Sequence
 
-from ..constants.planets import CASE_ID_TO_CASE, SACCases, CASES_BY_OPERATIVE
-from ..constants.operatives import SACOperatives
 from ..constants.missions import CHAPTER_ENTRIES
-from .keycards import KeycardInventory
-from .address_maps import BOLTS_ADDRESS, CHALLENGE_MODE_ADDRESS
-from .alien_codes import AlienCodeInventory
-from .case_struct import CaseStructInventory
-from .case_unlocks import CaseUnlockInventory, resolve_owned_cases
-from .location_hooks import LocationHooks, PICKUP_LOCATIONS, VENDOR_LOCATIONS, MARKER
-from .native_runtime import NativeRuntime
-from .main_menu import MainMenuNotice
-from .progression import Progression
-from .weapon_mods import WeaponMods
-from .notifications import ItemNotifications
-from .bolt_rewards import BoltRewards
-from .wrench import WrenchProgression, PROGRESSIVE_WRENCH
-from .weapons import WEAPON_ORDER
+from ..constants.operatives import SACOperatives
+from ..constants.planets import CASE_ID_TO_CASE, CASES_BY_OPERATIVE, SACCases
 from ..constants.weapons import GADGET_INTERNAL_TO_DISPLAY, RATCHET_WEAPON_INTERNAL_TO_DISPLAY
-from .cutscenes import CutsceneInventory
-from .gadgetbot_challenges import GadgetbotChallengeInventory
-from .missions import MissionInventory
-from .planets import CaseInventory
+from .address_maps import BOLTS_ADDRESS, CHALLENGE_MODE_ADDRESS
+from .bolt_rewards import BoltRewards
+from .inventories.alien_codes import AlienCodeInventory
+from .inventories.case_struct import CaseStructInventory
+from .inventories.case_unlocks import CaseUnlockInventory, resolve_owned_cases
+from .inventories.cutscenes import CutsceneInventory
+from .inventories.gadgetbot_challenges import GadgetbotChallengeInventory
+from .inventories.keycards import KeycardInventory
+from .inventories.missions import MissionInventory
+from .inventories.planets import CaseInventory
+from .inventories.ratchet_challenges import RatchetChallengeInventory
+from .inventories.special_challenges import SpecialChallengeInventory
+from .inventories.weapons import WEAPON_ORDER
+from .main_menu import MainMenuNotice
+from .native_runtime import NativeRuntime
+from .notifications import ItemNotifications
+from .patches import MARKER, PICKUP_LOCATIONS, VENDOR_LOCATIONS, LocationHooks
+from .patches.progression import Progression
+from .patches.weapon_mods import WeaponMods
+from .patches.wrench import PROGRESSIVE_WRENCH, WrenchProgression
 from .quick_select import QuickSelectState
-from .ratchet_challenges import RatchetChallengeInventory
 from .skill_points import SkillPointState
-from .special_challenges import SpecialChallengeInventory
 from .titanium_bolts import TitaniumBoltState
 from .traps import activate_trap as _activate_trap
 
@@ -138,6 +138,7 @@ class Core:
         on_goal:             Callable[[], None]      | None = None,
         on_case_ready:       Callable[[], None]      | None = None,
         missions_all:        Callable[[], bool]      | None = None,
+        on_bolt_state_changed: Callable[[dict, "dict | None"], None] | None = None,
     ) -> None:
         self.send_location = send_location
         if send_deathlink is not None:
@@ -152,6 +153,8 @@ class Core:
             self.on_case_ready = on_case_ready
         if missions_all is not None:
             self.missions_all = missions_all
+        if on_bolt_state_changed is not None:
+            self.bolt_rewards.on_state_changed = on_bolt_state_changed
 
     # -- AP inventory application ---------------------------------------------
 
@@ -165,7 +168,7 @@ class Core:
         self.progression.receive(received_names)
         self.weapon_mods.received = set(received_names)
         self.wrench.count = min(5, list(received_names).count(PROGRESSIVE_WRENCH))
-        self.bolt_rewards.received = list(received_names).count('Bolts')
+        self.bolt_rewards.received = list(received_names).count("Bolts")
         self._ap_owned = {"ratchet": dict(ratchet), "clank": dict(clank)}
         # Pure function of received_names alone -- no pine/game-state
         # dependency, so compute (and cache for tick()'s
@@ -189,15 +192,15 @@ class Core:
     def set_native_locations(self, enabled: bool) -> None:
         """Compatibility command: an AP session may not disable interception."""
         if not enabled:
-            raise RuntimeError('Native pickup/vendor interception is mandatory; it cannot be disabled')
+            raise RuntimeError("Native pickup/vendor interception is mandatory; it cannot be disabled")
         self._native_locations_enabled = True
 
     def _entitlements(self):
-        owned = dict(self._ap_owned['ratchet'])
+        owned = dict(self._ap_owned["ratchet"])
         owned.update(self.wrench.entitlements())
         owned.update(self.progression.ownership())
-        owned['fountainpen'] = self._ap_owned['clank'].get('Black Out Pen', False)
-        owned['sunglasses'] = self._ap_owned['clank'].get('Therm-Optic Shades', False)
+        owned["fountainpen"] = self._ap_owned["clank"].get("Black Out Pen", False)
+        owned["sunglasses"] = self._ap_owned["clank"].get("Therm-Optic Shades", False)
         return {slot: bool(owned[name]) for slot, name in enumerate(WEAPON_ORDER) if name in owned}
 
     def close(self):
@@ -214,7 +217,7 @@ class Core:
         screen = self.case.case_menu.screen_address
         if screen is None or self.pine.read_int32(screen) not in (8, 14, 16):
             if not self._native_pause_notice:
-                self._log('[SAC] Open Case Files to activate native vendor/pickup checks for this level.')
+                self._log("[SAC] Open Case Files to activate native vendor/pickup checks for this level.")
                 self._native_pause_notice = True
             return False
         if (hooks.module == self.case.case_id and hooks.marker_address is not None
@@ -228,12 +231,12 @@ class Core:
                       vendor_locations=VENDOR_LOCATIONS, checked=self._checked_items)
         hooks.install(screen)
         self._native_pause_notice = False
-        self._log('[SAC] Native vendor/pickup checks active for this level.')
+        self._log("[SAC] Native vendor/pickup checks active for this level.")
         return True
 
     def _read_native_locations(self) -> None:
         for name in self.location_hooks.poll():
-            # PICKUP_LOCATIONS/VENDOR_LOCATIONS (core/location_hooks.py) are
+            # PICKUP_LOCATIONS/VENDOR_LOCATIONS (core/patches/locations.py) are
             # keyed by raw WEAPON_ORDER internal name (e.g. "throwTie") for
             # most entries -- same translation case.ratchet_items.check()
             # applies below, needed before send_location() since
@@ -256,7 +259,7 @@ class Core:
         # The pen is slot 17 of the SAME GadgetData array, not a separate
         # Clank-only byte table. Keep the legacy internal-name item compatible.
         owned["fountainpen"] = owned.get("fountainpen", False) or self._ap_owned["clank"].get("Black Out Pen", False)
-        owned['sunglasses'] = owned.get('sunglasses', False) or self._ap_owned['clank'].get('Therm-Optic Shades', False)
+        owned["sunglasses"] = owned.get("sunglasses", False) or self._ap_owned["clank"].get("Therm-Optic Shades", False)
         self.case.ratchet_items.apply_all(owned)
         self.case.clank_items.apply_all(self._ap_owned["clank"])
 
@@ -430,7 +433,7 @@ class Core:
                 # Gameplay ownership never proves a vendor transaction.
                 continue
             if self.location_hooks.installed and name in {
-                    'fountainpen' if n == 'Black Out Pen (Pickup)' else n
+                    "fountainpen" if n == "Black Out Pen (Pickup)" else n
                     for n in PICKUP_LOCATIONS.values()}:
                 continue
             if name == "fountainpen":
@@ -464,7 +467,7 @@ class Core:
         complete = self.missions._reported
         klunk = (f"{SACCases.KLUNKS_LAIR} Complete" in complete or
                  self.missions.completed.get(CHAPTER_ENTRIES[SACCases.KLUNKS_LAIR][-1].name, False))
-        qwark = all(f'{case.name} Complete' in complete or
+        qwark = all(f"{case.name} Complete" in complete or
                     (bool(CHAPTER_ENTRIES.get(case.name)) and
                      all(self.missions.completed.get(entry.name, False) for entry in CHAPTER_ENTRIES[case.name]))
                     for case in CASES_BY_OPERATIVE[SACOperatives.QWARK])

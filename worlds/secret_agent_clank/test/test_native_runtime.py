@@ -2,12 +2,12 @@ import struct
 import unittest
 from unittest.mock import Mock, patch
 
-from ..core.native_runtime import NativeRuntime
-from ..core.core import Core
-from ..core.missions import MissionInventory
-from ..core.case_menu import CASE_LABELS
-from ..core.alien_codes import AlienCodeInventory
 from ..constants.alien_codes import ALIEN_CODE_MODULES
+from ..core.case_menu import CASE_LABELS
+from ..core.core import Core
+from ..core.inventories.alien_codes import AlienCodeInventory
+from ..core.inventories.missions import MissionInventory
+from ..core.native_runtime import NativeRuntime
 from .test_runtime import Memory
 
 
@@ -39,14 +39,14 @@ class NativeRuntimeTests(unittest.TestCase):
         self.runtime.progression = Mock(ng_plus=1)
         self.runtime.progression.prepare.return_value = []
         self.hooks.patches = []
-        with patch('worlds.secret_agent_clank.core.native_runtime.RuntimeSymbols'):
+        with patch("worlds.secret_agent_clank.core.native_runtime.RuntimeSymbols"):
             self.assertFalse(self.runtime.service(set(), {}))
-        self.assertEqual(self.hooks.prepare.call_args.kwargs['vendor_locations'], {})
-        self.assertFalse(self.runtime.progression.prepare.call_args.kwargs['vendor_enabled'])
+        self.assertEqual(self.hooks.prepare.call_args.kwargs["vendor_locations"], {})
+        self.assertFalse(self.runtime.progression.prepare.call_args.kwargs["vendor_enabled"])
         self.hooks.install_at_loader_gate.assert_called_once()
 
     def setUp(self):
-        travel = patch('worlds.secret_agent_clank.core.mission_travel.prepare_mission_travel', return_value=[])
+        travel = patch("worlds.secret_agent_clank.core.patches.mission_travel.prepare_mission_travel", return_value=[])
         travel.start()
         self.addCleanup(travel.stop)
         self.p = Memory()
@@ -58,7 +58,7 @@ class NativeRuntimeTests(unittest.TestCase):
                                  (0x206338, 3), (0x100, 5)])
 
     def test_incoming_hooks_survive_outgoing_module_during_startup(self):
-        from ..core.location_hooks import LocationHooks, MARKER
+        from ..core.patches import MARKER, LocationHooks
         hooks = LocationHooks(self.p)
         hooks.installed = True
         hooks.module = 16
@@ -106,11 +106,11 @@ class NativeRuntimeTests(unittest.TestCase):
         gate.armed = True
         gate.held_module.return_value = 1
         calls = []
-        self.hooks.install_at_loader_gate.side_effect = lambda g: calls.append('install')
-        gate.release.side_effect = lambda: calls.append('release')
-        with patch('worlds.secret_agent_clank.core.native_runtime.RuntimeSymbols'):
-            self.assertFalse(self.runtime.service({'throwTie'}, {11: True}))
-        self.assertEqual(calls, ['install', 'release'])
+        self.hooks.install_at_loader_gate.side_effect = lambda g: calls.append("install")
+        gate.release.side_effect = lambda: calls.append("release")
+        with patch("worlds.secret_agent_clank.core.native_runtime.RuntimeSymbols"):
+            self.assertFalse(self.runtime.service({"throwTie"}, {11: True}))
+        self.assertEqual(calls, ["install", "release"])
         self.assertTrue(self.runtime.awaiting_start)
         self.p.batch_write_int32([(0x100, 4)])
         gate.reset_mock()
@@ -127,8 +127,8 @@ class NativeRuntimeTests(unittest.TestCase):
 
     def test_failed_install_releases_loader(self):
         self.runtime.gate.held_module.return_value = 1
-        self.hooks.prepare.side_effect = ValueError('signature')
-        with patch('worlds.secret_agent_clank.core.native_runtime.RuntimeSymbols'), self.assertRaises(ValueError):
+        self.hooks.prepare.side_effect = ValueError("signature")
+        with patch("worlds.secret_agent_clank.core.native_runtime.RuntimeSymbols"), self.assertRaises(ValueError):
             self.runtime.service(set(), {})
         self.runtime.gate.release.assert_called_once()
 
@@ -136,7 +136,7 @@ class NativeRuntimeTests(unittest.TestCase):
         core = Core(self.p)
         with self.assertRaises(RuntimeError):
             core.set_native_locations(False)
-        core.apply_inventory(ratchet={'throwTie': False}, clank={'Black Out Pen': True})
+        core.apply_inventory(ratchet={"throwTie": False}, clank={"Black Out Pen": True})
         self.assertEqual(core._entitlements(), {11: False, 17: True, 25: False})
 
 
@@ -145,13 +145,13 @@ class MissionLabelTests(unittest.TestCase):
         p = Memory()
         inv = MissionInventory(p)
         inv.table_base = 0x110000
-        struct.pack_into('<2I', p.data, inv.table_base + 11 * 8, 0x120000, 2)
+        struct.pack_into("<2I", p.data, inv.table_base + 11 * 8, 0x120000, 2)
         for i, label in enumerate((5614, 5622)):
-            struct.pack_into('<I', p.data, 0x120000 + i * 96, 1)
-            struct.pack_into('<I', p.data, 0x120000 + i * 96 + 12, 3)
-            struct.pack_into('<I', p.data, 0x120000 + i * 96 + 60, label)
+            struct.pack_into("<I", p.data, 0x120000 + i * 96, 1)
+            struct.pack_into("<I", p.data, 0x120000 + i * 96 + 12, 3)
+            struct.pack_into("<I", p.data, 0x120000 + i * 96 + 60, label)
         found = inv.check_all()
-        self.assertEqual(set(found), {f'Mission: {CASE_LABELS[x]} Complete' for x in (5614, 5622)})
+        self.assertEqual(set(found), {f"Mission: {CASE_LABELS[x]} Complete" for x in (5614, 5622)})
         for name in found:
             inv.confirm(name)
         self.assertEqual(inv.check_all(), [])
@@ -162,12 +162,12 @@ class MissionLabelTests(unittest.TestCase):
         p = Memory()
         inv = MissionInventory(p)
         inv.table_base = 0x110000
-        struct.pack_into('<2I', p.data, inv.table_base + 4 * 8, 0x120000, 3)
+        struct.pack_into("<2I", p.data, inv.table_base + 4 * 8, 0x120000, 3)
         for i, kind in enumerate((1, 1, 4)):
-            struct.pack_into('<I', p.data, 0x120000 + i * 96, kind)
-            struct.pack_into('<I', p.data, 0x120000 + i * 96 + 12, 3 if i == 1 else 0)
-            struct.pack_into('<I', p.data, 0x120000 + i * 96 + 60, 5626)
-        self.assertEqual(inv.check_all(), [f'Mission: {CASE_LABELS[5626]} Complete'])
+            struct.pack_into("<I", p.data, 0x120000 + i * 96, kind)
+            struct.pack_into("<I", p.data, 0x120000 + i * 96 + 12, 3 if i == 1 else 0)
+            struct.pack_into("<I", p.data, 0x120000 + i * 96 + 60, 5626)
+        self.assertEqual(inv.check_all(), [f"Mission: {CASE_LABELS[5626]} Complete"])
 
 
 class AlienFlagTests(unittest.TestCase):
@@ -178,7 +178,7 @@ class AlienFlagTests(unittest.TestCase):
         self.assertEqual(len({entry.code for entry in ALIEN_CODE_LOCATIONS.values()}), 27)
 
     def test_chalice_collection_not_cards_or_door_completes_goal(self):
-        from ..core.keycards import KeycardInventory
+        from ..core.inventories.keycards import KeycardInventory
         p = Memory()
         cards = KeycardInventory(p)
         values = {0xAA: bytes([7]), 0xCB: bytes([0])}

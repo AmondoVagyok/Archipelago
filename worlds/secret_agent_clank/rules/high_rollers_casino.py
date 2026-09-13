@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING
 from rule_builder.rules import True_
 
 from ..constants.alien_codes import SACAlienCodeLocations
-from ..constants.clank_gadgets import THERM_OPTIC_SHADES
+from ..constants.clank_gadgets import THERM_OPTIC_SHADES, SACClankGadgets
 from ..constants.cutscenes import SACCutsceneLocations
 from ..constants.missions import SACMissionLocations
 from ..constants.skillpoints import SACSkillPointLocations
@@ -32,8 +32,8 @@ def set_high_rollers_casino_rules(world: "SecretAgentClankWorld") -> None:
 
     # Always-on
     world.set_rule(mw.get_location(SACRatchetWeapons.PORKBOMB, player), True_())
-    world.set_rule(mw.get_location(SACRatchetWeapons.HYPNOWATCH, player), True_())
-    world.set_rule(mw.get_location(SACRatchetWeapons.HOLOMONOCLE, player), True_())
+    world.set_rule(mw.get_location(SACClankGadgets.HYPNOWATCH, player), True_())
+    world.set_rule(mw.get_location(SACClankGadgets.HOLOMONOCLE, player), True_())
     world.set_rule(mw.get_location(SACTitaniumBoltLocations.HIGH_ROLLERS_CASINO_1, player), True_())
 
     # Story mission (Missions)

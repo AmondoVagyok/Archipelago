@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING
 from rule_builder.rules import True_
 
 from ..constants.alien_codes import SACAlienCodeLocations
-from ..constants.clank_gadgets import THERM_OPTIC_SHADES, SACClankGadgets
+from ..constants.clank_gadgets import THERM_OPTIC_SHADES, SACClankGadgets, SACClankWeapons
 from ..constants.cutscenes import SACCutsceneLocations
 from ..constants.missions import SACMissionLocations
 from ..constants.skillpoints import SACSkillPointLocations
@@ -31,7 +31,7 @@ def set_azcotal_alley_rules(world: "SecretAgentClankWorld") -> None:
     mw = world.multiworld
 
     # Always-on
-    world.set_rule(mw.get_location(SACClankGadgets.TANGLEVINE, player), True_())
+    world.set_rule(mw.get_location(SACClankWeapons.TANGLEVINE, player), True_())
     world.set_rule(mw.get_location(SACClankGadgets.CLANKPDA, player), True_())
     world.set_rule(mw.get_location(SACRatchetWeapons.BEEMINEGLOVE, player), True_())
     world.set_rule(mw.get_location(SACTitaniumBoltLocations.AZCOTAL_ALLEY_1, player), True_())

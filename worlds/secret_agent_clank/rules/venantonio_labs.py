@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING
 from rule_builder.rules import True_
 
 from ..constants.alien_codes import SACAlienCodeLocations
-from ..constants.clank_gadgets import THERM_OPTIC_SHADES, SACClankGadgets
+from ..constants.clank_gadgets import THERM_OPTIC_SHADES, SACClankWeapons
 from ..constants.cutscenes import SACCutsceneLocations
 from ..constants.missions import SACMissionLocations
 from ..constants.skillpoints import SACSkillPointLocations
@@ -32,8 +32,8 @@ def set_venantonio_labs_rules(world: "SecretAgentClankWorld") -> None:
 
     # Always-on
     world.set_rule(mw.get_location(SACRatchetWeapons.PLASMAWHIP, player), True_())
-    world.set_rule(mw.get_location(SACClankGadgets.FLAMETHROWERPEN, player), True_())
-    world.set_rule(mw.get_location(SACRatchetWeapons.LIGHTNINGUMBRELLA, player), True_())
+    world.set_rule(mw.get_location(SACClankWeapons.FLAMETHROWERPEN, player), True_())
+    world.set_rule(mw.get_location(SACClankWeapons.LIGHTNINGUMBRELLA, player), True_())
     world.set_rule(mw.get_location(SACRatchetWeapons.KICKBLAST, player), True_())
     world.set_rule(mw.get_location(SACTitaniumBoltLocations.VENANTONIO_LABS_1, player), True_())
     world.set_rule(mw.get_location(SACTitaniumBoltLocations.VENANTONIO_LABS_2, player), True_())

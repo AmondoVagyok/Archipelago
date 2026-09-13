@@ -19,8 +19,8 @@ Museum's anchor (slot 2) happens to have offset 0, so treating anchor +
 offset as an absolute address only worked out for that one case."""
 from typing import TYPE_CHECKING
 
-from ..constants.planets import CASE_ID_TO_CASE
-from .address_maps import (
+from ...constants.planets import CASE_ID_TO_CASE
+from ..address_maps import (
     CASE_NAME_TO_UNLOCK_SLOT,
     CASE_UNLOCK_BASE_ADDRESSES,
     CASE_UNLOCK_TABLE_OFFSETS,
@@ -28,7 +28,7 @@ from .address_maps import (
 )
 
 if TYPE_CHECKING:
-    from ..pypine import Pine
+    from ...pypine import Pine
 
 
 class CaseStructInventory:

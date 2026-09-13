@@ -16,6 +16,7 @@ from ..constants.cutscenes import SACCutsceneLocations
 from ..constants.gadgetbot_challenges import SACGadgetbotChallengeLocations
 from ..constants.missions import SACMissionLocations
 from ..constants.skillpoints import SACSkillPointLocations
+from ..constants.clank_gadgets import SACClankGadgets
 from ..constants.weapons import SACRatchetWeapons
 from ..options import Missions
 
@@ -29,12 +30,12 @@ def set_inside_the_a_eye_rules(world: "SecretAgentClankWorld") -> None:
 
     # Always-on
     # SHOCKROCKET/BOLTGRABBER's only native source is the vendor (see
-    # core/location_hooks.py's VENDOR_LOCATIONS) -- regions.py excludes
+    # core/patches/locations.py's VENDOR_LOCATIONS) -- regions.py excludes
     # them from generation entirely when Clank is disabled (no vendor
     # exists at all), even though this case's own operative is Gadgetbots.
     if world.has_vendor:
         world.set_rule(mw.get_location(SACRatchetWeapons.SHOCKROCKET, player), True_())
-        world.set_rule(mw.get_location(SACRatchetWeapons.BOLTGRABBER, player), True_())
+        world.set_rule(mw.get_location(SACClankGadgets.BOLTGRABBER, player), True_())
     world.set_rule(mw.get_location(SACGadgetbotChallengeLocations.INSIDE_THE_A_EYE_VAULTBREAKERS, player), True_())
     world.set_rule(mw.get_location(SACGadgetbotChallengeLocations.INSIDE_THE_A_EYE_DARK_HELMET, player), True_())
     world.set_rule(mw.get_location(SACGadgetbotChallengeLocations.INSIDE_THE_A_EYE_GO_LONG, player), True_())

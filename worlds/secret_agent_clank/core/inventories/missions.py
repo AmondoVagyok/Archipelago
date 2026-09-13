@@ -5,21 +5,21 @@ all cases, including separate cases sharing one module. Completed checks
 are monotonic for the AP session and survive rebinding after transitions.
 """
 import struct
-from typing import NamedTuple, TYPE_CHECKING
+from typing import TYPE_CHECKING, NamedTuple
 
-from ..constants.missions import (
+from ...constants.missions import (
     ALL_CHAPTER_ENTRIES,
     CHAPTER_ENTRIES,
     MISSION_NAME_TO_CHAPTER_ENTRY,
     MISSION_TO_CASE,
     MissionFlag,
 )
-from ..constants.planets import CASE_ID_TO_CASE, CASE_NAME_TO_CASE
-from .case_menu import CASE_LABELS
+from ...constants.planets import CASE_NAME_TO_CASE
+from ..case_menu import CASE_LABELS
 
 if TYPE_CHECKING:
-    from ..constants.planets import Case
-    from ..pypine import Pine
+    from ...constants.planets import Case
+    from ...pypine import Pine
 
 
 # The USA module exports g_MISSION_LEVEL_LIST as a direct 33-slot array.
@@ -35,7 +35,7 @@ _TASK_ENTRY_SIZE = 0x60        # bytes per task entry within a chapter's task ar
 # throughout (matches core/core.py's own raw entry.name lookups), and this
 # prefix is applied/stripped only at the two boundaries that actually talk
 # to AP: check()'s return value and confirm()/sync_from_ap()'s input.
-_AP_LOCATION_PREFIX = 'Mission: '
+_AP_LOCATION_PREFIX = "Mission: "
 _TASK_STATE_OFFSET = 0xC       # state field within a task entry (same field CHAPTER_ENTRIES
                                 # addresses point at; 1 byte, MissionFlag-valued)
 
@@ -92,7 +92,7 @@ def find_mission_level_list(pine: "Pine") -> "int | None":
     needed (see module comment above). Returns None if the game isn't in
     a state where the debug-symbol table can be found (e.g. still
     loading) or the scan windows above need widening for this build."""
-    from .symbols import RuntimeSymbols
+    from ..symbols import RuntimeSymbols
     symbols = RuntimeSymbols(pine)
     symbols.refresh()
     return symbols.get("g_MISSION_LEVEL_LIST")
@@ -163,7 +163,7 @@ class MissionInventory:
         # this level", distinct from {} (resolved, but the scan itself
         # came back empty -- also worth retrying, so both are falsy and
         # treated the same by _resolve_case_addresses()).
-        self._resolved_slots: "dict[int, list[int]] | None" = None
+        self._resolved_slots: dict[int, list[int]] | None = None
         self._resolved_cases = None
         self._story_addresses = {}
         self._reported = set()
@@ -201,14 +201,14 @@ class MissionInventory:
             data = self.pine.read_bytes(pointer, count * _TASK_ENTRY_SIZE)
             for index in range(count):
                 offset = index * _TASK_ENTRY_SIZE
-                kind = struct.unpack_from('<I', data, offset)[0]
-                label = struct.unpack_from('<I', data, offset + 0x3C)[0]
+                kind = struct.unpack_from("<I", data, offset)[0]
+                label = struct.unpack_from("<I", data, offset + 0x3C)[0]
                 name = CASE_LABELS.get(label)
                 if name is None or kind not in (1, 4):
                     continue
                 address = pointer + offset + _TASK_STATE_OFFSET
                 groups.setdefault(name, []).append(address)
-                title = struct.unpack_from('<I', data, offset + 4)[0]
+                title = struct.unpack_from("<I", data, offset + 4)[0]
                 self._resolved_title_ids.setdefault(name, []).append(title)
                 if kind == 1:
                     story.setdefault(name, []).append(address)
@@ -251,7 +251,7 @@ class MissionInventory:
         self._resolve_labels()
         if not all_missions:
             story = self._story_addresses.get(current_case.name, ())
-            name = f'{current_case.name} Complete'
+            name = f"{current_case.name} Complete"
             if story and name not in self._reported and self.pine.read_int32(story[-1]) == 3:
                 return [_AP_LOCATION_PREFIX + name]
             return []
@@ -399,7 +399,7 @@ class MissionInventory:
             labels = self.pine.batch_read_int32([pointer + i * 0x60 + 0x3C for i in range(count)])
             names = list(dict.fromkeys(CASE_LABELS[label] for label in labels if label in CASE_LABELS))
             expected = sum(len(CHAPTER_ENTRIES.get(name, ())) for name in names)
-            rows.append(ChapterTableRow(slot, count, ' / '.join(names) or None,
+            rows.append(ChapterTableRow(slot, count, " / ".join(names) or None,
                                         expected if names else None, expected == count if names else None))
         return rows
 

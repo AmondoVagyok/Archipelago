@@ -1,8 +1,9 @@
 import struct
 import unittest
 from unittest.mock import Mock
-from ..core.wrench import WrenchProgression, WRENCH_MODS
+
 from ..core.core import Core
+from ..core.patches.wrench import WRENCH_MODS, WrenchProgression
 from .test_runtime import Memory
 
 
