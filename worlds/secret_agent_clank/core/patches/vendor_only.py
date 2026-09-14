@@ -4,8 +4,8 @@ from ..symbols import forbid, require
 from .asm import MARKER, Patch, branch, jump, packed, words
 from .entitlements import Entitlements
 from .gameFlags import GameFlags
-from .plan import PatchPlan
 from .patch import PatchSet
+from .plan import PatchPlan
 
 
 class VendorOnly(PatchSet):

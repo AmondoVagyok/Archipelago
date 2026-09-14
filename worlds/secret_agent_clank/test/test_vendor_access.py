@@ -4,7 +4,6 @@ from unittest.mock import patch
 from BaseClasses import CollectionState
 from rule_builder.rules import False_
 from test.general import gen_steps, setup_multiworld
-
 from worlds.AutoWorld import call_all
 
 from ..constants import CASE_NAME_TO_INFOBOT

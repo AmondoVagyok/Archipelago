@@ -2,10 +2,10 @@
 import logging
 from collections.abc import Callable, Sequence
 
+from ..constants.clank_gadgets import BLACK_OUT_PEN, THERM_OPTIC_SHADES
 from ..constants.missions import CHAPTER_ENTRIES
 from ..constants.operatives import SACOperatives
 from ..constants.planets import CASE_ID_TO_CASE, CASES_BY_OPERATIVE, SACCases
-from ..constants.clank_gadgets import BLACK_OUT_PEN, THERM_OPTIC_SHADES
 from ..constants.weapons import GADGET_INTERNAL_TO_DISPLAY, RATCHET_WEAPON_INTERNAL_TO_DISPLAY
 from .address_maps import BOLTS_ADDRESS, CHALLENGE_MODE_ADDRESS
 from .bolt_rewards import BoltRewards

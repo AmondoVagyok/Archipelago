@@ -1,7 +1,7 @@
 """Native pickup/vendor location flags, separate from gameplay ownership."""
-from .patch import Patch
 from . import mips as m
 from .asm import jump, packed
+from .patch import Patch
 
 
 class GameFlags(Patch):

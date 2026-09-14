@@ -1,9 +1,11 @@
 import unittest
 from collections import Counter
+
 from test.general import setup_multiworld
-from ..world import SecretAgentClankWorld
+
 from ..constants import CASE_NAME_TO_INFOBOT
 from ..constants.weapon_progression import PROGRESSIVE_TO_INTERNAL, max_level
+from ..world import SecretAgentClankWorld
 
 
 class StartingEquipmentTests(unittest.TestCase):
@@ -12,8 +14,8 @@ class StartingEquipmentTests(unittest.TestCase):
         for progressive in (False, True):
             for weapons, gadgets in ((0, 0), (1, 1), (4, 3)):
                 m = setup_multiworld(SecretAgentClankWorld, seed=12345, options={
-                    'starting_weapons': weapons, 'starting_gadgets': gadgets,
-                    'progressive_weapons': progressive})
+                    "starting_weapons": weapons, "starting_gadgets": gadgets,
+                    "progressive_weapons": progressive})
                 starting = [i.name for i in m.precollected_items[1]]
                 # Infobots=cases (the default) precollects a second Case
                 # File too when more than one is available -- see world.py's
@@ -30,7 +32,7 @@ class StartingEquipmentTests(unittest.TestCase):
                         self.assertEqual(total[name], 1)
 
     def test_starting_choices_are_seed_deterministic(self):
-        options = {'starting_weapons': 4, 'starting_gadgets': 3}
+        options = {"starting_weapons": 4, "starting_gadgets": 3}
         a = setup_multiworld(SecretAgentClankWorld, seed=777, options=options)
         b = setup_multiworld(SecretAgentClankWorld, seed=777, options=options)
         self.assertEqual([i.name for i in a.precollected_items[1]],

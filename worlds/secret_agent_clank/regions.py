@@ -2,13 +2,13 @@
 from typing import TYPE_CHECKING
 
 from BaseClasses import Region
-from rule_builder.rules import CanReachLocation, CanReachRegion, False_, Has, True_
-
 from Options import OptionError
+from rule_builder.rules import CanReachLocation, CanReachRegion, False_, Has, True_
 
 from .constants import (
     ALIEN_CODES,
     ALL_CASES,
+    CASE_NAME_TO_CASE,
     CASES_BY_OPERATIVE,
     GOAL_CASE,
     KEYCARDS,
@@ -17,6 +17,12 @@ from .constants import (
 from .constants.clank_gadgets import THERM_OPTIC_SHADES
 from .constants.ratchet_challenges import RATCHET_CHALLENGES
 from .constants.weapon_mods import enabled_mods
+from .constants.weapon_progression import TITAN_LOCATIONS
+from .constants.weapons import (
+    CASE_BY_WEAPON_NAME,
+    GADGET_INTERNAL_TO_DISPLAY,
+    RATCHET_WEAPON_INTERNAL_TO_DISPLAY,
+)
 from .entities import SACLocation
 from .locations import (
     ALIEN_CODE_LOCATIONS,
@@ -76,8 +82,23 @@ def create_regions(world: "SecretAgentClankWorld") -> None:
         menu_region.connect(mod_region)
         multiworld.regions.append(mod_region)
     if world.options.ng_plus.value and has_vendor:
+        # TITAN_VENDOR_LOCATIONS covers every leveled weapon unconditionally,
+        # but a Titan tier's own rule (rules/vendor_access.py's
+        # set_vendor_rules()) requires reaching the ORIGINAL, non-Titan
+        # location for that weapon -- if the case that original pickup lives
+        # in is disabled (its operative excluded), that location was never
+        # created and the Titan tier's rule collapses to False_(), leaving a
+        # permanently unreachable location in the pool (a real "Fill error"
+        # trigger: user reported repeated NG+ Titan Vendor fill failures).
+        # Skip creating that Titan location entirely instead, same principle
+        # as vendor_only_names above.
+        internal_to_display = {**RATCHET_WEAPON_INTERNAL_TO_DISPLAY, **GADGET_INTERNAL_TO_DISPLAY}
         vendor_region = Region("Titan Vendor", player, multiworld)
-        for name, data in TITAN_VENDOR_LOCATIONS.items():
+        for internal, name in TITAN_LOCATIONS.items():
+            original_case = CASE_NAME_TO_CASE.get(CASE_BY_WEAPON_NAME.get(internal_to_display.get(internal, ""), ""))
+            if original_case is None or original_case.operative in disabled:
+                continue
+            data = TITAN_VENDOR_LOCATIONS[name]
             vendor_region.locations.append(SACLocation(player, name, data.code, vendor_region))
         menu_region.connect(vendor_region)
         multiworld.regions.append(vendor_region)

@@ -4,9 +4,9 @@ from ..core.patches import (
     MARKER,
     PICKUP_LOCATIONS,
     VENDOR_LOCATIONS,
-    LocationHooks,
     Entitlements,
     GameFlags,
+    LocationHooks,
     jump,
     words,
 )

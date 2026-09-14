@@ -1,10 +1,10 @@
 """Verified storage in retail debug-print stubs that already do nothing."""
-from .patch import PatchSet
 from ..symbols import require
 from . import mips as m
 from .asm import Patch, packed
-from .mips import jr
 from .debug_stubs import DEBUG_STUBS
+from .mips import jr
+from .patch import PatchSet
 
 RETURN_IMMEDIATELY = packed([jr(m.RA), m.NOP])
 

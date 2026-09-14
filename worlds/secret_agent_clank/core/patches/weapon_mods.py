@@ -2,10 +2,10 @@
 from ...constants.native_functions import NativeFunctions
 from ...constants.weapon_mods import WEAPON_MODS, enabled_mods
 from ..inventories.weapons import WEAPON_ORDER
-from .patch import PatchSet
 from ..symbols import require
 from .asm import Patch, jump, packed
 from .gain_storage import GainStorage
+from .patch import PatchSet
 
 
 class WeaponMods(PatchSet):

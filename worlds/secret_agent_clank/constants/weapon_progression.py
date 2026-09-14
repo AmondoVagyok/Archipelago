@@ -7,13 +7,13 @@ from .weapons import (
     SACRatchetWeapons,
 )
 
-LEVELLED_INTERNALS = ('blaster', 'shardgun', 'beemineglove', 'shockrocket',
-    'walloper', 'plasmawhip', 'porkbomb', 'minelauncher', 'ryno', 'throwTie',
-    'CuffLink', 'TangleVine', 'HoloKnuckles', 'FlamethrowerPen', 'LightningUmbrella')
+LEVELLED_INTERNALS = ("blaster", "shardgun", "beemineglove", "shockrocket",
+    "walloper", "plasmawhip", "porkbomb", "minelauncher", "ryno", "throwTie",
+    "CuffLink", "TangleVine", "HoloKnuckles", "FlamethrowerPen", "LightningUmbrella")
 
 
 def _attrs(cls):
-    return {name: value for name, value in vars(cls).items() if not name.startswith('_')}
+    return {name: value for name, value in vars(cls).items() if not name.startswith("_")}
 
 
 # Unlock -> progressive display name, matched by shared class attribute name
@@ -34,8 +34,8 @@ PROGRESSIVE_TO_INTERNAL = {
     progressive: _DISPLAY_TO_INTERNAL[unlock] for unlock, progressive in UNLOCK_TO_PROGRESSIVE.items()
 }
 def max_level(internal, ng_plus):
-    return 4 if internal == 'ryno' or not ng_plus else 8
+    return 4 if internal == "ryno" or not ng_plus else 8
 
-TITAN_LOCATIONS = {internal: f'Titan Vendor: {internal}'
-                   for internal in LEVELLED_INTERNALS if internal != 'ryno'}
-TITAN_ITEMS = {f'Titan Upgrade: {internal}': internal for internal in TITAN_LOCATIONS}
+TITAN_LOCATIONS = {internal: f"Titan Vendor: {internal}"
+                   for internal in LEVELLED_INTERNALS if internal != "ryno"}
+TITAN_ITEMS = {f"Titan Upgrade: {internal}": internal for internal in TITAN_LOCATIONS}

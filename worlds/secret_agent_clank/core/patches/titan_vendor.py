@@ -2,9 +2,9 @@
 from ...constants.native_functions import NativeFunctions
 from ...constants.weapon_progression import TITAN_LOCATIONS
 from ..inventories.weapons import WEAPON_ORDER
-from .patch import PatchSet
 from ..symbols import require
 from .asm import Patch, jump, packed
+from .patch import PatchSet
 
 
 class TitanOffers(PatchSet):

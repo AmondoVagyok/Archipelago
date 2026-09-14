@@ -1,10 +1,10 @@
 """Ratchet-only wrench input gates and progressive native mod entitlements."""
-from ...constants.native_functions import NativeFunctions
 import struct
 
-from .patch import PatchSet
+from ...constants.native_functions import NativeFunctions
 from ..symbols import require
 from .asm import Patch
+from .patch import PatchSet
 
 PROGRESSIVE_WRENCH = "Progressive Wrench"
 WRENCH_MODS = ("wrenchpower_firebomb", "wrenchpower_triplewave",

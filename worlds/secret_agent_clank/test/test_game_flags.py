@@ -1,6 +1,6 @@
 import unittest
-from ..core.patches.gameFlags import GameFlags
 
+from ..core.patches.gameFlags import GameFlags
 
 
 class Memory:

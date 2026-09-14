@@ -3,7 +3,6 @@ import unittest
 from pathlib import Path
 
 from test.general import gen_steps, setup_multiworld
-
 from worlds.AutoWorld import call_all
 
 from ..constants import ALL_CASES, CASE_NAME_TO_INFOBOT

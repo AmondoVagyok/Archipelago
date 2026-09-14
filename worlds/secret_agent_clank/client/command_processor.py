@@ -33,18 +33,18 @@ class SACCommandProcessor(ClientCommandProcessor):
         asyncio.create_task(self.ctx.reconnect_pine())
         return True
 
-    def _cmd_native_locations(self, mode: str = 'on') -> bool:
+    def _cmd_native_locations(self, mode: str = "on") -> bool:
         """Native interception is mandatory; /native_locations off is rejected."""
-        if mode.lower() not in ('on', 'off'):
-            logger.warning('[SAC] Usage: /native_locations on|off')
+        if mode.lower() not in ("on", "off"):
+            logger.warning("[SAC] Usage: /native_locations on|off")
             return False
 
         async def change_mode():
             async with self.ctx._pine_lock:
                 try:
-                    self.ctx._wiring.set_native_locations(mode.lower() == 'on')
+                    self.ctx._wiring.set_native_locations(mode.lower() == "on")
                 except Exception as exc:
-                    logger.warning(f'[SAC] Native location mode: {exc}')
+                    logger.warning(f"[SAC] Native location mode: {exc}")
         asyncio.create_task(change_mode())
         return True
 

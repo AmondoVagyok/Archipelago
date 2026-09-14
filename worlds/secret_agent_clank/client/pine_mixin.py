@@ -13,7 +13,7 @@ class PineMixin:
         try:
             self._wiring.close()
         except Exception:
-            logger.warning('[SAC] Could not restore the loader barrier. Restart the game before continuing if loading is held.', exc_info=True)
+            logger.warning("[SAC] Could not restore the loader barrier. Restart the game before continuing if loading is held.", exc_info=True)
         try:
             self.pine.disconnect()
         except Exception:

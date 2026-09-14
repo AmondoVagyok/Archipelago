@@ -6,8 +6,8 @@ from ..symbols import require
 from ..vendor import VendorState
 from .asm import Patch, branch, packed
 from .patch import PatchSet
-from .weapon_pickup import WeaponPickup
 from .vendor_only import VendorOnly
+from .weapon_pickup import WeaponPickup
 
 
 class VendorOfferPreview(PatchSet):

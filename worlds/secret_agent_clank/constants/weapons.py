@@ -146,3 +146,13 @@ GADGETS_BY_CASE: dict[str, tuple[str, ...]] = {
         SACClankWeapons.KICKSPLOSION,
     ),
 }
+
+# Reverse of WEAPONS_BY_CASE/GADGETS_BY_CASE -- display name -> the case its
+# AP location lives in, so a caller (regions.py's Titan Vendor filtering)
+# can tell which case must be active for a given weapon's location to exist.
+CASE_BY_WEAPON_NAME: dict[str, str] = {
+    name: case_name
+    for table in (WEAPONS_BY_CASE, GADGETS_BY_CASE)
+    for case_name, names in table.items()
+    for name in names
+}

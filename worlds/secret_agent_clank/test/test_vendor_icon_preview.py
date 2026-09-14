@@ -2,6 +2,7 @@
 import json
 import unittest
 from pathlib import Path
+
 from ..core.patches.asm import Patch
 from ..core.patches.vendor_icon_preview import VendorIconPreview
 from .test_native_capture_plans import CaptureMemory

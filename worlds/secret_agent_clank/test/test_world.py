@@ -1,8 +1,7 @@
 import unittest
 
-from test.general import setup_multiworld
-
 from Options import OptionError
+from test.general import setup_multiworld
 
 from ..world import SecretAgentClankWorld
 from .bases import SecretAgentClankTestBase

@@ -6,7 +6,6 @@ from . import mips as m
 from .asm import packed
 from .mips import jr
 
-
 TEXT_SIGNATURE = packed([
     m.addiu(m.SP, m.SP, -112), m.sd(m.A3, 72, m.SP), m.sd(m.T0, 80, m.SP), m.sd(m.T1, 88, m.SP),
     m.sd(m.T2, 96, m.SP), m.sd(m.T3, 104, m.SP), m.swc1(m.F12, 56, m.SP), m.swc1(m.F14, 60, m.SP),

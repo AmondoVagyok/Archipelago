@@ -1,9 +1,7 @@
 from typing import Any
 
 from BaseClasses import ItemClassification, Tutorial
-
 from Options import OptionError
-
 from worlds.AutoWorld import WebWorld, World
 
 from .constants import (

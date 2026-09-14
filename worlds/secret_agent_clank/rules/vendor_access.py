@@ -1,5 +1,4 @@
 from rule_builder.rules import CanReachLocation, CanReachRegion, False_, Has, True_
-
 from worlds.generic.Rules import add_rule
 
 from ..constants.clank_gadgets import SACClankGadgets

@@ -7,6 +7,16 @@ from .locations import PICKUP_LOCATIONS, VENDOR_LOCATIONS
 from .plan import PatchPlan
 
 __all__ = [
-    "MARKER", "PICKUP_LOCATIONS", "Patch", "PatchPlan", "VENDOR_LOCATIONS",
-    "LocationHooks", "branch", "Entitlements", "GameFlags", "jump", "packed", "words",
+    "MARKER",
+    "PICKUP_LOCATIONS",
+    "VENDOR_LOCATIONS",
+    "Entitlements",
+    "GameFlags",
+    "LocationHooks",
+    "Patch",
+    "PatchPlan",
+    "branch",
+    "jump",
+    "packed",
+    "words",
 ]

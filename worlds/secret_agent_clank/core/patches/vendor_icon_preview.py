@@ -1,8 +1,8 @@
 """Temporary replacement of the verified 32x32 Shock Rocket icon."""
 import struct
 
-from ..vendor import VendorState
 from ..symbols import require
+from ..vendor import VendorState
 from .asm import Patch
 from .patch import PatchSet
 

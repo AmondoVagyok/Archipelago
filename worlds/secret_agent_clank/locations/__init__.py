@@ -334,14 +334,15 @@ ALL_LOCATIONS: dict[str, SACLocationData] = {
 from ..constants.weapon_progression import TITAN_LOCATIONS
 
 TITAN_VENDOR_LOCATIONS = {
-    name: SACLocationData(BASE_ID + 31000 + index, 'Titan Vendor')
+    name: SACLocationData(BASE_ID + 31000 + index, "Titan Vendor")
     for index, name in enumerate(TITAN_LOCATIONS.values())
 }
 ALL_LOCATIONS.update(TITAN_VENDOR_LOCATIONS)
 
 from ..constants.weapon_mods import WEAPON_MODS
+
 MOD_VENDOR_LOCATIONS = {
-    mod.location: SACLocationData(BASE_ID + 32000 + mod.mod_id, 'Mod Vendor')
+    mod.location: SACLocationData(BASE_ID + 32000 + mod.mod_id, "Mod Vendor")
     for mod in WEAPON_MODS
 }
 ALL_LOCATIONS.update(MOD_VENDOR_LOCATIONS)

@@ -1,5 +1,6 @@
 import unittest
 from types import SimpleNamespace
+
 from ..client.vendor_scouts import VendorScouts
 
 

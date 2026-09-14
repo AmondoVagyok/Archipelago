@@ -6,7 +6,8 @@ from rule_builder.rules import False_
 
 tracker_loaded = False
 try:
-    from worlds.tracker.TrackerClient import UT_VERSION, TrackerGameContext as CommonContext
+    from worlds.tracker.TrackerClient import UT_VERSION
+    from worlds.tracker.TrackerClient import TrackerGameContext as CommonContext
     tracker_loaded = True
 except ImportError:
     from CommonClient import CommonContext

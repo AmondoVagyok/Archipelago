@@ -1,7 +1,7 @@
 """AP ownership snapshot applied before native object initialization."""
-from .patch import Patch
 from . import mips as m
 from .asm import jump, packed
+from .patch import Patch
 
 
 class Entitlements(Patch):

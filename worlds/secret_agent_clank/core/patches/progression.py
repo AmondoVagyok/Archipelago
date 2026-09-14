@@ -1,14 +1,14 @@
 """Native AP weapon tiers and gain multipliers, installed at the loader gate."""
-from ...constants.native_functions import NativeFunctions
 import struct
 from collections import Counter
 
+from ...constants.native_functions import NativeFunctions
 from ...constants.weapon_progression import PROGRESSIVE_TO_INTERNAL, TITAN_LOCATIONS, max_level
 from ..inventories.weapons import WEAPON_ORDER
-from .patch import PatchSet
 from ..symbols import require
 from .asm import Patch, jump, packed
 from .gain_storage import GainStorage
+from .patch import PatchSet
 from .titan_vendor import TitanPrice
 
 

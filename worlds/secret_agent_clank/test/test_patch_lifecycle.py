@@ -1,7 +1,8 @@
 import unittest
+
+from ..core.patches.asm import Patch as PatchRecord
 from ..core.patches.entitlements import Entitlements
 from ..core.patches.patch import PatchSet
-from ..core.patches.asm import Patch as PatchRecord
 from .test_game_flags import Memory
 
 

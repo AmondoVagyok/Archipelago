@@ -130,9 +130,9 @@ FILLER_ITEM_NAME = "Bolts"
 FILLER_ITEM_TABLE: dict[str, SACItemData] = _table((FILLER_ITEM_NAME,), ItemClassification.filler)
 
 # Allocate after existing items to preserve every prior item ID.
-PROGRESSIVE_WRENCH_ITEM_NAME = 'Progressive Wrench'
+PROGRESSIVE_WRENCH_ITEM_NAME = "Progressive Wrench"
 PROGRESSIVE_WRENCH_ITEM_TABLE = _table((PROGRESSIVE_WRENCH_ITEM_NAME,), ItemClassification.progression)
-for _mod in ('wrenchpower_firebomb', 'wrenchpower_triplewave', 'wrenchpower_crystallix', 'wrenchpower_wildburst'):
+for _mod in ("wrenchpower_firebomb", "wrenchpower_triplewave", "wrenchpower_crystallix", "wrenchpower_wildburst"):
     WEAPON_ITEM_TABLE.pop(_mod, None)
 
 # Per-case item tables -- see module docstring, all empty stubs so far.
@@ -148,8 +148,10 @@ _PER_CASE_ITEM_TABLES: tuple[dict[str, SACItemData], ...] = (
 )
 
 from ..constants.weapon_progression import PROGRESSIVE_TO_INTERNAL
+
 PROGRESSIVE_WEAPON_ITEM_TABLE = _table(tuple(PROGRESSIVE_TO_INTERNAL), ItemClassification.progression)
 from ..constants.weapon_progression import TITAN_ITEMS
+
 # Retain IDs for compatibility with experimental seeds; new seeds use the
 # automatic V4-to-V5 bridge and never pool separate Titan Upgrade items.
 TITAN_ITEM_TABLE = _table(tuple(TITAN_ITEMS), ItemClassification.progression)
@@ -174,5 +176,6 @@ for _table_dict in _PER_CASE_ITEM_TABLES:
 del _table_dict
 
 from ..constants.weapon_mods import WEAPON_MODS
+
 WEAPON_MOD_ITEM_TABLE = _table(tuple(mod.name for mod in WEAPON_MODS), ItemClassification.useful)
 ALL_ITEMS.update(WEAPON_MOD_ITEM_TABLE)

@@ -2,12 +2,12 @@
 import struct
 
 from ..notifications import ItemNotifications
-from ..vendor import VendorState
 from ..symbols import require
-from .asm import Patch, jump, packed
-from .patch import PatchSet
-from .gain_storage import GainStorage
+from ..vendor import VendorState
 from . import mips as m
+from .asm import Patch, jump, packed
+from .gain_storage import GainStorage
+from .patch import PatchSet
 
 
 class VendorTextPreview(PatchSet):
