@@ -4,7 +4,7 @@ from types import SimpleNamespace
 
 from ..constants.weapon_progression import PROGRESSIVE_TO_INTERNAL
 from ..core.inventories.weapons import WEAPON_ORDER
-from ..core.patches.progression import Progression, gain_wrapper
+from ..core.patches.progression import Progression
 from .test_runtime import Memory
 
 
@@ -15,7 +15,7 @@ class ProgressionTests(unittest.TestCase):
         replay, pointer = 0x110000, 0x208000
         for offset, word in enumerate((0x3C020021, 0x8C448000, 0x8C830ED4, 0x0003182B)):
             mem.batch_write_int32([(replay + 0x1C + offset * 4, word)])
-        symbols = {'GADGET_g_GadgetList': 0x100000, 'GLOBALVARS_IsInReplayMode__Fv': replay}
+        symbols = {"GADGET_g_GadgetList": 0x100000, "GLOBALVARS_IsInReplayMode__Fv": replay}
         # A relocated module has a valid code signature but a null save pointer.
         self.assertEqual(pr.prepare(symbols, SimpleNamespace(patches=[]), 1), [])
         self.assertEqual(pr.save_pointer_address, pointer)
@@ -54,14 +54,14 @@ class ProgressionTests(unittest.TestCase):
         self.assertEqual(mem.writes, [])
         mem.batch_write_int32([(0x206338, 3)])
         mem.writes.clear()
-        with self.assertRaisesRegex(RuntimeError, '0xFFFFFFFF'):
+        with self.assertRaisesRegex(RuntimeError, "0xFFFFFFFF"):
             pr.sync()
         self.assertEqual(mem.writes, [])
 
     def test_caps_ownership_and_duplicate_replay(self):
         p = Progression(Memory())
         for ng in (0, 1, 2):
-            p.configure({'progressive_weapons': True, 'ng_plus': ng})
+            p.configure({"progressive_weapons": True, "ng_plus": ng})
             p.receive([])
             self.assertFalse(any(p.ownership().values()))
             for name, internal in PROGRESSIVE_TO_INTERNAL.items():
@@ -69,7 +69,7 @@ class ProgressionTests(unittest.TestCase):
                 self.assertEqual(p.levels[internal], 1)
                 self.assertTrue(p.ownership()[internal])
                 p.receive([name] * 12)
-                expected = 4 if ng == 0 or internal == 'ryno' else 8
+                expected = 4 if ng == 0 or internal == "ryno" else 8
                 self.assertEqual(p.levels[internal], expected)
                 p.receive([name] * 12)
                 self.assertEqual(p.levels[internal], expected)
@@ -86,11 +86,11 @@ class ProgressionTests(unittest.TestCase):
     def test_native_zero_based_level_and_xp_reset(self):
         mem = Memory()
         p = Progression(mem)
-        p.configure({'progressive_weapons': True, 'ng_plus': 1})
-        name = next(n for n, i in PROGRESSIVE_TO_INTERNAL.items() if i == 'blaster')
+        p.configure({"progressive_weapons": True, "ng_plus": 1})
+        name = next(n for n, i in PROGRESSIVE_TO_INTERNAL.items() if i == "blaster")
         p.receive([name] * 5)
         p.base = 0x100000
-        slot = p.base + WEAPON_ORDER.index('blaster') * 0x74
+        slot = p.base + WEAPON_ORDER.index("blaster") * 0x74
         mem.batch_write_int32([(slot + 0x64, 123)])
         p.sync()
         self.assertEqual(mem.read_int32(slot + 0x5C), 4)
@@ -100,7 +100,7 @@ class ProgressionTests(unittest.TestCase):
         self.assertEqual(mem.writes, [])
 
     def test_multiplier_bounds(self):
-        for key in ('weapon_xp_multiplier', 'health_xp_multiplier', 'bolt_multiplier'):
+        for key in ("weapon_xp_multiplier", "health_xp_multiplier", "bolt_multiplier"):
             for value in (0, 11):
                 with self.assertRaises(ValueError):
                     Progression(Memory()).configure({key: value})
@@ -108,10 +108,10 @@ class ProgressionTests(unittest.TestCase):
     def test_emitted_gain_instructions_preserve_deductions(self):
         # Execute the arithmetic prefix, including the branch delay slot;
         # ensure both paths resume the untouched prologue and target+8.
-        original = struct.pack('<2I', 0x27BDFFF0, 0xFFB00000)
+        original = struct.pack("<2I", 0x27BDFFF0, 0xFFB00000)
         for reg in (4, 5):
             for value in (-100, 0, 1, 12345):
-                code = struct.unpack('<8I', gain_wrapper(0x200000, original, reg, 10))
+                code = struct.unpack("<8I", Progression.gain_wrapper(0x200000, original, reg, 10))
                 regs = [0] * 32
                 regs[reg] = value
                 pc = 0
@@ -134,6 +134,6 @@ class ProgressionTests(unittest.TestCase):
                         self.fail(hex(word))
                 self.assertEqual(pc, 4)
                 self.assertEqual(regs[reg], value * 10 if value > 0 else value)
-                self.assertEqual(struct.pack('<2I', *code[4:6]), original)
+                self.assertEqual(struct.pack("<2I", *code[4:6]), original)
                 self.assertEqual((code[6] & 0x3FFFFFF) << 2, 0x200008)
                 self.assertEqual(code[7], 0)

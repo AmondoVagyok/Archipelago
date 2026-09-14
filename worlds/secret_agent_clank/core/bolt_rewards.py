@@ -1,14 +1,4 @@
-"""Deliver AP currency once per received item.
-
-Delivery state lives in AP's own server-side data storage (the "delivered_bolts"/
-"pending_bolts" keys the client reads/writes -- see client/context.py), never in a
-local file: an external file can't be trusted to follow the player across
-machines or survive a wipe, and AP already provides durable per-slot storage
-built for exactly this. This module never touches the network itself -- it
-only computes the next state and hands it to on_state_changed(), the same
-callback-based boundary core/core.py uses everywhere else for anything that
-isn't a PINE memory read/write.
-"""
+"""Deliver AP currency once per received item."""
 from .address_maps import BOLTS_ADDRESS
 
 
@@ -34,10 +24,7 @@ class BoltRewards:
         self.pending = None
 
     def configure(self, *, starting_bolts=0, delivered=0, starting_delivered=False, pending=None):
-        """Called once the AP data-storage read for this slot's
-        "delivered_bolts"/"pending_bolts" keys has actually come back (see
-        client/context.py) -- delivered/starting_delivered are
-        "delivered_bolts"'s two fields, pending is "pending_bolts" as-is."""
+        """Called once the AP data-storage read for this slot's "delivered_bolts"/"pending_bolts" keys has actually come back (see client/context.py) -- delivered/starting_delivered are "delivered_bolts"'s two fields, pending is "pending_bolts" as-is."""
         if type(starting_bolts) is not int or not 0 <= starting_bolts <= 100_000:
             raise ValueError("Starting bolts must be between 0 and 100000")
         if type(delivered) is not int or delivered < 0:

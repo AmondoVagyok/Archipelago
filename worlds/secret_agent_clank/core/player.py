@@ -1,7 +1,4 @@
-"""Movement/health accessor for one of SAC's three playable characters
-(Ratchet, Clank, Qwark). One CharacterState instance per character, rebound
-per-case via set_addrs() -- same pattern as ItemInventory (see
-core/inventory.py) and the other RaC worlds' PlayerInventory."""
+"""Movement/health accessor for one of SAC's three playable characters (Ratchet, Clank, Qwark)."""
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:

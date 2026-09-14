@@ -1,20 +1,7 @@
 # 2026-09-11 audit: runtime exports now supply GadgetData and pause state.
 # Historical case-unlock anchors below overlap mission state fields and MUST
 # NOT be applied by the normal client. See docs/address_research.md.
-"""Secret Agent Clank PS2 (SCUS-97623) RAM addresses.
-
-Planet -> Case: each planet is split into several Cases, and it's the
-*case* id -- not the planet id -- that the transition system tracks. See
-constants/planets.py for the Planet/Case tables.
-
-Everything below CURRENT_CASE_ADDRESS/FORCE_CASE_ADDRESS is TODO unless
-marked CONFIRMED.
-
-Per-location addresses (missions, cutscenes, gadgetbot/special/ratchet
-challenges, skill points) live with their CaseStructure entry in the
-matching constants/*.py module instead. What's left here is genuinely
-global: case transition, per-case unlock gates, and plain running counters
-(bolts, titanium bolts)."""
+"""Secret Agent Clank PS2 (SCUS-97623) RAM addresses."""
 from dataclasses import dataclass, field
 
 from ...constants.planets import ALL_CASES, CASE_ID_TO_CASE, SACCases
@@ -146,13 +133,13 @@ WEAPON_ARRAY_BASE_BY_CASE: dict[int, int] = {
     5: 0x00512878,   # Larger Than Life
 }
 
-VENDOR_SCREEN_STATE_OFFSET = 0xB470 
-VENDOR_SLOT_ARRAY_OFFSET   = 0xB9C8 
-VENDOR_SLOT_COUNT          = 6 
+VENDOR_SCREEN_STATE_OFFSET = 0xB470
+VENDOR_SLOT_ARRAY_OFFSET   = 0xB9C8
+VENDOR_SLOT_COUNT          = 6
 
 VENDOR_ITEM_ARRAY_OFFSET = 0x13F38
-VENDOR_ITEM_STRIDE       = 0x1C  
-VENDOR_ITEM_MAX_COUNT    = 32    
+VENDOR_ITEM_STRIDE       = 0x1C
+VENDOR_ITEM_MAX_COUNT    = 32
 _ITEM_OFFSET_ACTIVE    = 0x00
 _ITEM_OFFSET_ICON      = 0x04
 _ITEM_OFFSET_NODE_TYPE = 0x0C

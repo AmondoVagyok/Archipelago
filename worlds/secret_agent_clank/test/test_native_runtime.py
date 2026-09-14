@@ -3,6 +3,7 @@ import unittest
 from unittest.mock import Mock, patch
 
 from ..constants.alien_codes import ALIEN_CODE_MODULES
+from ..constants.clank_gadgets import SACClankGadgets
 from ..core.case_menu import CASE_LABELS
 from ..core.core import Core
 from ..core.inventories.alien_codes import AlienCodeInventory
@@ -46,7 +47,7 @@ class NativeRuntimeTests(unittest.TestCase):
         self.hooks.install_at_loader_gate.assert_called_once()
 
     def setUp(self):
-        travel = patch("worlds.secret_agent_clank.core.patches.mission_travel.prepare_mission_travel", return_value=[])
+        travel = patch("worlds.secret_agent_clank.core.patches.mission_travel.MissionTravel.prepare", return_value=[])
         travel.start()
         self.addCleanup(travel.stop)
         self.p = Memory()
@@ -136,7 +137,7 @@ class NativeRuntimeTests(unittest.TestCase):
         core = Core(self.p)
         with self.assertRaises(RuntimeError):
             core.set_native_locations(False)
-        core.apply_inventory(ratchet={"throwTie": False}, clank={"Black Out Pen": True})
+        core.apply_inventory(ratchet={"throwTie": False}, clank={SACClankGadgets.BLACK_OUT_PEN: True})
         self.assertEqual(core._entitlements(), {11: False, 17: True, 25: False})
 
 

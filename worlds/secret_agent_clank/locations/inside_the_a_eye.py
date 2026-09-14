@@ -1,26 +1,10 @@
-"""All locations tied to Inside The A Eye, grouped into 4 dicts by which
-options.py toggle (if any) gates them -- see locations/__init__.py for how
-these get merged/re-derived for regions.py. Location ids come from this
-case's own fixed id block (see locations/_shared.py) so this file is fully
-self-contained -- no import-order dependency on sibling case files or on
-locations/__init__.py itself.
-
-  - INSIDE_THE_A_EYE_LOCATIONS: always created (weapon vendor / gadget pickup /
-    gadgetbot / special / ratchet challenge entries for this case).
-  - INSIDE_THE_A_EYE_MISSION_LOCATIONS: level_completion granularity (default), gated by Missions.
-  - INSIDE_THE_A_EYE_ALL_MISSIONS_LOCATIONS: all granularity, gated by Missions.
-  - INSIDE_THE_A_EYE_CUTSCENE_LOCATIONS: gated by AllCutscenes.
-  - INSIDE_THE_A_EYE_OTHER_LOCATIONS: this case's skill points + keycards + alien
-    codes -- each is individually gated by its own option (SkillPoints /
-    AllKeycards / AllAlienCodes), so locations/__init__.py re-splits this
-    back out by exact display name against constants/*.py rather than
-    treating it as one opaque toggle (which option gates a given name
-    can't be recovered from this dict alone once merged)."""
+"""All locations tied to Inside The A Eye, grouped into 4 dicts by which options.py toggle (if any) gates them -- see locations/__init__.py for how these get merged/re-derived for regions.py."""
 from ..constants import (
     ALIEN_CODES_BY_CASE,
     CASE_NAME_TO_CASE,
     CUTSCENE_TO_CASE,
     GADGETBOT_CHALLENGES_BY_CASE,
+    GADGETS_BY_CASE,
     KEYCARDS_BY_CASE,
     RATCHET_CHALLENGES_BY_CASE,
     SKILL_POINTS_BY_CASE,
@@ -43,6 +27,8 @@ def _take_id() -> int:
 
 INSIDE_THE_A_EYE_LOCATIONS: dict[str, SACLocationData] = {}
 for _name in WEAPONS_BY_CASE.get(_CASE_NAME, ()):
+    INSIDE_THE_A_EYE_LOCATIONS[_name] = SACLocationData(_take_id(), _CASE_NAME)
+for _name in GADGETS_BY_CASE.get(_CASE_NAME, ()):
     INSIDE_THE_A_EYE_LOCATIONS[_name] = SACLocationData(_take_id(), _CASE_NAME)
 for _name in (
     *GADGETBOT_CHALLENGES_BY_CASE.get(_CASE_NAME, ()),

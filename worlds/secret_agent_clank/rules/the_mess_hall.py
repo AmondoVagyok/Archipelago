@@ -1,13 +1,4 @@
-"""The Mess Hall's per-location rules -- every location belonging to
-this case is set here explicitly (mirrors worlds/rac_size_matters/rules'
-per-planet files, one world.set_rule() call per location, grouped by
-which options.py toggle gates that location's category -- a location
-only exists in the multiworld at all when its category's option is on,
-so calling get_location() on it unguarded would raise). Reaching the
-case at all is already gated by its "To The Mess Hall" entrance (see
-rules/entrances.py's set_entrance_rules()), so most locations just need
-True_() here; alien code locations additionally need Therm-Optic Shades
-on top."""
+"""The Mess Hall's per-location rules -- every location belonging to this case is set here explicitly (mirrors worlds/rac_size_matters/rules' per-planet files, one world.set_rule() call per location, grouped by which options.py toggle gates that location's category -- a location only exists in the multiworld at all when its category's option is on, so calling get_location() on it unguarded would raise)."""
 from typing import TYPE_CHECKING
 
 from rule_builder.rules import True_

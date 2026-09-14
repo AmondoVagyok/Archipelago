@@ -1,33 +1,8 @@
-"""Regions are one per CASE now (not per Operative -- see git history for
-the old grouping), each connected from Menu by a "To <Case>" entrance
-whose rule is that case's access gate. This module doesn't set that
-gate itself -- entrance rules are set by rules/entrances.py's
-set_entrance_rules() (mirroring worlds/rac_size_matters/rules/
-entrances.py's per-planet pattern), run later during set_rules() (see
-rules/__init__.py's docstring), and any real per-location extra
-requirement (e.g. alien codes needing Therm-Optic Shades) lives in
-rules/<case>.py alongside it -- see that module for why locations don't
-need their own case-access rule anymore now that the entrance gates it.
-The one exception is _create_victory() below: it still sets its own
-Victory event locations' rule directly with rule_helpers.py's
-case_access_rule() (the same rule set_entrance_rules() puts on the
-matching entrances), since those locations are also created here and
-there's nowhere else in the flow that currently touches them.
-
-An operative disabled via options.py's Operatives option has ALL of their
-cases' regions/locations excluded from generation entirely here, rather
-than left in place behind a permanently-false rule -- a permanently
-unreachable location with a real item requirement placed there would
-either break fill or waste a progression item slot; skipping creation
-avoids that outright (matches the user's "their missions will not
-unlock" -- the content doesn't exist in this seed, not just "you can't
-reach it"). Special Missions is a real, independently toggleable operative
-here same as the four playable characters (see constants/operatives.py's
-module docstring)."""
+"""Regions are one per CASE now (not per Operative -- see git history for the old grouping), each connected from Menu by a "To <Case>" entrance whose rule is that case's access gate."""
 from typing import TYPE_CHECKING
 
 from BaseClasses import Region
-from rule_builder.rules import CanReachLocation, CanReachRegion, Has, True_
+from rule_builder.rules import CanReachLocation, CanReachRegion, False_, Has, True_
 
 from Options import OptionError
 
@@ -39,6 +14,9 @@ from .constants import (
     KEYCARDS,
     SACOperatives,
 )
+from .constants.clank_gadgets import THERM_OPTIC_SHADES
+from .constants.ratchet_challenges import RATCHET_CHALLENGES
+from .constants.weapon_mods import enabled_mods
 from .entities import SACLocation
 from .locations import (
     ALIEN_CODE_LOCATIONS,
@@ -46,11 +24,14 @@ from .locations import (
     ALWAYS_ON_LOCATIONS,
     CUTSCENE_LOCATIONS,
     KEYCARD_LOCATIONS,
+    MOD_VENDOR_LOCATIONS,
     SKILL_POINT_LOCATIONS,
     STORY_MISSION_LOCATIONS,
+    TITAN_VENDOR_LOCATIONS,
 )
 from .options import Goal, Missions
 from .rules.rule_helpers import case_access_rule, disabled_operatives
+from .rules.vendor_access import VENDOR_ONLY_ITEM_NAMES, VENDOR_REQUIREMENTS
 
 if TYPE_CHECKING:
     from .world import SecretAgentClankWorld
@@ -62,10 +43,6 @@ def create_regions(world: "SecretAgentClankWorld") -> None:
     disabled = disabled_operatives(world)
 
     menu_region = Region("Menu", player, multiworld)
-    from .constants.weapon_mods import enabled_mods
-    from .locations import MOD_VENDOR_LOCATIONS
-    from .rules.vendor_access import VENDOR_REQUIREMENTS
-    from rule_builder.rules import False_
     # The vendor is only ever reachable from Clank's pause-menu screen (see
     # rules/vendor_access.py's VENDOR_REQUIREMENTS) -- Clank disabled means
     # no vendor at all, regardless of what any individual case's entry says.
@@ -86,22 +63,20 @@ def create_regions(world: "SecretAgentClankWorld") -> None:
     # exclusion) instead of leaving a location no item can ever fill.
     vendor_only_names: frozenset[str] = frozenset()
     if not has_vendor:
-        from .rules.vendor_access import VENDOR_ONLY_ITEM_NAMES
         vendor_only_names = VENDOR_ONLY_ITEM_NAMES
     if world.using_ut:
-        saved_ids = world.passthrough.get('weapon_mod_ids', ())
+        saved_ids = world.passthrough.get("weapon_mod_ids", ())
         world.weapon_mod_catalog = tuple(mod for mod in enabled_mods(
             world.options.operatives.value, world.options.ng_plus.value) if mod.mod_id in saved_ids)
     if world.weapon_mod_catalog:
-        mod_region = Region('Mod Vendor', player, multiworld)
+        mod_region = Region("Mod Vendor", player, multiworld)
         for mod in world.weapon_mod_catalog:
             mod_region.locations.append(SACLocation(player, mod.location,
                 MOD_VENDOR_LOCATIONS[mod.location].code, mod_region))
         menu_region.connect(mod_region)
         multiworld.regions.append(mod_region)
     if world.options.ng_plus.value and has_vendor:
-        from .locations import TITAN_VENDOR_LOCATIONS
-        vendor_region = Region('Titan Vendor', player, multiworld)
+        vendor_region = Region("Titan Vendor", player, multiworld)
         for name, data in TITAN_VENDOR_LOCATIONS.items():
             vendor_region.locations.append(SACLocation(player, name, data.code, vendor_region))
         menu_region.connect(vendor_region)
@@ -161,16 +136,7 @@ def create_regions(world: "SecretAgentClankWorld") -> None:
 def _create_victory(
     world: "SecretAgentClankWorld", case_regions: dict[str, Region], disabled_operatives: set[str],
 ) -> None:
-    """Places a locked "Victory" event per active goal condition (see
-    options.py's Goal) -- reaching ANY of them satisfies
-    multiworld.completion_condition (see rules.py's set_rules()), so
-    Goal=any naturally becomes an OR by placing both.
-
-    Raises OptionError instead of generating an unbeatable seed if the
-    selected goal's required character(s) are disabled via the Operatives
-    option (Defeat Klunk needs Clank; Qwark Opera needs Qwark; All Gadgetbots
-    needs Gadgetbots; Ratchet Prison Escape needs Ratchet; Any needs at
-    least one of Clank/Qwark)."""
+    """Places a locked "Victory" event per active goal condition (see options.py's Goal) -- reaching ANY of them satisfies multiworld.completion_condition (see rules.py's set_rules()), so Goal=any naturally becomes an OR by placing both."""
     player = world.player
     player_name = world.multiworld.get_player_name(player)
     goal = world.options.goal.value
@@ -216,7 +182,7 @@ def _create_victory(
         rule = True_()
         for entry in entries:
             if entry.case_name not in case_regions:
-                raise OptionError(f'{player_name}: the selected goal requires disabled case {entry.case_name}.')
+                raise OptionError(f"{player_name}: the selected goal requires disabled case {entry.case_name}.")
             locations_enabled = (world.options.all_alien_codes if goal == Goal.option_alien_codes
                                  else world.options.all_keycards)
             if locations_enabled:
@@ -225,10 +191,9 @@ def _create_victory(
                 # Native collectibles remain available without AP reward checks.
                 rule = rule & CanReachRegion(entry.case_name)
         if goal == Goal.option_alien_codes:
-            from .constants.clank_gadgets import THERM_OPTIC_SHADES
             rule = rule & Has(THERM_OPTIC_SHADES)
-        title = 'All Alien Codes' if goal == Goal.option_alien_codes else 'Collect the Chalice of Power'
-        add_victory(f'Victory: {title}', case_regions[entries[0].case_name], rule)
+        title = "All Alien Codes" if goal == Goal.option_alien_codes else "Collect the Chalice of Power"
+        add_victory(f"Victory: {title}", case_regions[entries[0].case_name], rule)
 
     if goal in (Goal.option_defeat_klunk, Goal.option_any) and not clank_disabled:
         case = GOAL_CASE
@@ -249,7 +214,6 @@ def _create_victory(
         add_victory("Victory: All Gadgetbots", case_regions[gadgetbot_cases[0].name], rule)
 
     if goal == Goal.option_ratchet_prison_escape and not ratchet_disabled:
-        from .constants.ratchet_challenges import RATCHET_CHALLENGES
         rule = True_()
         for entry in RATCHET_CHALLENGES:
             rule = rule & CanReachLocation(str(entry))

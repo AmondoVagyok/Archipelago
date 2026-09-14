@@ -1,9 +1,4 @@
-"""Read 32-bit mission states by native case label and mission title ID.
-
-Catalog case IDs are not module IDs. The resident 33-slot table contains
-all cases, including separate cases sharing one module. Completed checks
-are monotonic for the AP session and survive rebinding after transitions.
-"""
+"""Read 32-bit mission states by native case label and mission title ID."""
 import struct
 from typing import TYPE_CHECKING, NamedTuple
 
@@ -16,6 +11,7 @@ from ...constants.missions import (
 )
 from ...constants.planets import CASE_NAME_TO_CASE
 from ..case_menu import CASE_LABELS
+from ..symbols import RuntimeSymbols
 
 if TYPE_CHECKING:
     from ...constants.planets import Case
@@ -60,9 +56,7 @@ _SCAN_CHUNK_SIZE = 0x40000           # 256 KiB per Pine.read_bytes() call -- sta
 
 
 def _scan_bytes(pine: "Pine", start: int, size: int) -> bytes:
-    """Read `size` bytes starting at `start`, chunked to stay well under
-    PINE's per-request return-size cap (Pine.MAX_IPC_RETURN_SIZE) --
-    Pine.read_bytes() itself doesn't chunk a single call that large."""
+    """Read `size` bytes starting at `start`, chunked to stay well under PINE's per-request return-size cap (Pine.MAX_IPC_RETURN_SIZE) -- Pine.read_bytes() itself doesn't chunk a single call that large."""
     out = bytearray()
     offset = 0
     while offset < size:
@@ -73,9 +67,7 @@ def _scan_bytes(pine: "Pine", start: int, size: int) -> bytes:
 
 
 def _find_bytes(pine: "Pine", needle: bytes, start: int, initial_size: int) -> "int | None":
-    """Scan memory for `needle` starting at `start`, doubling the window
-    up to _MAX_SEARCH_SIZE if it isn't found. Returns the absolute
-    address of the first match, or None."""
+    """Scan memory for `needle` starting at `start`, doubling the window up to _MAX_SEARCH_SIZE if it isn't found."""
     size = initial_size
     while size <= _MAX_SEARCH_SIZE:
         haystack = _scan_bytes(pine, start, size)
@@ -87,29 +79,14 @@ def _find_bytes(pine: "Pine", needle: bytes, start: int, initial_size: int) -> "
 
 
 def find_mission_level_list(pine: "Pine") -> "int | None":
-    """Locate g_pMissionLevelList's real runtime address for whichever
-    level/case is currently loaded -- no prior per-case confirmation
-    needed (see module comment above). Returns None if the game isn't in
-    a state where the debug-symbol table can be found (e.g. still
-    loading) or the scan windows above need widening for this build."""
-    from ..symbols import RuntimeSymbols
+    """Locate g_pMissionLevelList's real runtime address for whichever level/case is currently loaded -- no prior per-case confirmation needed (see module comment above)."""
     symbols = RuntimeSymbols(pine)
     symbols.refresh()
     return symbols.get("g_MISSION_LEVEL_LIST")
 
 
 def resolve_chapter_table(pine: "Pine", base: int | None = None) -> "dict[int, tuple[int, int]]":
-    """Batch-read all 51 chapter slots off a freshly-resolved
-    g_pMissionLevelList, keeping only the ones that pass sanity checks
-    (see _PLAUSIBLE_PTR_RANGE/_PLAUSIBLE_MAX_COUNT). Returns {slot_index:
-    (task_array_ptr, task_count)} -- empty dict if the table can't be
-    resolved at all right now. Re-resolves g_pMissionLevelList from
-    scratch every call rather than caching it itself -- it's only valid
-    for whichever level is currently loaded; MissionInventory is the
-    layer that actually caches this (see its _resolved_slots /
-    invalidate_resolved_addresses()), since it has a cheap level-change
-    signal (Core.tick()'s became_ready) that this standalone function
-    doesn't have access to."""
+    """Batch-read all 51 chapter slots off a freshly-resolved g_pMissionLevelList, keeping only the ones that pass sanity checks (see _PLAUSIBLE_PTR_RANGE/_PLAUSIBLE_MAX_COUNT)."""
     if base is None:
         base = find_mission_level_list(pine)
     if base is None:
@@ -128,8 +105,7 @@ def resolve_chapter_table(pine: "Pine", base: int | None = None) -> "dict[int, t
 
 
 class ChapterTableRow(NamedTuple):
-    """One row of MissionInventory.dump_chapter_table()'s output -- see
-    that method's docstring."""
+    """One row of MissionInventory.dump_chapter_table()'s output -- see that method's docstring."""
     slot: int
     task_count: int
     assumed_case: "str | None"
@@ -138,13 +114,7 @@ class ChapterTableRow(NamedTuple):
 
 
 def resolve_task_state_addresses(pine: "Pine", base: int | None = None) -> "dict[int, list[int]]":
-    """resolve_chapter_table(), expanded out to each individual task
-    entry's state-byte address (entry + _TASK_STATE_OFFSET, same field
-    CHAPTER_ENTRIES' hardcoded addresses point at -- read/write it with
-    read_int8/write_int8, same as MissionFlag elsewhere in this module).
-    {slot_index: [state_address, ...]} in task order -- the dynamic
-    equivalent of walking CHAPTER_ENTRIES by hand for whichever level is
-    actually loaded right now."""
+    """resolve_chapter_table(), expanded out to each individual task entry's state-byte address (entry + _TASK_STATE_OFFSET, same field CHAPTER_ENTRIES' hardcoded addresses point at -- read/write it with read_int8/write_int8, same as MissionFlag elsewhere in this module)."""
     return {
         slot: [ptr + i * _TASK_ENTRY_SIZE + _TASK_STATE_OFFSET for i in range(count)]
         for slot, (ptr, count) in resolve_chapter_table(pine, base).items()
@@ -179,14 +149,7 @@ class MissionInventory:
                 self.completed[entry.name] = True
 
     def invalidate_resolved_addresses(self) -> None:
-        """Call once on every case transition (Core.tick()'s
-        became_ready) -- forces the next _resolve_case_addresses() call to
-        re-scan g_pMissionLevelList instead of reusing last level's now-
-        stale addresses. Needed because the WHOLE chapter table's absolute
-        addresses move per level (see module comment above the dynamic-
-        resolution helpers), not just whichever case's slot a caller
-        happens to want -- so a level change invalidates every cached
-        slot, not just the one for the case being left/entered."""
+        """Call once on every case transition (Core.tick()'s became_ready) -- forces the next _resolve_case_addresses() call to re-scan g_pMissionLevelList instead of reusing last level's now- stale addresses."""
         self._resolved_slots = None
         self._resolved_cases = None
         self._story_addresses = {}
@@ -216,11 +179,7 @@ class MissionInventory:
             self._resolved_cases, self._story_addresses = groups, story
 
     def check_all(self, *, all_missions=False):
-        """Progress can persist into the next module before the next host poll.
-
-        Read every labelled case, including both cases sharing a module, so
-        completion is not lost when native code immediately starts a transition.
-        """
+        """Progress can persist into the next module before the next host poll."""
         self._resolve_labels()
         found = []
         for name in self._resolved_cases or {}:
@@ -240,11 +199,7 @@ class MissionInventory:
         return addresses
 
     def check(self, current_case: "Case | None", *, all_missions: bool = True) -> list[str]:
-        """Report individual tasks, or the final story task for case completion.
-
-        Bonus tasks (kind 4) participate in All Missions but are not required
-        for the case-completion location. Never report a check twice.
-        """
+        """Report individual tasks, or the final story task for case completion."""
         newly: list[str] = []
         if current_case is None:
             return newly
@@ -272,43 +227,11 @@ class MissionInventory:
         return newly
 
     def confirm(self, name: str) -> None:
-        """Mark a name check()/check_all() returned as successfully
-        delivered to AP -- see core/case_events.py's
-        CaseEventInventory.confirm() for why this must wait for
-        Core.send_location(name) to return True rather than happening
-        unconditionally inside check()."""
+        """Mark a name check()/check_all() returned as successfully delivered to AP -- see core/case_events.py's CaseEventInventory.confirm() for why this must wait for Core.send_location(name) to return True rather than happening unconditionally inside check()."""
         self._reported.add(name.removeprefix(_AP_LOCATION_PREFIX))
 
     def enforce_owned_first_missions(self, owned_cases: "set[str]") -> int:
-        """Continuously self-heals every AP-owned case's first
-        CHAPTER_ENTRIES mission back to UNLOCKED (2) if it's currently
-        DISABLED, making each owned case reachable/playable without
-        marking it complete (see module docstring for why nothing else
-        unlocks a case's first mission). Call every tick regardless of
-        which case is actually loaded right now -- every level's resident
-        chapter table carries every case's own data (see module comment
-        above the dynamic-resolution helpers), so this can enforce EVERY
-        owned case's first mission in one batch write, not just whichever
-        one happens to be currently loaded. Mirrors
-        CaseUnlockInventory.apply_all()'s own continuous every-tick
-        re-apply pattern (see core/core.py's apply_inventory()/tick()).
-
-        Writes UNLOCKED specifically, not UNLOCKED_COMPLETED -- confirmed
-        live: UNLOCKED makes a mission reachable but leaves it incomplete
-        (check() only ever treats UNLOCKED_COMPLETED as done, so this
-        never fires a false completion), while UNLOCKED_COMPLETED marks it
-        as actually finished. Never downgrades: a case whose first mission
-        is already UNLOCKED or UNLOCKED_COMPLETED is left untouched, and a
-        case with no CHAPTER_ENTRIES or whose slot can't be resolved/
-        doesn't match this call is skipped entirely. Returns how many
-        writes were actually made.
-
-        One batch_read_int8() call for every owned case's first-mission
-        address, then one batch_write_int8() call for whatever needs
-        raising -- not one Pine round-trip per case, which matters here
-        since this runs every tick across potentially all 30 cases at
-        once (unlike check(), which only ever looks at one case per
-        call)."""
+        """Continuously self-heals every AP-owned case's first CHAPTER_ENTRIES mission back to UNLOCKED (2) if it's currently DISABLED, making each owned case reachable/playable without marking it complete (see module docstring for why nothing else unlocks a case's first mission)."""
         first_addresses: list[int] = []
         for case_name in owned_cases:
             entries = CHAPTER_ENTRIES.get(case_name)
@@ -334,16 +257,7 @@ class MissionInventory:
         return len(writes)
 
     def force_flag(self, mission_name: str, value: int) -> bool:
-        """Debug/testing helper -- force a single mission's flag byte to
-        value (typically MissionFlag.DISABLED to lock, .UNLOCKED to make
-        reachable without marking complete, or .UNLOCKED_COMPLETED for an
-        actual completion), matched by exact mission name. Resolves the
-        address dynamically
-        off g_pMissionLevelList via _resolve_case_addresses() rather than
-        CHAPTER_ENTRIES' hardcoded one -- works regardless of which case
-        is currently loaded (see that method's docstring). Returns False
-        (no-op) if mission_name isn't known, or its case's slot can't be
-        resolved/doesn't match this call."""
+        """Debug/testing helper -- force a single mission's flag byte to value (typically MissionFlag.DISABLED to lock, .UNLOCKED to make reachable without marking complete, or .UNLOCKED_COMPLETED for an actual completion), matched by exact mission name."""
         entry = MISSION_NAME_TO_CHAPTER_ENTRY.get(mission_name)
         case_name = MISSION_TO_CASE.get(mission_name)
         case = CASE_NAME_TO_CASE.get(case_name) if case_name else None
@@ -357,12 +271,7 @@ class MissionInventory:
         return True
 
     def force_all(self, value: int) -> int:
-        """Debug/testing helper -- force every known mission's flag byte
-        to value in one batch write, each address resolved dynamically
-        per case via _resolve_case_addresses() (see force_flag()). Returns
-        how many were actually written -- a case whose slot can't be
-        resolved/doesn't match this call is skipped, not silently assumed
-        zero missions."""
+        """Debug/testing helper -- force every known mission's flag byte to value in one batch write, each address resolved dynamically per case via _resolve_case_addresses() (see force_flag())."""
         writes: list[tuple[int, int]] = []
         for case_name in CHAPTER_ENTRIES:
             case = CASE_NAME_TO_CASE.get(case_name)
@@ -377,22 +286,7 @@ class MissionInventory:
         return len(writes)
 
     def dump_chapter_table(self) -> list["ChapterTableRow"]:
-        """Debug helper for the client's /mission_table command --
-        resolves the WHOLE chapter table fresh (bypassing check()/
-        enforce_owned_first_missions()'s cache; this is a manual one-off
-        diagnostic, not a hot path, so a full re-scan every call is fine)
-        and cross-references every resolved slot against CASE_ID_TO_CASE's
-        slot-index-equals-case_id assumption -- confirmed live only for
-        slot 1 / Boltaire Museum's case_id 1 so far (see
-        _resolve_case_addresses()'s docstring). Returns one row per
-        resolved slot, sorted by slot index; a row's `matches` is None
-        when no case is currently assumed to live in that slot at all
-        (nothing to compare against), True/False otherwise. A MISMATCH
-        row means that case_id's CHAPTER_ENTRIES addresses are currently
-        being resolved off the wrong slot entirely -- use it the same way
-        /force_case was used to pin down real case_id values: change
-        case_id/CHAPTER_ENTRIES to point at whichever slot actually shows
-        the expected task count instead."""
+        """Debug helper for the client's /mission_table command -- resolves the WHOLE chapter table fresh (bypassing check()/ enforce_owned_first_missions()'s cache; this is a manual one-off diagnostic, not a hot path, so a full re-scan every call is fine) and cross-references every resolved slot against CASE_ID_TO_CASE's slot-index-equals-case_id assumption -- confirmed live only for slot 1 / Boltaire Museum's case_id 1 so far (see _resolve_case_addresses()'s docstring)."""
         slots = resolve_chapter_table(self.pine, self.table_base)
         rows = []
         for slot, (pointer, count) in sorted(slots.items()):

@@ -1,12 +1,4 @@
-"""Universal Tracker integration for Secret Agent Clank -- mirrors
-worlds/rac_size_matters/universal_tracker.py's pattern: UT regenerates this
-world from a finished multiworld's slot_data (via
-multiworld.re_gen_passthrough), without the player's original YAML, so its
-options must be restored from fill_slot_data()'s payload (world.py) rather
-than re-rolled. Every option that affects which regions/locations exist or
-what the item pool looks like must round-trip through both places -- an
-option missing here (or from fill_slot_data()) makes UT's regenerated world
-diverge from the real one, corrupting its reachability sweep."""
+"""Universal Tracker integration for Secret Agent Clank -- mirrors worlds/rac_size_matters/universal_tracker.py's pattern: UT regenerates this world from a finished multiworld's slot_data (via multiworld.re_gen_passthrough), without the player's original YAML, so its options must be restored from fill_slot_data()'s payload (world.py) rather than re-rolled."""
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:

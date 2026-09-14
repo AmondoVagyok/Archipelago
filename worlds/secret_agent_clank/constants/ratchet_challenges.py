@@ -1,10 +1,4 @@
-"""Ratchet arena challenge names in native per-case challenge order.
-
-Completion is an unsigned win count, not a bit flag. The runtime reader in
-core/ratchet_challenges.py resolves the arena table and current save pointer.
-Legacy absolute addresses below document the original capture only.
-Max-Security Cells uses GLOBAL flags 0x54..0x58 (save + 0x534..0x538).
-"""
+"""Ratchet arena challenge names in native per-case challenge order."""
 
 from dataclasses import dataclass
 
@@ -14,11 +8,7 @@ from .types import CaseStructure, group_by_case
 
 @dataclass(frozen=True)
 class SACRatchetChallenges:
-    """String constants for Ratchet Challenge event titles (short form only
-    -- see RATCHET_CHALLENGES below for which case/address each belongs
-    to). Several titles repeat per case (e.g. every case's culminating
-    "Mega Challenge") -- fine here since only the CaseStructure entries
-    below (case + title pair) need to be unique, not the bare title."""
+    """String constants for Ratchet Challenge event titles (short form only -- see RATCHET_CHALLENGES below for which case/address each belongs to)."""
 
     CATCH_AS_CATCH_CAN = "Catch-as-Catch-Can"
     AMOEBOID_ON_A_POLE = "Amoeboid on a Pole"
@@ -153,11 +143,7 @@ RATCHET_CHALLENGES_BY_CASE: dict[str, tuple[str, ...]] = group_by_case(RATCHET_C
 
 @dataclass(frozen=True)
 class SACRatchetChallengeLocations:
-    """One named constant per Ratchet Challenge location -- each value is
-    the exact full display name RATCHET_CHALLENGES above builds via
-    CaseStructure.__str__, spelled out here so rules/<case>.py can
-    reference an individual location directly -- same one-name-per-location
-    layout as constants/weapons.py's SACRatchetWeapons."""
+    """One named constant per Ratchet Challenge location -- each value is the exact full display name RATCHET_CHALLENGES above builds via CaseStructure.__str__, spelled out here so rules/<case>.py can reference an individual location directly -- same one-name-per-location layout as constants/weapons.py's SACRatchetWeapons."""
 
     PRISON_BREAKOUT_CATCH_AS_CATCH_CAN = "Ratchet: Prison Breakout!: Ratchet Challenge: Catch-as-Catch-Can"
     PRISON_BREAKOUT_AMOEBOID_ON_A_POLE = "Ratchet: Prison Breakout!: Ratchet Challenge: Amoeboid on a Pole"

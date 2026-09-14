@@ -8,10 +8,7 @@ from .test_runtime import Memory
 
 
 class FakeServerStorage:
-    """Stands in for AP's data-storage "delivered_bolts"/"pending_bolts"
-    keys -- a real client persists these via Set (see client/context.py);
-    tests just need something a fresh BoltRewards can be configure()'d from
-    to simulate a restart/reconnect."""
+    """Stands in for AP's data-storage "delivered_bolts"/"pending_bolts" keys -- a real client persists these via Set (see client/context.py); tests just need something a fresh BoltRewards can be configure()'d from to simulate a restart/reconnect."""
     def __init__(self):
         self.delivered = {"count": 0, "starting_delivered": False}
         self.pending = None
@@ -59,7 +56,7 @@ class BoltRewardTests(unittest.TestCase):
         original = self.p.write_int32
         def lost_ack(a, n):
             original(a, n)
-            raise OSError('Lost acknowledgement')
+            raise OSError("Lost acknowledgement")
         self.p.write_int32 = lost_ack
         with self.assertRaises(OSError):
             self.r.deliver()
@@ -68,7 +65,7 @@ class BoltRewardTests(unittest.TestCase):
         r.configure(**self.server.configure_kwargs(starting_bolts=5000))
         r.deliver()
         self.assertEqual(self.p.read_int32(BOLTS_ADDRESS), 6000)
-        self.assertTrue(self.server.delivered['starting_delivered'])
+        self.assertTrue(self.server.delivered["starting_delivered"])
 
     def test_existing_reward_journal_receives_missing_starting_grant(self):
         self.server.delivered = {"count": 2, "starting_delivered": False}
@@ -77,7 +74,7 @@ class BoltRewardTests(unittest.TestCase):
         r.received = 2
         r.deliver()
         self.assertEqual(self.p.read_int32(BOLTS_ADDRESS), 6000)
-        self.assertEqual(self.server.delivered['count'], 2)
+        self.assertEqual(self.server.delivered["count"], 2)
 
     def test_duplicate_packets_and_restart_do_not_reaward(self):
         self.r.received = 2
@@ -99,7 +96,7 @@ class BoltRewardTests(unittest.TestCase):
         core.bolt_rewards = self.r
         core.native_runtime.service = Mock(return_value=False)
         core.case.check_transition = Mock(return_value=False)
-        core.apply_inventory(ratchet={}, clank={}, received_names=['Bolts', 'Bolts'])
+        core.apply_inventory(ratchet={}, clank={}, received_names=["Bolts", "Bolts"])
         core.tick()
         self.assertEqual(self.r.received, 2)
         self.assertEqual(self.p.read_int32(BOLTS_ADDRESS), 1000)
@@ -112,7 +109,7 @@ class BoltRewardTests(unittest.TestCase):
         original = self.p.write_int32
         def lost_ack(a, n):
             original(a, n)
-            raise OSError('Lost acknowledgement')
+            raise OSError("Lost acknowledgement")
         self.p.write_int32 = lost_ack
         self.r.received = 1
         with self.assertRaises(OSError):
@@ -120,7 +117,7 @@ class BoltRewardTests(unittest.TestCase):
         self.p.write_int32 = original
         self.r.deliver()
         self.assertEqual(self.p.read_int32(BOLTS_ADDRESS), 1200)
-        self.assertEqual(self.server.delivered['count'], 1)
+        self.assertEqual(self.server.delivered["count"], 1)
 
     def test_reconfigure_replaces_in_memory_state(self):
         # Simulates switching to a different slot's already-fetched AP

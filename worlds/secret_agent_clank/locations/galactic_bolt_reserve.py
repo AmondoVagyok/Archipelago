@@ -1,21 +1,4 @@
-"""All locations tied to Galactic Bolt Reserve, grouped into 4 dicts by which
-options.py toggle (if any) gates them -- see locations/__init__.py for how
-these get merged/re-derived for regions.py. Location ids come from this
-case's own fixed id block (see locations/_shared.py) so this file is fully
-self-contained -- no import-order dependency on sibling case files or on
-locations/__init__.py itself.
-
-  - GALACTIC_BOLT_RESERVE_LOCATIONS: always created (weapon vendor / gadget pickup /
-    gadgetbot / special / ratchet challenge entries for this case).
-  - GALACTIC_BOLT_RESERVE_MISSION_LOCATIONS: level_completion granularity (default), gated by Missions.
-  - GALACTIC_BOLT_RESERVE_ALL_MISSIONS_LOCATIONS: all granularity, gated by Missions.
-  - GALACTIC_BOLT_RESERVE_CUTSCENE_LOCATIONS: gated by AllCutscenes.
-  - GALACTIC_BOLT_RESERVE_OTHER_LOCATIONS: this case's skill points + keycards + alien
-    codes -- each is individually gated by its own option (SkillPoints /
-    AllKeycards / AllAlienCodes), so locations/__init__.py re-splits this
-    back out by exact display name against constants/*.py rather than
-    treating it as one opaque toggle (which option gates a given name
-    can't be recovered from this dict alone once merged)."""
+"""All locations tied to Galactic Bolt Reserve, grouped into 4 dicts by which options.py toggle (if any) gates them -- see locations/__init__.py for how these get merged/re-derived for regions.py."""
 from ..constants import (
     ALIEN_CODES_BY_CASE,
     CASE_NAME_TO_CASE,

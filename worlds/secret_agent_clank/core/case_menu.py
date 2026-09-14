@@ -1,9 +1,4 @@
-"""Native Operatives -> Cases menu, separate from mission completion flags.
-
-The USA menu uses pointer arrays of tPAUSEMENU_NODE records. Each row has
-selectable/visible bytes at +0xCC/+0xCD and user data at +0xD0. Child user data
-is a mission pointer, whose +0x30/+0x34 identify module and operative variant.
-"""
+"""Native Operatives -> Cases menu, separate from mission completion flags."""
 import struct
 from dataclasses import dataclass
 
@@ -58,14 +53,14 @@ class CaseMenu:
     def bind_runtime(self, symbols) -> bool:
         self.screen_address = self.parent_header = self.child_header = None
         self.mission_table = None
-        pause = symbols.get('g_PauseModeData')
-        update = symbols.get('SCRNGALACTICMAP_Update__Fv')
-        render = symbols.get('SCRNGALACTICMAP_Render__Fv')
-        getter = symbols.get('PAUSEMENU_GetCurrentItemNode__FP10tPAUSEMENU')
+        pause = symbols.get("g_PauseModeData")
+        update = symbols.get("SCRNGALACTICMAP_Update__Fv")
+        render = symbols.get("SCRNGALACTICMAP_Render__Fv")
+        getter = symbols.get("PAUSEMENU_GetCurrentItemNode__FP10tPAUSEMENU")
         if None in (pause, update, render, getter) or not 0 < render - update <= 0x1000:
             return False
         code = self.pine.read_bytes(update, render - update)
-        words = struct.unpack('<' + 'I' * (len(code) // 4), code)
+        words = struct.unpack("<" + "I" * (len(code) // 4), code)
         targets = []
         for i in range(1, len(words) - 1):
             if words[i] != 0x0C000000 | (getter >> 2):
@@ -85,34 +80,28 @@ class CaseMenu:
             return False
         self.child_header, self.parent_header = targets
         self.screen_address = pause + 12
-        self.mission_table = symbols.get('g_MISSION_LEVEL_LIST')
+        self.mission_table = symbols.get("g_MISSION_LEVEL_LIST")
         return True
 
     def unlock_owned_missions(self, owned_cases: set[str]) -> set[str]:
-        """Expose the first story mission for each received case by menu label.
-
-        This avoids treating catalog case IDs as module slots for shared cases.
-        State 2 means accessible; state 3 (completed) is never written here.
-        Returns cases changed. An already-open Case Files screen caches its
-        mission list until fully closed and reopened.
-        """
+        """Expose the first story mission for each received case by menu label."""
         if self.mission_table is None or not owned_cases:
             return set()
         table = self.pine.read_bytes(self.mission_table, 33 * 8)
         first = {}
         for slot in range(33):
-            pointer, count = struct.unpack_from('<2I', table, slot * 8)
+            pointer, count = struct.unpack_from("<2I", table, slot * 8)
             if not 0 < count <= 16 or not ee_pointer(pointer, count * 0x60):
                 continue
             tasks = self.pine.read_bytes(pointer, count * 0x60)
             for index in range(count):
                 task = index * 0x60
-                kind = struct.unpack_from('<I', tasks, task)[0]
-                label = struct.unpack_from('<I', tasks, task + 0x3C)[0]
+                kind = struct.unpack_from("<I", tasks, task)[0]
+                label = struct.unpack_from("<I", tasks, task + 0x3C)[0]
                 name = CASE_LABELS.get(label)
                 if kind == 1 and name in owned_cases and name not in first:
                     first[name] = (pointer + task + 12,
-                                   struct.unpack_from('<I', tasks, task + 12)[0])
+                                   struct.unpack_from("<I", tasks, task + 12)[0])
         # A completion or module reload can happen while PINE reads the table.
         # Never downgrade a mission that completed after the initial snapshot.
         if self.pine.read_bytes(self.mission_table, 33 * 8) != table:
@@ -127,7 +116,7 @@ class CaseMenu:
     def _header(self, address):
         if address is None:
             return None
-        pointer, count, selected = struct.unpack('<3I', self.pine.read_bytes(address, 12))
+        pointer, count, selected = struct.unpack("<3I", self.pine.read_bytes(address, 12))
         if not 0 < count <= 64 or selected >= count or not ee_pointer(pointer, count * 4):
             return None
         return pointer, count, selected
@@ -152,10 +141,10 @@ class CaseMenu:
                 return []
             flags = self.pine.read_bytes(node + 0xCC, 8)
             selectable, visible = flags[:2]
-            mission = struct.unpack_from('<I', flags, 4)[0]
+            mission = struct.unpack_from("<I", flags, 4)[0]
             if selectable not in (0, 1) or visible not in (0, 1) or not ee_pointer(mission, 0x60):
                 return []
-            module, mask, parent_label, label = struct.unpack('<4I', self.pine.read_bytes(mission + 0x30, 16))
+            module, mask, parent_label, label = struct.unpack("<4I", self.pine.read_bytes(mission + 0x30, 16))
             if not 1 <= module <= 31 or mask not in (1, 2, 4, 8, 16) or parent_label != operative:
                 return []
             entries.append(CaseMenuEntry(index, node, mission, selectable, visible, module, mask, parent_label, label))

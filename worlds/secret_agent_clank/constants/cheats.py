@@ -1,22 +1,4 @@
-"""Cheat unlocks, gated by cumulative skill point count in vanilla.
-
-Cheats are NOT part of the CaseStructure/bitflag location system the other
-constants modules use (constants/types.py) -- they aren't AP locations at
-all, just traps and one useful item (per user: "cheats are not locations
-they are just traps"; "these arnt locations just the names of them").
-CHEAT_SKILL_POINT_THRESHOLD is real data (user-supplied), not a
-placeholder, and stays a plain threshold dict -- there's no per-cheat
-address/flag to convert it to. Backed by CHEATS_ADDRESS (see
-core/address_maps/ps2.py) -- layout there (bitmask? one bit per cheat in
-list order?) is unconfirmed, so core/traps.py can't actually flip a cheat
-on yet.
-
-A few of these ARE surfaced as AP items though (see items.py):
-  - Ratchet Pack (useful item) -- directly grants the "Ratchet Pack" cheat.
-  - Weapon Switching / Mirrored Levels / Bolt Confusion / Big Headed
-    (traps) -- force the matching cheat(s) on for the trap's duration. Big
-    Headed is one trap that turns on BOTH Big Headed Clank and Big Headed
-    Ratchet at once (see TRAP_CHEATS)."""
+"""Cheat unlocks, gated by cumulative skill point count in vanilla."""
 
 from dataclasses import dataclass
 
@@ -59,8 +41,7 @@ CHEAT_SKILL_POINT_THRESHOLD: dict[str, int] = {
 
 @dataclass(frozen=True)
 class SACTraps:
-    """String constants for trap items -- each forces one or more vanilla
-    cheats on for the trap's duration (see TRAP_CHEATS)."""
+    """String constants for trap items -- each forces one or more vanilla cheats on for the trap's duration (see TRAP_CHEATS)."""
 
     WEAPON_SWITCHING = "Weapon Switching Trap"
     MIRRORED_LEVELS = "Mirrored Levels Trap"

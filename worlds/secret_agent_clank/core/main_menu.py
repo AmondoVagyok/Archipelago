@@ -21,6 +21,6 @@ class MainMenuNotice:
     def poll(self):
         at_menu = is_main_menu(self.pine)
         if at_menu and not self.shown:
-            self.log('[SAC] Start a new game')
+            self.log("[SAC] Start a new game")
         self.shown = at_menu
         return at_menu

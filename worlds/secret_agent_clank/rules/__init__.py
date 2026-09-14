@@ -1,19 +1,9 @@
-"""One rules file per case (SAC's atomic content unit -- see
-constants/planets.py's Planet/Case docstring), mirroring
-worlds/rac_size_matters/rules' one-file-per-planet layout at SAC's finer
-per-case granularity, PLUS entrances.py mirroring that world's own
-entrances.py. set_entrance_rules() (entrances.py) is the real case-access
-gate now -- one "To <Case>" entrance rule per case (HasPlanet + HasCase +
-HasCharacter) -- called FIRST below, same order rac_size_matters' own
-set_rules() calls set_entrance_rules() before any per-planet file. Each
-set_<case>_rules() runs after that and only needs to handle genuine
-per-location extras (e.g. alien codes needing Therm-Optic Shades); most
-are empty stubs since most locations have no extra requirement beyond
-reaching their case at all, which the entrance already covers."""
+"""One rules file per case (SAC's atomic content unit -- see constants/planets.py's Planet/Case docstring), mirroring worlds/rac_size_matters/rules' one-file-per-planet layout at SAC's finer per-case granularity, PLUS entrances.py mirroring that world's own entrances.py."""
 from typing import TYPE_CHECKING
 
 from rule_builder.rules import Has
 
+from ..constants import SACCases
 from .a_fiction_full_of_dollars import set_a_fiction_full_of_dollars_rules
 from .asyanica_rooftops import set_asyanica_rooftops_rules
 from .azcotal_alley import set_azcotal_alley_rules
@@ -59,7 +49,6 @@ def set_rules(world: "SecretAgentClankWorld") -> None:
 
     set_entrance_rules(world)
 
-    from ..constants import SACCases
     enabled = {r.name for r in world.multiworld.get_regions(world.player)}
     for case, apply_rules in (
         (SACCases.BOLTAIRE_MUSEUM, set_boltaire_museum_rules),

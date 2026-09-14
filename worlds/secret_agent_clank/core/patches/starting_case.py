@@ -1,15 +1,12 @@
-"""SCUS-97623 new-save launch override, confined to the frontend DLL.
-
-Wrap frontend new-game initialization and memory-card new-game travel.
-Load Game, Continue and gameplay resets never call these wrappers. Verified retail
-debug-print stubs (already no-ops) provide storage for the wrapper bodies.
-"""
+"""SCUS-97623 new-save launch override, confined to the frontend DLL."""
 from ...constants.native_modules import CASE_MODULES
 from ...constants.planets import ALL_CASES, SACCases
-from .asm import Patch, jump, packed
+from .asm import Patch, jump, packed, words
+from .debug_stubs import DEBUG_STUBS
+from .patch import PatchSet
 
 
-class StartingCase:
+class StartingCase(PatchSet):
     INIT = 0x331700
     CALLS = (0x365F58, 0x3660C4)
     TRAVEL_CALLS = (0x349774, 0x349A30, 0x349E3C)
@@ -17,33 +14,21 @@ class StartingCase:
     STUBS = (0x338F40, 0x338F70, 0x338FA8, 0x338FD8)
     FRONT_SIGNATURE = packed([0x27BDFFF0, 0x3C030043, 0x2402001E,
                               0xFFBF0000, 0x0C0E3EA6, 0xAC62DE34])
-    STUB_WORDS = (
-        [0x27BDFF90, 0xFFA70048, 0xFFA80050, 0xFFA90058,
-         0xFFAA0060, 0xFFAB0068, 0xE7AC0038, 0xE7AE003C,
-         0xE7B00040, 0xE7B20044, 0x03E00008, 0x27BD0070],
-        [0x27BDFF90, 0xFFA60040, 0xFFA70048, 0xFFA80050,
-         0xFFA90058, 0xFFAA0060, 0xFFAB0068, 0xE7AC0030,
-         0xE7AE0034, 0xE7B00038, 0xE7B2003C, 0x03E00008, 0x27BD0070],
-        [0x27BDFFA0, 0xFFA80040, 0xFFA90048, 0xFFAA0050,
-         0xFFAB0058, 0xE7AC0030, 0xE7AE0034, 0xE7B00038,
-         0xE7B2003C, 0x03E00008, 0x27BD0060],
-        [0x27BDFFA0, 0xFFA80040, 0xFFA90048, 0xFFAA0050,
-         0xFFAB0058, 0xE7AC0030, 0xE7AE0034, 0xE7B00038,
-         0xE7B2003C, 0x03E00008, 0x27BD0060],
-    )
+    STUB_WORDS = tuple(tuple(words(stub.signature)) for stub in DEBUG_STUBS)
 
     def __init__(self, pine, log):
-        self.pine, self.log = pine, log
+        super().__init__(pine)
+        self.log = log
         self.case_name = None  # Older slot data retains the native start.
         self.installed_case = None
         self.patches = []
 
     def configure(self, slot_data):
-        name = slot_data.get('starting_case')
+        name = slot_data.get("starting_case")
         if name is not None:
             case = next((case for case in ALL_CASES if case.name == name), None)
-            if case is None or not slot_data.get('operatives', {}).get(case.operative, 0):
-                raise ValueError(f'Invalid or disabled starting case: {name!r}')
+            if case is None or not slot_data.get("operatives", {}).get(case.operative, 0):
+                raise ValueError(f"Invalid or disabled starting case: {name!r}")
         self.case_name = name
 
     def is_frontend(self):
@@ -52,9 +37,10 @@ class StartingCase:
                 and p.read_int32(0x1AAE3C) == 5
                 and p.read_int32(0x206324) == 0xFFFFFFFF
                 and p.read_bytes(0x3652C0, len(self.FRONT_SIGNATURE)) == self.FRONT_SIGNATURE
-                and p.get_game_id() == 'SCUS-97623')
+                and p.get_game_id() == "SCUS-97623")
 
     def prepare(self, name):
+        self.patches = []
         module = CASE_MODULES[name]
         # Case Files uses A9 for Clank in module 4, C8 for Qwark in
         # module 11, and CA for a manually selected case entry.
@@ -82,7 +68,7 @@ class StartingCase:
             replacement = packed([0x03E00008, 0] + body)
             replacement += expected[len(replacement):]
             if len(replacement) != len(expected):
-                raise RuntimeError('New-game wrapper exceeds debug stub storage')
+                raise RuntimeError("New-game wrapper exceeds debug stub storage")
             edits.append(Patch(address, expected, replacement))
         for address in self.CALLS:
             edits.append(Patch(address, packed([jump(self.INIT, True), 0x24050001]),
@@ -93,8 +79,14 @@ class StartingCase:
                                packed([0x24040001, jump(travel, True), 0x24050001])))
         for edit in edits:
             if self.pine.read_bytes(edit.address, len(edit.original)) != edit.original:
-                raise RuntimeError(f'New-game launch layout changed at {edit.address:#x}')
+                raise RuntimeError(f"New-game launch layout changed at {edit.address:#x}")
+        self.patches = edits
         return edits
+
+    def apply(self):
+        if not self.is_frontend() or self.pine.read_int32(0x42DE34) not in (6, 8, 12, 46, 47):
+            raise RuntimeError("New-game patches require the idle frontend")
+        super().apply()
 
     def service(self):
         if not self.is_frontend():
@@ -109,18 +101,14 @@ class StartingCase:
             return True
         self.close()
         if self.case_name is not None:
-            edits = self.prepare(self.case_name)
+            self.prepare(self.case_name)
             try:
-                for edit in edits:
-                    self.patches.append(edit)
-                    self.pine.write_bytes(edit.address, edit.replacement)
-                    if self.pine.read_bytes(edit.address, len(edit.replacement)) != edit.replacement:
-                        raise RuntimeError('New-game hook readback failed')
+                self.apply()
             except Exception:
                 self.close()
                 raise
             self.installed_case = self.case_name
-            self.log(f'[SAC] New saves will start in {self.case_name}. Ready to create a new save.')
+            self.log(f"[SAC] New saves will start in {self.case_name}. Ready to create a new save.")
         return True
 
     def close(self):
@@ -131,6 +119,6 @@ class StartingCase:
                 if actual == edit.replacement:
                     self.pine.write_bytes(edit.address, edit.original)
                 elif actual != edit.original:
-                    raise RuntimeError('New-game hook changed; refusing to overwrite it')
+                    raise RuntimeError("New-game hook changed; refusing to overwrite it")
         self.patches.clear()
         self.installed_case = None

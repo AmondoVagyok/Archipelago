@@ -1,8 +1,4 @@
-"""String constants for Special Challenge locations -- the Special
-Missions-operative counterpart to constants/gadgetbot_challenges.py's
-Gadgetbot Challenges (same structural pattern: addresses recorded
-individually, each a plain 0/1 byte -- see SPECIAL_CHALLENGES below,
-CONFIRMED live for every entry so far)."""
+"""String constants for Special Challenge locations -- the Special Missions-operative counterpart to constants/gadgetbot_challenges.py's Gadgetbot Challenges (same structural pattern: addresses recorded individually, each a plain 0/1 byte -- see SPECIAL_CHALLENGES below, CONFIRMED live for every entry so far)."""
 
 from dataclasses import dataclass
 
@@ -12,9 +8,7 @@ from .types import CaseStructure, group_by_case
 
 @dataclass(frozen=True)
 class SACSpecialChallenges:
-    """String constants for Special Challenge event titles (short form
-    only -- see SPECIAL_CHALLENGES below for which case/address each
-    belongs to)."""
+    """String constants for Special Challenge event titles (short form only -- see SPECIAL_CHALLENGES below for which case/address each belongs to)."""
 
     VEHICLE_GREAT_ESCAPE = "Vehicle: Great Escape"
     VEHICLE_SPEEDBOATING = "Vehicle: Speedboating"
@@ -78,11 +72,7 @@ SPECIAL_CHALLENGES_BY_CASE: dict[str, tuple[str, ...]] = group_by_case(SPECIAL_C
 
 @dataclass(frozen=True)
 class SACSpecialChallengeLocations:
-    """One named constant per Special Challenge location -- each value is
-    the exact full display name SPECIAL_CHALLENGES above builds via
-    CaseStructure.__str__, spelled out here so rules/<case>.py can
-    reference an individual location directly -- same one-name-per-location
-    layout as constants/weapons.py's SACRatchetWeapons."""
+    """One named constant per Special Challenge location -- each value is the exact full display name SPECIAL_CHALLENGES above builds via CaseStructure.__str__, spelled out here so rules/<case>.py can reference an individual location directly -- same one-name-per-location layout as constants/weapons.py's SACRatchetWeapons."""
 
     VENANTONIO_CANALS_VEHICLE_GREAT_ESCAPE = "Special Missions: Venantonio Canals: Special Challenge: Vehicle: Great Escape"
     VENANTONIO_CANALS_VEHICLE_SPEEDBOATING = "Special Missions: Venantonio Canals: Special Challenge: Vehicle: Speedboating"

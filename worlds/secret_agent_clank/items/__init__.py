@@ -1,9 +1,4 @@
-"""Item tables. Most items here are flat category pools (weapons, gadgets,
-Infobots, ...), not naturally per-case -- but one file per case exists
-below anyway (items/<case>.py), mirroring rules/'s one-file-per-case
-layout, as a placeholder extension point for case-specific items. Every
-case file is currently an empty dict merged into ALL_ITEMS as a no-op --
-add real entries there once a case needs its own dedicated item."""
+"""Item tables."""
 from typing import NamedTuple
 
 from BaseClasses import ItemClassification

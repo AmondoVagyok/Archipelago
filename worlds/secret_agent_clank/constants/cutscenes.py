@@ -1,19 +1,4 @@
-"""String constants for cutscene-trigger locations (see options.py's
-AllCutscenes). Backed by the same Completed-missions-style bitmask region
-as constants/missions.py's story missions -- 0x206BE0-0x206BF4, called
-STORY_PROGRESS in the old address-map comments since cutscenes and
-missions turned out to share it. Each address covers several cutscenes,
-not one-per-cutscene -- a cutscene is identified by the bit it sets in its
-CaseStructure.event_address byte (see CaseStructure.event_flag) when it
-fires. CONFIRMED live for every entry below.
-
-Display names follow "{character/operative}: {case}: {description}" (user:
-"can we actually change the layout to character: planet: description for
-the cutscenes" -- "planet" here means the case name, e.g. "Rooftop
-Deathtrap", matching how the Gadgetbots: Rooftop Deathtrap example was
-given) -- which is exactly what CaseStructure.__str__ builds from
-case_name + event_name, so only the short event_name needs to be hand-typed
-per entry now."""
+"""String constants for cutscene-trigger locations (see options.py's AllCutscenes)."""
 
 from dataclasses import dataclass
 
@@ -23,8 +8,7 @@ from .types import CaseStructure, group_by_case
 
 @dataclass(frozen=True)
 class SACCutscenes:
-    """String constants for cutscene-trigger event titles (short form only
-    -- see CUTSCENES below for which case/address/flag each belongs to)."""
+    """String constants for cutscene-trigger event titles (short form only -- see CUTSCENES below for which case/address/flag each belongs to)."""
 
     ENTER_CUTSCENE = "Enter Cutscene"
     COMPLETE_CASE_CUTSCENE = "Complete Case Cutscene"
@@ -136,13 +120,7 @@ CUTSCENES: tuple[CaseStructure, ...] = (
 
 @dataclass(frozen=True)
 class SACCutsceneLocations:
-    """One named constant per cutscene location -- each value is the exact
-    full display name CUTSCENES above builds via CaseStructure.__str__
-    (case + short SACCutscenes title), spelled out here so rules/<case>.py
-    can reference an individual location directly (e.g.
-    SACCutsceneLocations.BOLTAIRE_MUSEUM_ENTER_CUTSCENE) instead of a raw
-    string or a case-name-keyed lookup -- same one-name-per-location layout
-    as constants/weapons.py's SACRatchetWeapons."""
+    """One named constant per cutscene location -- each value is the exact full display name CUTSCENES above builds via CaseStructure.__str__ (case + short SACCutscenes title), spelled out here so rules/<case>.py can reference an individual location directly (e.g."""
 
     BOLTAIRE_MUSEUM_ENTER_CUTSCENE = "Clank: Boltaire Museum: Enter Cutscene"
     BOLTAIRE_GEM_WING_COMPLETE_CASE_CUTSCENE = "Special Missions: Boltaire Gem Wing: Complete Case Cutscene"

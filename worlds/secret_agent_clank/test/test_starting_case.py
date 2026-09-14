@@ -30,7 +30,7 @@ class FrontendMemory(Memory):
         self.writes.clear()
 
     def get_game_id(self):
-        return 'SCUS-97623'
+        return "SCUS-97623"
 
     def write_bytes(self, address, data):
         self.writes.append((address, data))
@@ -45,25 +45,25 @@ class StartingCaseTests(unittest.TestCase):
         restored.re_gen_passthrough = {SecretAgentClankWorld.game: saved}
         for step in gen_steps:
             call_all(restored, step)
-        self.assertEqual(restored.worlds[1].starting_case, saved['starting_case'])
-        self.assertIn(CASE_NAME_TO_INFOBOT[saved['starting_case']],
+        self.assertEqual(restored.worlds[1].starting_case, saved["starting_case"])
+        self.assertIn(CASE_NAME_TO_INFOBOT[saved["starting_case"]],
                       [item.name for item in restored.precollected_items[1]])
 
     def test_random_start_respects_characters_and_access_in_every_mode(self):
         observed = set()
-        for mode in ('cases', 'planets', 'progressive_planet', 'character_unlocks'):
+        for mode in ("cases", "planets", "progressive_planet", "character_unlocks"):
             for seed in range(8):
                 mw = setup_multiworld(SecretAgentClankWorld, seed=seed, options={
-                    'operatives': {'Ratchet': 1, 'Qwark': 1, 'Gadgetbots': 1},
-                    'goal': 'qwark_opera', 'infobots': mode, 'all_missions': 'all'})
+                    "operatives": {"Ratchet": 1, "Qwark": 1, "Gadgetbots": 1},
+                    "goal": "qwark_opera", "infobots": mode, "all_missions": "all"})
                 world = mw.worlds[1]
                 name = world.starting_case
                 observed.add(name)
                 case = next(case for case in ALL_CASES if case.name == name)
-                self.assertIn(case.operative, ('Ratchet', 'Qwark', 'Gadgetbots'))
+                self.assertIn(case.operative, ("Ratchet", "Qwark", "Gadgetbots"))
                 self.assertIn(CASE_NAME_TO_INFOBOT[name], [i.name for i in mw.precollected_items[1]])
-                self.assertTrue(mw.state.can_reach(name, 'Region', 1))
-                self.assertEqual(world.fill_slot_data()['starting_case'], name)
+                self.assertTrue(mw.state.can_reach(name, "Region", 1))
+                self.assertEqual(world.fill_slot_data()["starting_case"], name)
         self.assertGreater(len(observed), 1)
 
     def test_install_idempotent_restore_and_disabled_validation(self):
@@ -71,8 +71,8 @@ class StartingCaseTests(unittest.TestCase):
         before = bytes(p.data)
         hook = StartingCase(p, lambda _: None)
         with self.assertRaises(ValueError):
-            hook.configure({'starting_case': 'Boltaire Museum', 'operatives': {'Qwark': 1}})
-        hook.configure({'starting_case': 'Suck and Jive', 'operatives': {'Qwark': 1}})
+            hook.configure({"starting_case": "Boltaire Museum", "operatives": {"Qwark": 1}})
+        hook.configure({"starting_case": "Suck and Jive", "operatives": {"Qwark": 1}})
         self.assertTrue(hook.service())
         writes = list(p.writes)
         hook.service()
@@ -84,7 +84,7 @@ class StartingCaseTests(unittest.TestCase):
         p = FrontendMemory()
         p.data[StartingCase.CALLS[1]] ^= 1
         hook = StartingCase(p, lambda _: None)
-        hook.configure({'starting_case': 'Max-Security Cells', 'operatives': {'Ratchet': 1}})
+        hook.configure({"starting_case": "Max-Security Cells", "operatives": {"Ratchet": 1}})
         with self.assertRaises(RuntimeError):
             hook.service()
         self.assertEqual(p.writes, [])
@@ -95,7 +95,7 @@ class StartingCaseTests(unittest.TestCase):
         hook.configure({})
         hook.service()
         self.assertEqual(p.writes, [])
-        hook.configure({'starting_case': 'Max-Security Cells', 'operatives': {'Ratchet': 1}})
+        hook.configure({"starting_case": "Max-Security Cells", "operatives": {"Ratchet": 1}})
         p.batch_write_int32([(0x1AAE78, 3)])
         p.writes.clear()
         self.assertFalse(hook.service())
@@ -104,7 +104,7 @@ class StartingCaseTests(unittest.TestCase):
     def test_unloaded_frontend_is_never_restored_over_gameplay(self):
         p = FrontendMemory()
         hook = StartingCase(p, lambda _: None)
-        hook.configure({'starting_case': 'Max-Security Cells', 'operatives': {'Ratchet': 1}})
+        hook.configure({"starting_case": "Max-Security Cells", "operatives": {"Ratchet": 1}})
         hook.service()
         p.batch_write_int32([(0x1AAE78, 3)])
         p.writes.clear()
@@ -117,17 +117,17 @@ class StartingCaseTests(unittest.TestCase):
         expected = packed([jump(StartingCase.CHANGE_LEVEL, True), 0x8C440ECC])
         p.data[load:load + 8] = expected
         hook = StartingCase(p, lambda _: None)
-        hook.configure({'starting_case': 'Max-Security Cells', 'operatives': {'Ratchet': 1}})
+        hook.configure({"starting_case": "Max-Security Cells", "operatives": {"Ratchet": 1}})
         hook.service()
         self.assertEqual(p.read_bytes(load, 8), expected)
 
     def test_wrapper_executes_init_then_sets_destination_and_shared_flags(self):
         # Execute the emitted instructions with real branch delay semantics.
         # Model the native initializer as a call that clobbers caller registers.
-        for name, flags in [('Max-Security Cells', (0, 0)),
-                            ('Asyanica Rooftops', (1, 0)),
-                            ('Rooftop Deathtrap', (0, 0)),
-                            ('Suck and Jive', (0, 1)), ('Gondola Ascent', (0, 0))]:
+        for name, flags in [("Max-Security Cells", (0, 0)),
+                            ("Asyanica Rooftops", (1, 0)),
+                            ("Rooftop Deathtrap", (0, 0)),
+                            ("Suck and Jive", (0, 1)), ("Gondola Ascent", (0, 0))]:
             p = FrontendMemory()
             hook = StartingCase(p, lambda _: None)
             for edit in hook.prepare(name):
@@ -135,7 +135,7 @@ class StartingCaseTests(unittest.TestCase):
             for caller in hook.CALLS + hook.TRAVEL_CALLS:
                 regs = [0] * 32
                 regs[4], regs[29] = 0x200000, 0x700000
-                struct.pack_into('<I', p.data, 0x418FD8, 0x200000)
+                struct.pack_into("<I", p.data, 0x418FD8, 0x200000)
                 pc, pending, native_calls = caller, None, 0
                 for _ in range(40):
                     if pc == caller + 8:
@@ -170,11 +170,11 @@ class StartingCaseTests(unittest.TestCase):
                     elif word & 63 == 8 and op == 0:
                         pending = regs[rs]
                     elif op == 63:
-                        struct.pack_into('<Q', p.data, address, regs[rt])
+                        struct.pack_into("<Q", p.data, address, regs[rt])
                     elif op == 55:
-                        regs[rt] = struct.unpack_from('<Q', p.data, address)[0]
+                        regs[rt] = struct.unpack_from("<Q", p.data, address)[0]
                     elif op == 43:
-                        struct.pack_into('<I', p.data, address, regs[rt])
+                        struct.pack_into("<I", p.data, address, regs[rt])
                     elif op == 40:
                         p.data[address] = regs[rt] & 255
                     else:
@@ -188,11 +188,11 @@ class StartingCaseTests(unittest.TestCase):
                 self.assertEqual(p.read_int8(0x2005AA), 1)
 
     def test_plan_matches_real_frontend_capture(self):
-        path = Path(__file__).parents[1] / '.research/main_menu_start.bin'
+        path = Path(__file__).parents[1] / ".research/main_menu_start.bin"
         if not path.exists():
-            self.skipTest('Local frontend capture unavailable')
+            self.skipTest("Local frontend capture unavailable")
         p = FrontendMemory()
         p.data[:] = path.read_bytes()
         hook = StartingCase(p, lambda _: None)
         self.assertTrue(hook.is_frontend())
-        self.assertEqual(len(hook.prepare('Max-Security Cells')), 9)
+        self.assertEqual(len(hook.prepare("Max-Security Cells")), 9)

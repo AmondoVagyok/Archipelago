@@ -17,12 +17,7 @@ from .constants.operatives import ALL_OPERATIVES
 
 
 class Missions(Choice):
-    """Controls the granularity of story-mission location checks.
-    level_completion: one location per case -- "{Case} Complete", checked
-    when that case's final CHAPTER_ENTRIES mission completes.
-    all: one location per individual mission within each case (see
-    constants/missions.py's CHAPTER_ENTRIES), checked as each one
-    completes rather than only the last."""
+    """Controls the granularity of story-mission location checks."""
     display_name = "Missions"
     option_level_completion = 0
     option_all = 1
@@ -40,27 +35,17 @@ class SkillPoints(Toggle):
 
 
 class AllKeycards(Toggle):
-    """Include the 3 keycard pickups as optional AP location checks.
-    This does not select or restrict the goal. The Chalice of Power goal
-    can be played with this option on or off."""
+    """Include the 3 keycard pickups as optional AP location checks."""
     display_name = "All Keycards"
 
 
 class AllAlienCodes(Toggle):
-    """Include the 27 Alien Codes as optional AP location checks.
-    This does not select or restrict the goal. Selecting Alien Codes under
-    Goal requires collecting all 27, whether these location checks are on or off."""
+    """Include the 27 Alien Codes as optional AP location checks."""
     display_name = "All Alien Codes"
 
 
 class Infobots(Choice):
-    """Choose how access is unlocked.
-    Planets: one access item unlocks a planet's cases.
-    Cases: individual Case Files unlock individual cases.
-    Progressive Planet: each copy unlocks the next planet in order.
-    Character Unlocks: Ratchet/Clank unlock together per character;
-    Qwark/Gadgetbots unlock one case per progressive copy.
-    """
+    """Choose how access is unlocked."""
     display_name = "Infobots"
     option_planets = 0
     option_cases = 1
@@ -70,20 +55,7 @@ class Infobots(Choice):
 
 
 class Operatives(OptionCounter):
-    """Enabled operatives (Ratchet, Clank, Qwark, Gadgetbots, and Special
-    Missions -- user: "lets change characters to Operatives. we will have
-    special missions here aswel as an operative"). Set one to 0 (or remove
-    it) to remove it entirely from the game -- none of its cases are
-    generated as locations at all, and their content is skipped ("their
-    missions will not unlock"). Additional logic around this (e.g.
-    redirecting their story beats) isn't implemented yet.
-
-    Keys are operative names, not AP item names -- this isn't an ItemDict,
-    it doesn't pick a subset of the item pool, it's a set of operative
-    toggles regions.py reads to decide which cases even get created (see
-    SACOperatives). Special Missions has no dedicated playable character of
-    its own, but is still a real, independently toggleable group here --
-    see constants/operatives.py's module docstring."""
+    """Enabled operatives (Ratchet, Clank, Qwark, Gadgetbots, and Special Missions)."""
     display_name = "Operatives"
     min = 0
     max = 1
@@ -99,19 +71,7 @@ class Operatives(OptionCounter):
 
 
 class Goal(Choice):
-    """Victory condition.
-    defeat_klunk: complete the Klunk's Lair case (the main story finale).
-    qwark_opera: complete every case filed under the Qwark Operative group
-    (see constants/operatives.py's SACOperatives -- Larger Than Life, Suck
-    and Jive, and the other Qwark-tagged cases).
-    any: victory as soon as either condition above is met.
-    chalice_of_power: collect the Chalice of Power after obtaining the keycards.
-    alien_codes: collect all 27 Alien Codes.
-    all_gadgetbots: complete every case filed under the Gadgetbots Operative
-    group (Rooftop Deathtrap, Inside the A-Eye, Bulkhead Lock).
-    ratchet_prison_escape: complete every Ratchet Challenge location across
-    all 5 Ratchet-operative prison cases (see constants/ratchet_challenges.py).
-    Keycard and Alien Code location toggles are independent of these goals."""
+    """Victory condition."""
     display_name = "Goal"
     option_defeat_klunk    = 0
     option_qwark_opera     = 1
@@ -132,14 +92,12 @@ class NgPlus(Range):
 
 
 class ProgressiveWeapons(Toggle):
-    """AP weapon copies grant V1, then one level each. Combat does not level
-    weapons in this mode. NG+ allows V5-V8; RYNO stops at V4."""
+    """AP weapon copies grant V1, then one level each."""
     display_name = "Progressive Weapons"
 
 
 class ProgressiveWrench(Toggle):
-    """Adds 5 Progressive Wrench items to the pool (Ratchet only) -- each
-    copy upgrades the wrench a level. Off by default."""
+    """Adds 5 Progressive Wrench items to the pool (Ratchet only) -- each copy upgrades the wrench a level."""
     display_name = "Progressive Wrench"
 
 
@@ -168,8 +126,7 @@ class BoltMultiplier(Range):
 
 
 class DeathAmnesty(Range):
-    """Number of deaths allowed before items are stripped from the player's
-    inventory on death. Higher values are more forgiving."""
+    """Number of deaths allowed before items are stripped from the player's inventory on death."""
     display_name = "Death Amnesty"
     range_start = 0
     range_end = 5
@@ -209,10 +166,7 @@ class TrapChance(Range):
 
 
 class TrapWeight(ItemDict):
-    """Sets the relative weights of trap types in the filler pool. A higher value increases
-    how often that trap is chosen over the others when a filler item rolls as a trap (see
-    Trap Chance). Has no effect when Trap Chance is 0, or when every weight here is 0
-    (Bolts fills in instead)."""
+    """Sets the relative weights of trap types in the filler pool."""
     display_name = "Trap Weight"
     min = 0
     max = 100

@@ -1,6 +1,4 @@
-"""Owns the raw PINE socket to PCSX2: connect/reconnect/teardown, plus the
-poll loop that drives Core.tick() every cycle. Modeled on
-worlds/rac_size_matters/client/pine_mixin.py."""
+"""Owns the raw PINE socket to PCSX2: connect/reconnect/teardown, plus the poll loop that drives Core.tick() every cycle."""
 import asyncio
 
 from CommonClient import logger
@@ -109,14 +107,7 @@ class PineMixin:
         await self._apply_received_items()
 
     def _append_location_by_name(self, name: str) -> bool:
-        """Queue an AP location check, if -- and only if -- `name` is
-        actually a location that exists in THIS seed. Returns whether it
-        was queued: Core's tick() (core/core.py) only tells a detector
-        (Inventory.confirm()) that a name it reported is done once this
-        returns True, so a name rejected here (wrong options, or not
-        resolved yet right after connecting) is retried on a later tick
-        instead of being silently dropped forever -- see each Inventory's
-        confirm() docstring."""
+        """Queue an AP location check, if -- and only if -- `name` is actually a location that exists in THIS seed."""
         loc_id = self._location_name_to_id.get(name)
         if loc_id is None:
             if name not in self._warned_missing_locations:

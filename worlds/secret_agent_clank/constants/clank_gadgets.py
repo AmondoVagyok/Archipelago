@@ -1,27 +1,4 @@
-"""Clank item names.
-
-Black Out Pen is GadgetData slot 17 (internal name fountainpen), verified
-against the running USA game and GADGET_PlayerHasGadget's code on 2026-09-11.
-Core merges its AP entitlement into the shared 32-bit ownership table.
-Its physical delivery/pickup state is separate and is still being mapped.
-
-Clank's items split across two classes plus a progressive counterpart,
-mirroring constants/weapons.py's SACRatchetWeapons/SACProgressiveRatchetWeapons
-split for Ratchet:
-  - SACClankGadgets: lock/unlock-only items (no progression) -- BLACK_OUT_PEN/
-    THERM_OPTIC_SHADES (the case_id-keyed positional system, via
-    CLANK_GADGET_BY_CASE_ID below, backing GADGET_ITEM_TABLE/
-    case.clank_items) plus CLANKPDA/JETBOOTS/OMNIKEY/HYPNOWATCH/HOLOMONOCLE/
-    BOLTGRABBER (WEAPON_ORDER-struct items with no progressive counterpart).
-  - SACClankWeapons: WEAPON_ORDER-struct items that DO have progression --
-    THROWTIE/CUFFLINK/TANGLEVINE/FLAMETHROWERPEN/HOLOKNUCKLES/SUPERKICK/
-    LIGHTNINGUMBRELLA/KICKSPLOSION.
-  - SACProgressiveClankWeapons: progressive counterpart to SACClankWeapons.
-All WEAPON_ORDER-struct members (both SACClankGadgets' and SACClankWeapons')
-back WEAPON_ITEM_TABLE/case.ratchet_items, not GADGET_ITEM_TABLE -- see
-constants/weapons.py's GADGET_DISPLAY_TO_INTERNAL, which builds its
-WEAPON_ORDER-side tracking table from both classes' attributes combined.
-"""
+"""Clank item names."""
 from dataclasses import dataclass
 
 from .planets import CASE_ID_TO_CASE
@@ -29,9 +6,7 @@ from .planets import CASE_ID_TO_CASE
 
 @dataclass(frozen=True)
 class SACClankWeapons:
-    """WEAPON_ORDER-struct Clank items that have a progressive counterpart
-    (see SACProgressiveClankWeapons) -- see module docstring for the split
-    from SACClankGadgets' lock/unlock-only items."""
+    """WEAPON_ORDER-struct Clank items that have a progressive counterpart (see SACProgressiveClankWeapons) -- see module docstring for the split from SACClankGadgets' lock/unlock-only items."""
     THROWTIE          = "Weapon: Clank: Bowtie"
     CUFFLINK          = "Weapon: Clank: Cufflink"
     TANGLEVINE        = "Weapon: Clank: Tanglevine"
@@ -57,10 +32,7 @@ class SACProgressiveClankWeapons:
 
 @dataclass(frozen=True)
 class SACClankGadgets:
-    """Lock/unlock-only Clank items (no progression) -- see module docstring
-    for why the two mechanically-separate tracking systems (case_id-keyed
-    CLANK_GADGET_BY_CASE_ID vs the shared WEAPON_ORDER struct) share one
-    naming class."""
+    """Lock/unlock-only Clank items (no progression) -- see module docstring for why the two mechanically-separate tracking systems (case_id-keyed CLANK_GADGET_BY_CASE_ID vs the shared WEAPON_ORDER struct) share one naming class."""
 
     BLACK_OUT_PEN      = "Gadget: Clank: Black Out Pen"
     THERM_OPTIC_SHADES = "Gadget: Clank: Therm-Optic Shades"
@@ -104,11 +76,7 @@ GADGET_PICKUP_BY_CASE: dict[str, str] = {
 
 @dataclass(frozen=True)
 class SACGadgetPickupLocations:
-    """One named constant per "{gadget} (Pickup)" location -- same values
-    as GADGET_PICKUP_BY_CASE, spelled out here so rules/<case>.py can
-    reference an individual location directly instead of a case-name-keyed
-    lookup -- same one-name-per-location layout as constants/weapons.py's
-    SACRatchetWeapons."""
+    """One named constant per "{gadget} (Pickup)" location -- same values as GADGET_PICKUP_BY_CASE, spelled out here so rules/<case>.py can reference an individual location directly instead of a case-name-keyed lookup -- same one-name-per-location layout as constants/weapons.py's SACRatchetWeapons."""
 
     BOLTAIRE_MUSEUM = "Gadget: Clank: Black Out Pen (Pickup)"
     ROOFTOP_DEATHTRAP = "Gadget: Clank: Therm-Optic Shades (Pickup)"

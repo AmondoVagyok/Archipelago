@@ -10,8 +10,8 @@ class LoaderGateTests(unittest.TestCase):
         self.p = Memory()
         self.p.write_int32 = lambda address, value: self.p.batch_write_int32([(address, value)])
         self.p.write_bytes = lambda address, data: self.p.data.__setitem__(slice(address, address + len(data)), data)
-        self.p.get_game_id = lambda: 'SCUS-97623'
-        self.p.write_bytes(LoaderGate.SIGNATURE_START, struct.pack('<11I', *LoaderGate.SIGNATURE))
+        self.p.get_game_id = lambda: "SCUS-97623"
+        self.p.write_bytes(LoaderGate.SIGNATURE_START, struct.pack("<11I", *LoaderGate.SIGNATURE))
         self.gate = LoaderGate(self.p)
 
     def test_branch_yields_without_starting_module(self):

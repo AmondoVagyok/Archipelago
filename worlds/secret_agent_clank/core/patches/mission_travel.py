@@ -1,47 +1,90 @@
-"""Use the native end-of-level map instead of forced next-planet travel."""
+"""Route completed missions to Case Files, including Ratchet's movie exit."""
+from ...constants.native_functions import NativeFunctions as Functions
 from ..symbols import require
 from .asm import Patch, branch, jump, packed
+from .patch import PatchSet
 
 
-def prepare_mission_travel(pine, symbols):
-    function, map_ender = require(symbols,
-        'UPDATE_ChangeToLevelOrMapIfAlreadyCompleted__Fi', 'SCRNGALACTICMAP_SetLevelEnder__Fv',
-    )
-    if (pine.read_bytes(function, 12) != packed([0x27BDFFF0, 0xFFB00000, 0xFFBF0008])
-            or pine.read_bytes(function + 0x14, 12) != packed([0x0050102B, 0x14400010, 0x0200202D])
-            or pine.read_int32(function + 0x20) != jump(map_ender, True)
-            or pine.read_int32(function + 0x34) != 0x2404000E):
-        raise RuntimeError('Mission-end travel layout changed')
-    # Only bypass the choice of forced travel, preserving the existing map
-    # opening path, completion processing and manual Case Files travel code.
-    edits = [Patch(function + 0x18, packed([0x14400010]), packed([0]))]
-    # Ratchet's results screen bypasses the generic completion helper. Its
-    # Continue row has two routes: straight to the next level, or a movie
-    # whose completion callback loads it. Redirect both, leaving challenge
-    # selection, quitting and the Case Files launch handler alone.
-    update, exit_screen, next_level, set_next, change = require(symbols,
-        'SCRNRATCHETARENA_Update__Fv', 'SCRNRATCHETARENA_Exit__Fv', 'Arena_GetLevelToLoad__Fv',
-        'SetNextLevel__Fi', 'UPDATE_ChangeToLevel__Fib',
-    )
-    direct = update + 0x188
-    callback = exit_screen + 0x38
-    if (pine.read_bytes(direct, 16) != packed([
-            jump(next_level, True), 0, 0x10000014, 0x0040202D])
-            or pine.read_int32(update + 0x228) != 0x1240000B
-            or pine.read_bytes(callback, 24) != packed([
-                0x27BDFFF0, 0xFFBF0000, jump(next_level, True), 0,
-                jump(set_next, True), 0x0040202D])
-            or pine.read_int32(callback + 0x20) != jump(change, True)
-            or pine.read_bytes(callback + 0x28, 12) != packed([
-                0xDFBF0000, 0x03E00008, 0x27BD0010])):
-        raise RuntimeError('Ratchet completion travel layout changed')
-    # Prove that the movie callback registered by the Continue row is the
-    # same unnamed function we just validated after the exported Exit.
-    hi = (callback + 0x8000) >> 16
-    if (pine.read_int32(update + 0x158) != (0x3C060000 | hi)
-            or pine.read_int32(update + 0x160) != (0x24C60000 | (callback & 0xFFFF))):
-        raise RuntimeError('Ratchet completion movie callback changed')
-    edits += [Patch(direct, pine.read_bytes(direct, 16), packed([
-        jump(function, True), 0, branch(direct + 8, update + 0x228), 0])),
-        Patch(callback + 0x20, packed([jump(change, True)]), packed([jump(function, True)]))]
-    return edits
+class TravelLayout:
+    HELPER_PROLOGUE = (0x27BDFFF0, 0xFFB00000, 0xFFBF0008)
+    HELPER_DECISION_OFFSET = 0x14
+    HELPER_DECISION = (0x0050102B, 0x14400010, 0x0200202D)
+    FORCED_TRAVEL_BRANCH = 0x18
+    OPEN_MAP_CALL = 0x20
+    MAP_SCREEN_ARGUMENT = 0x34
+    MAP_SCREEN_INSTRUCTION = 0x2404000E
+
+    CONTINUE = 0x188
+    CONTINUE_END = 0x228
+    CONTINUE_END_INSTRUCTION = 0x1240000B
+    CALLBACK = 0x38
+    CALLBACK_HIGH = 0x158
+    CALLBACK_LOW = 0x160
+    CALLBACK_TRAVEL_CALL = 0x20
+    CALLBACK_RETURN = 0x28
+    CALLBACK_EPILOGUE = (0xDFBF0000, 0x03E00008, 0x27BD0010)
+
+
+class MissionTravel(PatchSet):
+    def prepare(self, symbols):
+        self.patches = []
+        helper, map_ender = require(
+            symbols, Functions.UPDATE_CHANGE_TO_LEVEL_OR_MAP_IF_ALREADY_COMPLETED,
+            Functions.SCRNGALACTICMAP_SET_LEVEL_ENDER)
+        helper_patch = self._prepare_map_route(helper, map_ender)
+        arena_patches = self._prepare_arena_routes(symbols, helper)
+        self.patches = [helper_patch, *arena_patches]
+        return self.patches
+
+    def _expect(self, address, instructions, label):
+        expected = packed(instructions)
+        if self.pine.read_bytes(address, len(expected)) != expected:
+            raise RuntimeError(f"{label} layout changed at {address:#x}")
+
+    def _prepare_map_route(self, helper, map_ender):
+        layout = TravelLayout
+        checks = (
+            (0, layout.HELPER_PROLOGUE),
+            (layout.HELPER_DECISION_OFFSET, layout.HELPER_DECISION),
+            (layout.OPEN_MAP_CALL, (jump(map_ender, True),)),
+            (layout.MAP_SCREEN_ARGUMENT, (layout.MAP_SCREEN_INSTRUCTION,)),
+        )
+        for offset, expected in checks:
+            self._expect(helper + offset, expected, "Mission-end travel")
+        return Patch(helper + layout.FORCED_TRAVEL_BRANCH,
+                     packed([layout.HELPER_DECISION[1]]), packed([0]))
+
+    def _prepare_arena_routes(self, symbols, helper):
+        update, exit_screen, next_level, set_next, change = require(
+            symbols, Functions.SCRNRATCHETARENA_UPDATE, Functions.SCRNRATCHETARENA_EXIT,
+            Functions.ARENA_GET_LEVEL_TO_LOAD, Functions.SET_NEXT_LEVEL,
+            Functions.UPDATE_CHANGE_TO_LEVEL)
+        layout = TravelLayout
+        direct = update + layout.CONTINUE
+        callback = exit_screen + layout.CALLBACK
+        original_direct = (jump(next_level, True), 0, 0x10000014, 0x0040202D)
+        checks = (
+            (direct, original_direct),
+            (update + layout.CONTINUE_END, (layout.CONTINUE_END_INSTRUCTION,)),
+            (callback, (0x27BDFFF0, 0xFFBF0000, jump(next_level, True), 0,
+                        jump(set_next, True), 0x0040202D)),
+            (callback + layout.CALLBACK_TRAVEL_CALL, (jump(change, True),)),
+            (callback + layout.CALLBACK_RETURN, layout.CALLBACK_EPILOGUE),
+        )
+        for address, expected in checks:
+            self._expect(address, expected, "Ratchet completion travel")
+        self._validate_registered_callback(update, callback)
+        return [
+            Patch(direct, packed(original_direct), packed([
+                jump(helper, True), 0, branch(direct + 8, update + layout.CONTINUE_END), 0])),
+            Patch(callback + layout.CALLBACK_TRAVEL_CALL,
+                  packed([jump(change, True)]), packed([jump(helper, True)])),
+        ]
+
+    def _validate_registered_callback(self, update, callback):
+        """Check the signed LUI/ADDIU pair points to the validated movie callback."""
+        high = (callback + 0x8000) >> 16
+        self._expect(update + TravelLayout.CALLBACK_HIGH,
+                     (0x3C060000 | high,), "Ratchet movie callback")
+        self._expect(update + TravelLayout.CALLBACK_LOW,
+                     (0x24C60000 | (callback & 0xFFFF),), "Ratchet movie callback")

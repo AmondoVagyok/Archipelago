@@ -1,9 +1,4 @@
-"""Research barrier between DLL relocation and starting the level thread.
-
-SCUS-97623 only. The resident update keeps yielding to vblank while held.
-The owner MUST release in a finally block; this is not a crash-safe watchdog.
-The AP client arms this barrier automatically and releases it on shutdown.
-"""
+"""Research barrier between DLL relocation and starting the level thread."""
 import struct
 
 
@@ -25,18 +20,18 @@ class LoaderGate:
         self.armed = False
 
     def validate(self, *, patched=False):
-        if self.pine.get_game_id() != 'SCUS-97623':
-            raise RuntimeError('Loader barrier supports only SCUS-97623')
+        if self.pine.get_game_id() != "SCUS-97623":
+            raise RuntimeError("Loader barrier supports only SCUS-97623")
         expected = list(self.SIGNATURE)
         if patched:
             expected[5] = self.HELD
         actual = self.pine.read_bytes(self.SIGNATURE_START, len(expected) * 4)
-        if actual != struct.pack('<11I', *expected):
-            raise RuntimeError('Resident loader signature changed')
+        if actual != struct.pack("<11I", *expected):
+            raise RuntimeError("Resident loader signature changed")
 
     def arm(self):
         if self.armed:
-            raise RuntimeError('Loader barrier already armed')
+            raise RuntimeError("Loader barrier already armed")
         self.validate()
         # Mark before the write so finally can recover a failed readback.
         self.armed = True
@@ -60,13 +55,13 @@ class LoaderGate:
     def release(self):
         if not self.armed:
             return
-        if self.pine.get_game_id() != 'SCUS-97623':
-            raise RuntimeError('Game changed; refusing resident code restoration')
+        if self.pine.get_game_id() != "SCUS-97623":
+            raise RuntimeError("Game changed; refusing resident code restoration")
         word = self.pine.read_int32(self.SITE)
         if word == self.HELD:
             self.validate(patched=True)
             self.pine.write_int32(self.SITE, self.ORIGINAL)
         elif word != self.ORIGINAL:
-            raise RuntimeError('Barrier was replaced; refusing to overwrite unknown code')
+            raise RuntimeError("Barrier was replaced; refusing to overwrite unknown code")
         self.validate()
         self.armed = False

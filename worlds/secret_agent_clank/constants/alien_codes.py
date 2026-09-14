@@ -1,10 +1,4 @@
-"""27 Alien Codes: three each in nine native modules.
-
-Module counts are decoded from GLOBALVARS_GetTotalAlienCodeCount. Codes
-use nibbles in global save flags starting at 0x38; case mappings use the
-native mission labels. Code titles and their within-area ordering come
-from the existing user-supplied catalog and still need live per-code checks.
-"""
+"""27 Alien Codes: three each in nine native modules."""
 from dataclasses import dataclass
 
 from .planets import SACCases
@@ -13,8 +7,7 @@ from .types import CaseStructure, group_by_case
 
 @dataclass(frozen=True)
 class SACAlienCodes:
-    """String constants for each Alien Code's title (short form only --
-    see ALIEN_CODES below for which case/address each belongs to)."""
+    """String constants for each Alien Code's title (short form only -- see ALIEN_CODES below for which case/address each belongs to)."""
 
     THE_LEGENDS = "The Legends"
     RONNS_SECRET = "Ronn's secret"
@@ -112,12 +105,7 @@ ALIEN_CODES_BY_CASE: dict[str, tuple[str, ...]] = group_by_case(
 
 @dataclass(frozen=True)
 class SACAlienCodeLocations:
-    """One named constant per alien code location -- each value is the
-    exact full display name ALIEN_CODES above builds via
-    CaseStructure.__str__, spelled out here so rules/<case>.py can
-    reference an individual location directly instead of a raw string or
-    a case-name-keyed lookup -- same one-name-per-location layout as
-    constants/weapons.py's SACRatchetWeapons."""
+    """One named constant per alien code location -- each value is the exact full display name ALIEN_CODES above builds via CaseStructure.__str__, spelled out here so rules/<case>.py can reference an individual location directly instead of a raw string or a case-name-keyed lookup -- same one-name-per-location layout as constants/weapons.py's SACRatchetWeapons."""
 
     BOLTAIRE_MUSEUM_THE_LEGENDS = "Clank: Boltaire Museum: Alien Code: The Legends"
     BOLTAIRE_MUSEUM_RONNS_SECRET = "Clank: Boltaire Museum: Alien Code: Ronn's secret"

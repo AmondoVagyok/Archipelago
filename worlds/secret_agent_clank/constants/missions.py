@@ -1,15 +1,4 @@
-"""String constants for story mission names -- the real per-case mission
-title, as opposed to locations.py's "{case.name} Complete" placeholder used
-until every mission has a real case/address (see core/missions.py).
-
-CHAPTER_ENTRIES below is the actual mission tracker: each SACMissionEntry
-pairs a mission with its own dedicated address, CONFIRMED live to hold a
-MissionFlag byte directly (0 = LOCKED, 3 = UNLOCKED_COMPLETED) -- no
-shared bitmask involved, superseding the old MISSIONS/CaseStructure
-event_flag/event_address approach this module used to have. These
-addresses are so far only confirmed for one planet's worth of cases;
-they're only valid to read/write while that specific case/planet is
-actually loaded in-game."""
+"""String constants for story mission names -- the real per-case mission title, as opposed to locations.py's "{case.name} Complete" placeholder used until every mission has a real case/address (see core/missions.py)."""
 
 from dataclasses import dataclass
 from enum import IntFlag
@@ -23,8 +12,7 @@ from .types import CaseStructure
 
 @dataclass(frozen=True)
 class SACMissions:
-    """String constants for real story mission titles (short form only --
-    see CHAPTER_ENTRIES below for which case/address/flag each belongs to)."""
+    """String constants for real story mission titles (short form only -- see CHAPTER_ENTRIES below for which case/address/flag each belongs to)."""
 
     ESCAPE_THE_RAVINE = "Escape The Ravine"
     GET_INSIDE_THE_MUSEUM = "Get Inside the Museum"
@@ -258,12 +246,7 @@ MISSION_NAME_TO_CHAPTER_ENTRY: dict[str, SACMissionEntry] = {
 
 @dataclass(frozen=True)
 class SACMissionLocations:
-    """One named constant per story mission location -- both granularities
-    options.py's Missions can produce: an individual CHAPTER_ENTRIES
-    mission (all) and the coarser "{case} Complete" placeholder
-    (level_completion, the default) -- so rules/<case>.py can reference
-    either directly instead of a raw string. Same one-name-per-location
-    layout as constants/weapons.py's SACRatchetWeapons."""
+    """One named constant per story mission location -- both granularities options.py's Missions can produce: an individual CHAPTER_ENTRIES mission (all) and the coarser "{case} Complete" placeholder (level_completion, the default) -- so rules/<case>.py can reference either directly instead of a raw string."""
 
     BOLTAIRE_MUSEUM_ESCAPE_THE_RAVINE = "Mission: Escape the Ravine"
     BOLTAIRE_MUSEUM_GET_INSIDE_THE_MUSEUM = "Mission: Get Inside the Museum"

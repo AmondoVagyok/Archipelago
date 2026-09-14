@@ -1,25 +1,4 @@
-"""Case-transition detection plus every case-dependent accessor (Ratchet/
-Clank/Qwark state+health, Ratchet/Clank item inventories), rebound via
-CaseInventory.set_case() whenever the current case changes.
-
-ratchet_items is a core/weapons.py WeaponInventory (Ratchet's WeaponData
-struct array, rebound via set_base()); clank_items is still the generic
-core/inventory.py ItemInventory (Clank's spy gadgets, a separate and still
-unmapped address system, rebound via set_addrs()). Both expose the same
-check()/apply_all()/strip_all() shape so core/core.py treats them
-identically.
-
-Qwark has no item inventory -- his "Qwarkography" sections are fixed
-side-scrolling minigames with no weapons/gadgets to collect, unlike
-Ratchet's/Clank's sections (see items.py -- there's no QWARK_ITEM_TABLE).
-He still has his own CharacterState (state/health) though, since he's a
-separately playable character during those sections.
-
-SAC's world is Planet -> Case: FORCE_CASE_ADDRESS/CURRENT_CASE_ADDRESS (see
-core/address_maps/ps2.py, CONFIRMED live) work at the case level, not the
-planet level -- a planet transition is really just a case transition into
-that planet's first case, and moving between two cases of the *same*
-planet goes through this exact same detector."""
+"""Case-transition detection plus every case-dependent accessor (Ratchet/ Clank/Qwark state+health, Ratchet/Clank item inventories), rebound via CaseInventory.set_case() whenever the current case changes."""
 import logging
 from collections.abc import Callable
 from typing import TYPE_CHECKING
@@ -90,11 +69,7 @@ class CaseInventory:
             )
 
     def check_transition(self) -> bool:
-        """Require a settled request and a validated resident GadgetData table.
-
-        Transition notifications only invalidate bindings; old addresses must
-        never be stripped after the engine has begun unloading their module.
-        """
+        """Require a settled request and a validated resident GadgetData table."""
         current = self.pine.read_int32(CURRENT_CASE_ADDRESS)
         requested = self.pine.read_int32(FORCE_CASE_ADDRESS)
         changing = current != self._prev_case_id or requested != 0xFFFFFFFF
@@ -136,9 +111,7 @@ class CaseInventory:
         return True
 
     def force_case(self, case_id: int) -> None:
-        """Write FORCE_CASE_ADDRESS to trigger a transition straight to
-        case_id -- the same mechanism the game itself uses when moving
-        between cases/planets."""
+        """Write FORCE_CASE_ADDRESS to trigger a transition straight to case_id -- the same mechanism the game itself uses when moving between cases/planets."""
         if case_id not in CASE_ID_TO_CASE or case_id in (6, 12):
             raise ValueError(f"No independently loadable module is verified for case {case_id}")
         self.pine.write_int32(FORCE_CASE_ADDRESS, case_id)

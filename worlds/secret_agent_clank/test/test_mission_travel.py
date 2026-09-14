@@ -1,7 +1,7 @@
 import unittest
 
 from ..core.patches import jump, packed
-from ..core.patches.mission_travel import prepare_mission_travel
+from ..core.patches.mission_travel import MissionTravel
 from .test_runtime import Memory
 
 
@@ -26,25 +26,25 @@ class MissionTravelTests(unittest.TestCase):
         p.batch_write_int32([(callback+0x20, jump(change, True))])
         p.data[callback+0x28:callback+0x34] = packed([
             0xDFBF0000, 0x03E00008, 0x27BD0010])
-        symbols = {'UPDATE_ChangeToLevelOrMapIfAlreadyCompleted__Fi': f,
-                   'SCRNGALACTICMAP_SetLevelEnder__Fv': ender,
-                   'SCRNRATCHETARENA_Update__Fv': update,
-                   'SCRNRATCHETARENA_Exit__Fv': exit_screen,
-                   'Arena_GetLevelToLoad__Fv': next_level,
-                   'SetNextLevel__Fi': set_next,
-                   'UPDATE_ChangeToLevel__Fib': change}
-        changes = prepare_mission_travel(p, symbols)
+        symbols = {"UPDATE_ChangeToLevelOrMapIfAlreadyCompleted__Fi": f,
+                   "SCRNGALACTICMAP_SetLevelEnder__Fv": ender,
+                   "SCRNRATCHETARENA_Update__Fv": update,
+                   "SCRNRATCHETARENA_Exit__Fv": exit_screen,
+                   "Arena_GetLevelToLoad__Fv": next_level,
+                   "SetNextLevel__Fi": set_next,
+                   "UPDATE_ChangeToLevel__Fib": change}
+        changes = MissionTravel(p).prepare(symbols)
         self.assertEqual(len(changes), 3)
         self.assertEqual(changes[0].address, f+0x18)
         self.assertEqual(changes[0].replacement, packed([0]))
         # The direct Continue path calls the map helper then skips the
         # challenge/quit handlers. The movie callback uses the same helper.
         import struct
-        direct = struct.unpack('<4I', changes[1].replacement)
+        direct = struct.unpack("<4I", changes[1].replacement)
         self.assertEqual(direct[:2], (jump(f, True), 0))
         self.assertEqual(update+0x194+(direct[2] & 65535)*4, update+0x228)
         self.assertEqual(changes[2].replacement, packed([jump(f, True)]))
         self.assertFalse(any(c.address == change for c in changes))
         p.batch_write_int32([(f+0x18, 0xFFFFFFFF)])
         with self.assertRaises(RuntimeError):
-            prepare_mission_travel(p, symbols)
+            MissionTravel(p).prepare(symbols)

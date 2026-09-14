@@ -1,18 +1,4 @@
-"""Location tables, assembled from one file per case (locations/<case>.py)
--- each case file builds its own locations (5 dicts, grouped by which
-options.py toggle/Choice value gates them) using its own fixed id block
-(see _shared.py), so this module just imports and merges/re-derives from
-them rather than building anything itself. See each case file's own
-docstring for its 5-dict breakdown -- the two mission dicts
-(*_MISSION_LOCATIONS / *_ALL_MISSIONS_LOCATIONS) are mutually exclusive at
-generation time (regions.py picks one set based on options.py's Missions),
-but both always exist here so the client's location-name-to-id table
-covers every possible name regardless of which mode a given seed used.
-
-NOTE: location ids are assigned per-case-block now (see _shared.py) rather
-than by one shared sequential counter walked in category order -- every
-existing location's id has changed as a result of this reorg. Names are
-unchanged, only ids moved."""
+"""Location tables, assembled from one file per case (locations/<case>.py) -- each case file builds its own locations (5 dicts, grouped by which options.py toggle/Choice value gates them) using its own fixed id block (see _shared.py), so this module just imports and merges/re-derives from them rather than building anything itself."""
 from ..constants import ALIEN_CODES, KEYCARDS
 from ..constants.skillpoints import SKILL_POINTS
 from ._shared import SACLocationData

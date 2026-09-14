@@ -2,6 +2,8 @@ from typing import Any
 
 from BaseClasses import ItemClassification, Tutorial
 
+from Options import OptionError
+
 from worlds.AutoWorld import WebWorld, World
 
 from .constants import (
@@ -14,6 +16,14 @@ from .constants import (
     SACCases,
     SACOperatives,
 )
+from .constants.planets import ALL_CASES, PLANET_ACCESS_ITEM_NAME
+from .constants.weapon_progression import (
+    LEVELLED_INTERNALS,
+    PROGRESSIVE_TO_INTERNAL,
+    UNLOCK_TO_PROGRESSIVE,
+    max_level,
+)
+from .constants.weapons import GADGET_DISPLAY_TO_INTERNAL, RATCHET_WEAPON_DISPLAY_TO_INTERNAL
 from .entities import SACItem
 from .items import (
     ALL_ITEMS,
@@ -28,6 +38,7 @@ from .locations import ALL_LOCATIONS
 from .options import Infobots, SecretAgentClankOptions, sac_option_groups
 from .regions import create_regions
 from .rules import set_rules
+from .rules.vendor_access import VENDOR_ONLY_ITEM_NAMES
 from .universal_tracker import setup_options_from_slot_data
 
 try:
@@ -57,12 +68,7 @@ class SACWeb(WebWorld):
 
 
 class SecretAgentClankWorld(World):
-    """Secret Agent Clank is a 2008 PS2 action-platformer spin-off following
-    Ratchet, Clank, Qwark, and the Gadgetbots on an undercover mission
-    across the galaxy.
-    NOTE: this world is an early scaffold — planets/missions/weapons/gadgets
-    are all placeholder content and every game-memory address is unconfirmed
-    (see core/address_maps/ps2.py)."""
+    """Secret Agent Clank is a 2008 PS2 action-platformer spin-off following Ratchet, Clank, Qwark, and the Gadgetbots on an undercover mission across the galaxy."""
 
     game = "Secret Agent Clank"
     web = SACWeb()
@@ -98,9 +104,6 @@ class SecretAgentClankWorld(World):
         set_rules(self)
 
     def create_items(self) -> None:
-        from Options import OptionError
-
-        from .constants.planets import ALL_CASES, PLANET_ACCESS_ITEM_NAME
         region_names = {r.name for r in self.multiworld.get_regions(self.player)}
         active_cases = [case for case in ALL_CASES if case.name in region_names]
         candidates = [case for case in active_cases
@@ -120,13 +123,34 @@ class SecretAgentClankWorld(World):
             self.create_item(CASE_NAME_TO_INFOBOT[starting_case.name])
         )
 
+        # Infobots=cases has no planet/progressive fallback access tier --
+        # a lone starting Case File can leave the player with only that
+        # one case's own locations to find the rest from, so give a second
+        # one too. Only meaningful with >1 enabled candidate; otherwise
+        # there's nothing else to grant.
+        second_starting_case = None
+        if self.options.infobots == Infobots.option_cases:
+            second_candidates = [case for case in candidates if case.name != starting_case.name]
+            if second_candidates:
+                if self.using_ut:
+                    name = self.passthrough.get("second_starting_case")
+                    second_starting_case = next(
+                        (case for case in second_candidates if case.name == name), None,
+                    )
+                else:
+                    second_starting_case = self.random.choice(second_candidates)
+                if second_starting_case is not None:
+                    self.multiworld.push_precollected(
+                        self.create_item(CASE_NAME_TO_INFOBOT[second_starting_case.name])
+                    )
+        self.second_starting_case = second_starting_case.name if second_starting_case else None
+
         pool: list[str] = []
         pool += [mod.name for mod in self.weapon_mod_catalog]
         ratchet_enabled = SACOperatives.RATCHET in self.options.operatives.value
         clank_enabled = SACOperatives.CLANK in self.options.operatives.value
         if ratchet_enabled and self.options.progressive_wrench:
             pool += ["Progressive Wrench"] * 5
-        from .constants.weapon_progression import PROGRESSIVE_TO_INTERNAL, UNLOCK_TO_PROGRESSIVE, max_level
 
         # WEAPON_ITEM_TABLE mixes Ratchet's own weapons with the WEAPON_ORDER-
         # struct half of Clank's gadgets (see items/__init__.py's docstring) --
@@ -134,7 +158,6 @@ class SecretAgentClankWorld(World):
         # same as their cases/locations already are (see regions.py's
         # disabled_operatives()), so their weapons/gadgets can never be
         # received or function in-game.
-        from .rules.vendor_access import VENDOR_ONLY_ITEM_NAMES
         for name in WEAPON_ITEM_TABLE:
             owned_by_clank = name in GADGETS_FROM_WEAPON_TABLE
             if owned_by_clank and not clank_enabled:
@@ -164,7 +187,7 @@ class SecretAgentClankWorld(World):
         elif self.options.infobots == Infobots.option_cases:
             pool += [
                 CASE_NAME_TO_INFOBOT[case.name] for case in active_cases
-                if case.name != starting_case.name
+                if case.name != starting_case.name and case.name != self.second_starting_case
             ]
         elif self.options.infobots == Infobots.option_planets:
             active_planets = {case.planet for case in active_cases}
@@ -190,8 +213,6 @@ class SecretAgentClankWorld(World):
         # Choose once during generation so AP logic and every client agree.
         # Remove one pooled copy (also for progressive weapons) rather than
         # duplicating it; filler below replaces the freed location slot.
-        from .constants.weapon_progression import LEVELLED_INTERNALS
-        from .constants.weapons import GADGET_DISPLAY_TO_INTERNAL, RATCHET_WEAPON_DISPLAY_TO_INTERNAL
         starting_groups = (
             (SACOperatives.RATCHET, self.options.starting_weapons.value,
              [name for name, internal in RATCHET_WEAPON_DISPLAY_TO_INTERNAL.items()
@@ -206,7 +227,6 @@ class SecretAgentClankWorld(World):
                           if self.options.progressive_weapons else name for name in candidates]
             candidates = [name for name in candidates if name in pool]
             if count > len(candidates):
-                from Options import OptionError
                 raise OptionError(f"Not enough eligible {character} starting items for {count} selections")
             for name in self.random.sample(candidates, count):
                 pool.remove(name)
@@ -214,7 +234,6 @@ class SecretAgentClankWorld(World):
 
         unfilled = len(self.multiworld.get_unfilled_locations(self.player))
         if len(pool) > unfilled:
-            from Options import OptionError
             raise OptionError(
                 f"Secret Agent Clank needs {len(pool)} item locations, but only {unfilled} are enabled. "
                 f"Enable at least {len(pool) - unfilled} more optional locations (such as Missions: All, "
@@ -231,6 +250,7 @@ class SecretAgentClankWorld(World):
     def fill_slot_data(self) -> dict[str, Any]:
         return {
             "starting_case": self.starting_case,
+            "second_starting_case": self.second_starting_case,
             "infobots": self.options.infobots.value,
             "weapon_mods": self.passthrough.get("weapon_mods", False) if self.using_ut else True,
             "weapon_mod_ids": [mod.mod_id for mod in self.weapon_mod_catalog],

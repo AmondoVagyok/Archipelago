@@ -1,17 +1,7 @@
-"""Native vendor rows and the pause-screen selector.
-
-USA Boltaire Museum: g_PauseModeData + 0xC is read by
-PAUSEMODE_GetCurrentPauseScreen (0x3C0358). The init dispatch at 0x3C0CC8
-routes screen IDs 8 and 16 to SCRNVENDOR_Init; other nonzero screens are
-not vendors. RuntimeSymbols resolves the relocated data anchor.
-
-The native header and its rows were read live on case 10, screen 8. The
-purchase routine identifies the header even when the row array's offset from
-GadgetData differs. A latched purchase flag alone does not identify a purchase:
-it also covers ammo and mods, and its reset lifetime still needs testing.
-"""
+"""Native vendor rows and the pause-screen selector."""
 import struct
-from typing import TYPE_CHECKING, NamedTuple, Sequence
+from collections.abc import Sequence
+from typing import TYPE_CHECKING, NamedTuple
 
 from .address_maps.ps2 import (
     _ITEM_OFFSET_ACTIVE,
@@ -42,11 +32,7 @@ DEFAULT_WEAPON_ICON = 51
 
 
 class VendorOffer(NamedTuple):
-    """One entry in a force_roster() call -- weapon_name must be a
-    WEAPON_ORDER name (== a constants/weapons.py RATCHET_WEAPONS entry).
-    Unrecognized names are silently skipped by force_roster() rather than
-    raising, since roster data (constants/weapons.py's WEAPONS_BY_CASE) is
-    plain data that could reference a name that's since been renamed."""
+    """One entry in a force_roster() call -- weapon_name must be a WEAPON_ORDER name (== a constants/weapons.py RATCHET_WEAPONS entry)."""
     weapon_name: str
     mod_id: int = 0
     node_type: int = WEAPON_OFFER_NODE_TYPE
@@ -54,10 +40,7 @@ class VendorOffer(NamedTuple):
 
 
 class VendorItem(NamedTuple):
-    """One live row read out of the vendor's real item array (see
-    read_items() below). weapon_name is WEAPON_ORDER[weapon_id], or None
-    if weapon_id falls outside WEAPON_ORDER's range or names an unnamed
-    slot (0/1)."""
+    """One live row read out of the vendor's real item array (see read_items() below)."""
     index: int
     node_type: int
     icon: int
@@ -75,12 +58,7 @@ class VendorSnapshot(NamedTuple):
 
 
 def purchased_base_item(before: VendorSnapshot, after: VendorSnapshot) -> str | None:
-    """Require a paid, disappearing base-item offer; inventory is not evidence.
-
-    The purchase flag is latched until vendor initialization, so it need not
-    have been zero before this transaction. Multiple purchases between polls
-    or ambiguous prices are intentionally not inferred from a currency total.
-    """
+    """Require a paid, disappearing base-item offer; inventory is not evidence."""
     row = next((r for r in before.rows if r.index == before.selected_index), None)
     if row is None or row.node_type != 0 or row.weapon_name is None:
         return None
@@ -103,10 +81,7 @@ class VendorState:
         self._previous_snapshot: VendorSnapshot | None = None
 
     def set_addr(self, menu_addr: int | None, items_addr: int | None = None) -> None:
-        """Rebind to the current case's derived addresses (CaseAddresses.menu
-        and .vendor_items) -- called from core/planets.py's
-        CaseInventory.set_case() the same way every other per-case accessor
-        is rebound."""
+        """Rebind to the current case's derived addresses (CaseAddresses.menu and .vendor_items) -- called from core/planets.py's CaseInventory.set_case() the same way every other per-case accessor is rebound."""
         self.menu_addr = menu_addr
         self.items_addr = items_addr
         self.header_addr = self.price_addr = self.purchase_flag_addr = None
@@ -135,18 +110,13 @@ class VendorState:
         return [name] if name is not None else []
 
     def bind_runtime(self, symbols) -> bool:
-        """Resolve native vendor globals from a signature-checked purchase prologue.
-
-        The row array's offset from GadgetData varies between modules. The
-        purchase routine instead passes the real tICONMENU to GetCurrentItemNode.
-        No Capstone dependency or game-code writes are needed here.
-        """
+        """Resolve native vendor globals from a signature-checked purchase prologue."""
         pause = symbols.get("g_PauseModeData")
         self.set_addr(pause + 12 if pause else None)
         function = symbols.get("SCRNVENDOR_ProcessPurchase__Fv")
         if function is None:
             return False
-        words = struct.unpack('<27I', self.pine.read_bytes(function, 108))
+        words = struct.unpack("<27I", self.pine.read_bytes(function, 108))
         pairs = ((8, 24, 0x3C100000, 0x26100000),
                  (72, 88, 0x3C070000, 0x8CE30000),
                  (76, 104, 0x3C080000, 0xA1050000))
@@ -169,7 +139,7 @@ class VendorState:
         if self.header_addr is None or not self.active:
             return None
         pointer, count, _columns, selected = struct.unpack(
-            '<4I', self.pine.read_bytes(self.header_addr, 16))
+            "<4I", self.pine.read_bytes(self.header_addr, 16))
         if count == 0:
             return pointer, count, selected
         if not (0 < count <= VENDOR_ITEM_MAX_COUNT and selected < count
@@ -205,11 +175,7 @@ class VendorState:
     )
 
     def read_items(self) -> list[VendorItem]:
-        """Read only populated native rows while the bound vendor is open.
-
-        Directly supplied legacy arrays retain their padding-terminated read
-        mode for research tools. Runtime binding always uses the native count.
-        """
+        """Read only populated native rows while the bound vendor is open."""
         count = VENDOR_ITEM_MAX_COUNT
         if self.header_addr is not None:
             header = self._native_header()

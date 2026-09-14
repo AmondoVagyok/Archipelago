@@ -1,43 +1,4 @@
-"""Ratchet's weapons/tools, sourced from the single 40-slot WeaponData struct
-array core/weapons.py's WEAPON_ORDER documents.
-
-Character split: WEAPON_ORDER is one shared struct array, but its contents
-are NOT all Ratchet's:
-  - SACRatchetWeapons: Ratchet's own real, obtainable weapons/tools.
-  - constants/clank_gadgets.py's SACClankGadgets/SACClankWeapons: Clank's
-    items that live in this same struct -- see that module's docstring for
-    the gadgets(no progression)/weapons(has progression) split.
-  - SACQwarkWeapons: Qwark's own slots -- documentation only, not wired
-    into the randomizer at all.
-
-Display names: every SACRatchetWeapons/SACClankGadgets/SACClankWeapons
-WEAPON_ORDER-struct value is "Weapon:/Gadget: {Character}: {name}".
-*_DISPLAY_TO_INTERNAL below maps back to the raw WEAPON_ORDER name, used by
-core/core.py.
-
-Filtering: WEAPON_ORDER has 40 slots; excluded entirely (not real,
-obtainable, in-game content):
-  - slot 0, 1: blank / unnamed.
-  - Vacuum(20), hypershot(22), mapomatic(34), boxbreaker(36),
-    wrenchpower_firebomb/triplewave/crystallix/wildburst(28-31): unused/
-    unreachable content.
-  - sunglasses(25): TODO -- believed to be the same physical unlock as
-    constants/clank_gadgets.py's THERM_OPTIC_SHADES; not yet reconciled.
-  - fountainpen(17): believed to be the same physical unlock as
-    constants/clank_gadgets.py's Black Out Pen (GadgetData slot 17);
-    left out here to avoid double-counting.
-
-Postgame/Challenge Mode content is included: ryno (RYNO, 2,000,000 bolts),
-kicksplosion (Hot Foot 2.1 Beta, 200,000 bolts, now Clank's -- see
-clank_gadgets.py).
-
-See WEAPONS_BY_CASE/GADGETS_BY_CASE below for where each of these becomes an
-AP location.
-
-Weapon mods have their own catalog in constants/weapon_mods.py. Native
-vendor transaction flags are separate from AP ownership;
-core/weapon_mods.py handles those hooks.
-"""
+"""Ratchet's weapons/tools, sourced from the single 40-slot WeaponData struct array core/weapons.py's WEAPON_ORDER documents."""
 from dataclasses import dataclass
 
 from .clank_gadgets import SACClankGadgets, SACClankWeapons

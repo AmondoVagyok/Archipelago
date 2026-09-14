@@ -1,7 +1,4 @@
-"""Shared low-level MIPS/patch-plan primitives -- word packing, jump/branch
-encoding, and the Patch record every patches/*.py plan builder produces.
-No game-specific knowledge lives here; see patches/weapon_pickup.py and
-patches/vendor_only.py for the actual native patch plans."""
+"""Shared low-level MIPS/patch-plan primitives -- word packing, jump/branch encoding, and the Patch record every patches/*.py plan builder produces."""
 import struct
 from dataclasses import dataclass
 

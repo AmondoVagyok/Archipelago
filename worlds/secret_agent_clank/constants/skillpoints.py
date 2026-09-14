@@ -1,15 +1,4 @@
-"""String constants for skill point locations. Real names (from the
-in-game skill point list); case grouping is best-guess (see
-constants/planets.py's LOW CONFIDENCE comments) since the source list
-wasn't planet-ordered.
-
-Old convention displayed these as "{Planet}: Skill Point: {Title}" (planet,
-not case) -- now unified with every other per-case constants module onto
-CaseStructure's "{operative}: {case}: {category}: {title}" instead, so
-these read per-case (finer-grained than planet) with an operative prefix,
-same as everything else. address/flag data (CONFIRMED live) is one bit per
-skill point, packed across 0x206BF8-0x206C00 (8 per byte, 65 skill points
-total -- the last byte only uses bit 0x01)."""
+"""String constants for skill point locations."""
 
 from dataclasses import dataclass
 
@@ -19,8 +8,7 @@ from .types import CaseStructure, group_by_case
 
 @dataclass(frozen=True)
 class SACSkillPoints:
-    """String constants for skill point event titles (short form only --
-    see SKILL_POINTS below for which case/address each belongs to)."""
+    """String constants for skill point event titles (short form only -- see SKILL_POINTS below for which case/address each belongs to)."""
 
     FURIOUS_FISTS = "Furious Fists of Fury"
     SILENT_NIGHT = "Silent Night"
@@ -173,12 +161,7 @@ SKILL_POINTS_BY_CASE: dict[str, tuple[str, ...]] = group_by_case(SKILL_POINTS)
 
 @dataclass(frozen=True)
 class SACSkillPointLocations:
-    """One named constant per skill point location -- each value is the
-    exact full display name SKILL_POINTS above builds via
-    CaseStructure.__str__, spelled out here so rules/<case>.py can
-    reference an individual location directly instead of a raw string or
-    a case-name-keyed lookup -- same one-name-per-location layout as
-    constants/weapons.py's SACRatchetWeapons."""
+    """One named constant per skill point location -- each value is the exact full display name SKILL_POINTS above builds via CaseStructure.__str__, spelled out here so rules/<case>.py can reference an individual location directly instead of a raw string or a case-name-keyed lookup -- same one-name-per-location layout as constants/weapons.py's SACRatchetWeapons."""
 
     BOLTAIRE_MUSEUM_FURIOUS_FISTS = "Clank: Boltaire Museum: Skill Point: Furious Fists of Fury"
     BOLTAIRE_MUSEUM_SILENT_NIGHT = "Clank: Boltaire Museum: Skill Point: Silent Night"

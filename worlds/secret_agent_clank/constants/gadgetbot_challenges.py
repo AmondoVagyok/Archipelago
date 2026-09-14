@@ -1,14 +1,4 @@
-"""String constants for Gadgetbot Challenge locations. Not every case has
-Gadgetbot Challenges -- only Gadgetbots-operative cases do, and only some
-of those have a confirmed address so far (see GADGETBOT_CHALLENGES below).
-
-All of a case's challenges live in ONE shared, irregularly-packed struct
-across the whole game -- NOT a fixed-stride per-case record (confirmed:
-the byte gaps between Rooftop Deathtrap's, Inside the A-Eye's, and
-Bulkhead Lock's completed-flag runs aren't uniform) -- so addresses are
-recorded individually per entry rather than computed from a base+offset
-formula. Each is a plain 0/1 byte, not a shared bitmask -- event_flag is
-always 0x01 (bit 0) for these."""
+"""String constants for Gadgetbot Challenge locations."""
 
 from dataclasses import dataclass
 
@@ -18,9 +8,7 @@ from .types import CaseStructure, group_by_case
 
 @dataclass(frozen=True)
 class SACGadgetbotChallenges:
-    """String constants for Gadgetbot Challenge event titles (short form
-    only -- see GADGETBOT_CHALLENGES below for which case/address each
-    belongs to)."""
+    """String constants for Gadgetbot Challenge event titles (short form only -- see GADGETBOT_CHALLENGES below for which case/address each belongs to)."""
 
     RESCUE_CLANK = "Rescue Clank"
     WORKING_DOWN = "Working Down"
@@ -80,11 +68,7 @@ GADGETBOT_CHALLENGES_BY_CASE: dict[str, tuple[str, ...]] = group_by_case(GADGETB
 
 @dataclass(frozen=True)
 class SACGadgetbotChallengeLocations:
-    """One named constant per Gadgetbot Challenge location -- each value is
-    the exact full display name GADGETBOT_CHALLENGES above builds via
-    CaseStructure.__str__, spelled out here so rules/<case>.py can
-    reference an individual location directly -- same one-name-per-location
-    layout as constants/weapons.py's SACRatchetWeapons."""
+    """One named constant per Gadgetbot Challenge location -- each value is the exact full display name GADGETBOT_CHALLENGES above builds via CaseStructure.__str__, spelled out here so rules/<case>.py can reference an individual location directly -- same one-name-per-location layout as constants/weapons.py's SACRatchetWeapons."""
 
     ROOFTOP_DEATHTRAP_RESCUE_CLANK = "Gadgetbots: Rooftop Deathtrap: Gadgetbot Challenge: Rescue Clank"
     ROOFTOP_DEATHTRAP_WORKING_DOWN = "Gadgetbots: Rooftop Deathtrap: Gadgetbot Challenge: Working Down"

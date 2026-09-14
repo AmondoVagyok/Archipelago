@@ -2,6 +2,7 @@ import struct
 import unittest
 from unittest.mock import Mock
 
+from ..constants.clank_gadgets import SACClankGadgets, SACGadgetPickupLocations
 from ..constants.planets import CASE_ID_TO_CASE
 from ..core.address_maps import CURRENT_CASE_ADDRESS, FORCE_CASE_ADDRESS
 from ..core.core import Core
@@ -21,7 +22,7 @@ class Memory:
         return bytes(self.data[address:address + size])
 
     def read_int32(self, address):
-        return struct.unpack_from('<I', self.data, address)[0]
+        return struct.unpack_from("<I", self.data, address)[0]
 
     def read_int8(self, address):
         return self.data[address]
@@ -35,7 +36,7 @@ class Memory:
     def batch_write_int32(self, writes):
         for address, value in writes:
             self.writes.append((address, value))
-            struct.pack_into('<I', self.data, address, value)
+            struct.pack_into("<I", self.data, address, value)
 
     def batch_write_int8(self, writes):
         for address, value in writes:
@@ -47,31 +48,31 @@ class RuntimeTests(unittest.TestCase):
     def test_blackout_pen_is_one_item_and_one_location(self):
         from ..items import ALL_ITEMS
         from ..locations import ALL_LOCATIONS
-        self.assertIn('Black Out Pen', ALL_ITEMS)
-        self.assertNotIn('fountainpen', ALL_ITEMS)
-        self.assertIn('Black Out Pen (Pickup)', ALL_LOCATIONS)
-        self.assertNotIn('fountainpen', ALL_LOCATIONS)
+        self.assertIn(SACClankGadgets.BLACK_OUT_PEN, ALL_ITEMS)
+        self.assertNotIn("fountainpen", ALL_ITEMS)
+        self.assertIn(SACGadgetPickupLocations.BOLTAIRE_MUSEUM, ALL_LOCATIONS)
+        self.assertNotIn("fountainpen", ALL_LOCATIONS)
 
     def test_blackout_pen_receipt_writes_shared_slot_without_a_check(self):
         memory = Memory()
         core = Core(memory)
         core.case.ratchet_items.set_base(0x100000)
-        core.apply_inventory(ratchet={}, clank={'Black Out Pen': True})
+        core.apply_inventory(ratchet={}, clank={SACClankGadgets.BLACK_OUT_PEN: True})
         core._reapply_all_inventories()
         self.assertEqual(memory.read_int32(0x100000 + 17 * 0x74 + 0x70), 1)
         self.assertEqual(core.case.ratchet_items.check(), [])
 
     def test_symbol_uses_following_value_not_previous_export(self):
         data = bytearray(512)
-        data[128:134] = b'target'
-        struct.pack_into('<IIII', data, 0, 0x555555, 0x1021234, 0x600080, 0x123456)
-        self.assertEqual(RuntimeSymbols.parse(data, 0x600000), {'target': 0x123456})
+        data[128:134] = b"target"
+        struct.pack_into("<IIII", data, 0, 0x555555, 0x1021234, 0x600080, 0x123456)
+        self.assertEqual(RuntimeSymbols.parse(data, 0x600000), {"target": 0x123456})
 
     def test_conflicting_symbols_are_rejected(self):
         data = bytearray(512)
-        data[128:134] = b'target'
-        struct.pack_into('<III', data, 0, 0x1021234, 0x600080, 0x123456)
-        struct.pack_into('<III', data, 12, 0x1031234, 0x600080, 0x123460)
+        data[128:134] = b"target"
+        struct.pack_into("<III", data, 0, 0x1021234, 0x600080, 0x123456)
+        struct.pack_into("<III", data, 12, 0x1031234, 0x600080, 0x123460)
         self.assertEqual(RuntimeSymbols.parse(data, 0x600000), {})
 
     def test_only_vendor_screens_are_active(self):
@@ -79,7 +80,7 @@ class RuntimeTests(unittest.TestCase):
         vendor = VendorState(memory)
         vendor.set_addr(100)
         for screen in (0, 1, 7, 8, 9, 16, 17, 0x10008):
-            struct.pack_into('<I', memory.data, 100, screen)
+            struct.pack_into("<I", memory.data, 100, screen)
             self.assertEqual(vendor.active, screen in (8, 16))
 
     def test_ap_grant_never_reports_a_pickup(self):
@@ -87,7 +88,7 @@ class RuntimeTests(unittest.TestCase):
         weapons = WeaponInventory(memory)
         weapons.set_base(0x100000)
         weapons.sync()
-        weapons.apply_all({'fountainpen': True})
+        weapons.apply_all({"fountainpen": True})
         self.assertEqual(weapons.check(), [])
         self.assertEqual(memory.writes, [(0x100000 + 17 * 0x74 + 0x70, 1)])
 
@@ -95,11 +96,11 @@ class RuntimeTests(unittest.TestCase):
         memory = Memory()
         weapons = WeaponInventory(memory)
         weapons.set_base(0x100000)
-        weapons.apply_all({'fountainpen': False})
+        weapons.apply_all({"fountainpen": False})
         address = 0x100000 + 17 * 0x74 + 0x70
-        struct.pack_into('<I', memory.data, address, 1)
-        self.assertEqual(weapons.check(), ['fountainpen'])
-        weapons.apply_all({'fountainpen': False})
+        struct.pack_into("<I", memory.data, address, 1)
+        self.assertEqual(weapons.check(), ["fountainpen"])
+        weapons.apply_all({"fountainpen": False})
         self.assertEqual(memory.read_int32(address), 0)
 
     def test_transition_unbinds_without_writing_old_overlay(self):
@@ -109,8 +110,8 @@ class RuntimeTests(unittest.TestCase):
         case._prev_case_id = 1
         case.ratchet_items.set_base(0x100000)
         case.on_transition_start = Mock()
-        struct.pack_into('<I', memory.data, CURRENT_CASE_ADDRESS, 2)
-        struct.pack_into('<I', memory.data, FORCE_CASE_ADDRESS, 0xFFFFFFFF)
+        struct.pack_into("<I", memory.data, CURRENT_CASE_ADDRESS, 2)
+        struct.pack_into("<I", memory.data, FORCE_CASE_ADDRESS, 0xFFFFFFFF)
         self.assertFalse(case.check_transition())
         self.assertFalse(case.is_ready)
         self.assertFalse(case.ratchet_items.weapons)
@@ -122,7 +123,7 @@ class RuntimeTests(unittest.TestCase):
         core = Core(memory)
         core.case.is_ready = True
         core.send_location = Mock()
-        core.apply_inventory(ratchet={'blaster': True}, clank={})
+        core.apply_inventory(ratchet={"blaster": True}, clank={})
         self.assertEqual(memory.writes, [])
         core.send_location.assert_not_called()
 

@@ -47,7 +47,5 @@ class DeathLinkMixin:
             self._kill_player_sync()
 
     def _kill_player_sync(self) -> None:
-        """TODO: no confirmed death-state value exists yet (see
-        core/player.py's CharacterState.DEAD_STATE_VALUES) — zeroing health
-        is the best available approximation until one is found live."""
+        """TODO: no confirmed death-state value exists yet (see core/player.py's CharacterState.DEAD_STATE_VALUES) — zeroing health is the best available approximation until one is found live."""
         self._wiring.case.ratchet.health = 0.0

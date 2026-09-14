@@ -1,6 +1,11 @@
 """Install native location hooks before each loaded module starts gameplay."""
+from ..constants.native_modules import CASE_MODULES
+from .main_menu import is_main_menu
 from .patches import PICKUP_LOCATIONS, VENDOR_LOCATIONS
 from .patches.loader_gate import LoaderGate
+from .patches.mission_travel import MissionTravel
+from .patches.starting_case import StartingCase
+from .patches.titan_vendor import TitanOffers, TitanVendor
 from .symbols import RuntimeSymbols
 
 
@@ -15,19 +20,13 @@ class NativeRuntime:
         self.progression = None
         self.weapon_mods = None
         self.vendor_modules = None
-        from .patches.starting_case import StartingCase
         self.starting_case = StartingCase(pine, log)
 
     def configure_vendors(self, case_names):
-        from ..constants.native_modules import CASE_MODULES
         self.vendor_modules = {CASE_MODULES[name] for name in case_names}
 
     def service(self, checked, entitlements):
-        """Return True only when gameplay may use this module's installed hooks.
-
-        A connection to an already loaded level requires one in-game reset.
-        Polling never attempts to repair code while that code can be executing.
-        """
+        """Return True only when gameplay may use this module's installed hooks."""
         p = self.pine
         try:
             if self.starting_case.service():
@@ -41,8 +40,6 @@ class NativeRuntime:
                         or p.read_int32(0x206324) != 0xFFFFFFFF
                         or p.read_int32(0x206338) != 3):
                     return False
-                # Keep Core's location polling suspended until the incoming
-                # module and its pre-object-init hook have actually started.
                 if (p.read_int32(0x206328) != self.hooks.module
                         or (self.hooks.entitlement_table is not None
                             and not p.read_int8(self.hooks.entitlement_table + 40))):
@@ -52,8 +49,6 @@ class NativeRuntime:
                 self.gate.arm()
             target = self.gate.held_module()
             if target == 0:
-                # Returning to title loads a separate DLL. It has no gameplay
-                # hooks; release it rather than leaving the loader held.
                 self.hooks.installed = False
                 self.awaiting_start = False
                 self.reset_notice = False
@@ -69,18 +64,15 @@ class NativeRuntime:
                                    entitlements=entitlements)
                 if self.wrench is not None:
                     self.hooks.patches.extend(self.wrench.prepare(symbols, target))
-                from .patches.mission_travel import prepare_mission_travel
-                self.hooks.patches.extend(prepare_mission_travel(p, symbols))
+                self.hooks.patches.extend(MissionTravel(p).prepare(symbols))
                 if self.weapon_mods is not None:
                     self.hooks.patches.extend(self.weapon_mods.prepare(
                         symbols, self.hooks, target, checked, vendor_enabled))
                 if self.progression is not None:
                     if self.progression.ng_plus and vendor_enabled:
-                        from .patches.titan_vendor import prepare_titan_vendor
-                        self.hooks.patches.extend(prepare_titan_vendor(p, symbols, self.hooks, checked))
+                        self.hooks.patches.extend(TitanVendor(p).prepare(symbols, self.hooks, checked))
                     elif vendor_enabled:
-                        from .patches.titan_vendor import prepare_disable_titan_offers
-                        self.hooks.patches.extend(prepare_disable_titan_offers(p, symbols))
+                        self.hooks.patches.extend(TitanOffers(p).prepare(symbols))
                     self.hooks.patches.extend(self.progression.prepare(
                         symbols, self.hooks, target, vendor_enabled=vendor_enabled))
                 self.hooks.install_at_loader_gate(self.gate)
@@ -88,9 +80,8 @@ class NativeRuntime:
                 self.gate.release()
                 self.awaiting_start = True
                 self.reset_notice = False
-                self.log(f'[SAC] Hooks loaded for {target}')
+                self.log(f"[SAC] Hooks loaded for {target}")
                 return False
-            from .main_menu import is_main_menu
             if is_main_menu(p):
                 self.awaiting_start = False
                 self.reset_notice = False
@@ -106,11 +97,10 @@ class NativeRuntime:
                 self.hooks.sync_entitlements(entitlements)
                 return True
             if not self.reset_notice:
-                self.log('[SAC] Native checks are mandatory. Reset the level in-game once to initialize AP; do not load a savestate.')
+                self.log("[SAC] Native checks are mandatory. Reset the level in-game once to initialize AP; do not load a savestate.")
                 self.reset_notice = True
             return False
         except Exception:
-            # Do not leave a relocated module parked after a validation error.
             self.close()
             raise
 

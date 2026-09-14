@@ -1,6 +1,4 @@
-"""Return shape shared by patches/weapon_pickup.py and patches/vendor_only.py
--- patches/hooks.py's LocationHooks.prepare() picks whichever builder
-applies, then copies this straight onto its own instance attributes."""
+"""Return shape shared by patches/weapon_pickup.py and patches/vendor_only.py -- patches/hooks.py's LocationHooks.prepare() picks whichever builder applies, then copies this straight onto its own instance attributes."""
 from dataclasses import dataclass, field
 
 from .asm import Patch

@@ -1,14 +1,16 @@
 from rule_builder.rules import CanReachLocation, CanReachRegion, False_, Has, True_
+
 from worlds.generic.Rules import add_rule
 
-from ..constants.planets import SACCases
 from ..constants.clank_gadgets import SACClankGadgets
-from ..constants.weapons import (
-    RATCHET_WEAPON_DISPLAY_TO_INTERNAL, GADGET_DISPLAY_TO_INTERNAL,
-)
+from ..constants.planets import SACCases
 from ..constants.weapon_progression import TITAN_LOCATIONS
+from ..constants.weapons import (
+    GADGET_DISPLAY_TO_INTERNAL,
+    RATCHET_WEAPON_DISPLAY_TO_INTERNAL,
+)
 from ..core.patches import VENDOR_LOCATIONS
-from .rule_helpers import HasGadget, HasWeapon
+from .rule_helpers import HasWeapon
 
 VENDOR_ONLY_ITEM_NAMES: frozenset[str] = frozenset(
     name for name, internal in {**RATCHET_WEAPON_DISPLAY_TO_INTERNAL, **GADGET_DISPLAY_TO_INTERNAL}.items()
@@ -92,7 +94,7 @@ def set_vendor_rules(world):
             continue
         original_name = original_names.get(internal)
         if original_name is None:
-            raise ValueError(f'Missing original location mapping for Titan weapon: {internal}')
+            raise ValueError(f"Missing original location mapping for Titan weapon: {internal}")
         # Reachability models the ability to complete the original check.
         # Do not require receiving its AP item: that reward may belong to
         # another player, and weapon ownership is independent of purchases.

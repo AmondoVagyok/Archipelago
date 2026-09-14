@@ -39,11 +39,7 @@ class TestGenerationCharacterItems(SecretAgentClankTestBase):
 
 
 class TestGenerationCharacterDisabled(SecretAgentClankTestBase):
-    """Smoke test: an operative disabled entirely via Operatives.
-
-    ItemDict (Operatives) culls 0-valued entries and does NOT merge with
-    the option's default -- the given mapping IS the whole value, so every
-    operative that should stay enabled must be listed explicitly at 1."""
+    """Smoke test: an operative disabled entirely via Operatives."""
     options = {
         "skill_points": True,
         "infobots": "character_unlocks",
@@ -71,20 +67,17 @@ class TestGenerationEverythingOn(SecretAgentClankTestBase):
 
 
 class TestGenerationWithKeycards(SecretAgentClankTestBase):
-    """Smoke test: All Keycards on (goal stays default -- Chalice of Power
-    isn't generatable yet, see TestGoalNotYetImplemented)."""
+    """Smoke test: All Keycards on (goal stays default -- Chalice of Power isn't generatable yet, see TestGoalNotYetImplemented)."""
     options = {"all_keycards": True}
 
 
 class TestGenerationWithAlienCodes(SecretAgentClankTestBase):
-    """Smoke test: All Alien Codes on (goal stays default -- Alien Codes
-    isn't generatable yet, see TestGoalNotYetImplemented)."""
+    """Smoke test: All Alien Codes on (goal stays default -- Alien Codes isn't generatable yet, see TestGoalNotYetImplemented)."""
     options = {"all_alien_codes": True}
 
 
 class TestGoalCharacterMismatch(unittest.TestCase):
-    """Goal options requiring a disabled character must raise OptionError
-    instead of silently generating an unbeatable seed."""
+    """Goal options requiring a disabled character must raise OptionError instead of silently generating an unbeatable seed."""
 
     def test_defeat_klunk_requires_clank(self):
         with self.assertRaises(OptionError):

@@ -1,7 +1,4 @@
-"""USA case/module mapping verified from the native mission table.
-
-Shared DLLs need vendor hooks if either of their cases has a vendor.
-"""
+"""USA case/module mapping verified from the native mission table."""
 CASE_MODULES = {'Boltaire Museum': 1,
  'Boltaire Gem Wing': 2,
  'Max-Security Cells': 3,

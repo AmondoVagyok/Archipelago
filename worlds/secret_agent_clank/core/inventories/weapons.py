@@ -1,43 +1,4 @@
-"""Ratchet's WeaponData table -- the single 40-slot struct array that backs
-every weapon/tool/wrench-ability Ratchet can carry during SAC's Ratchet
-action sections (see constants/weapons.py's RATCHET_WEAPONS docstring for
-the separate, still-placeholder vendor-order list this does NOT replace).
-
-Reverse-engineered via Ghidra/PINE (see docs/ for the write-up): each
-struct is WEAPON_STRUCT_SIZE (0x74/116) bytes, back to back, 40 entries per
-array. WEAPON_ORDER below is that struct array's own slot order (index ==
-slot id), pulled straight from the table's name pointers -- slot 0 is
-always blank (no name pointer, category 0) and slot 1 is a real weapon
-category (2) with no name pointer ever observed (unknown/unnamed), so both
-are None. Every other slot's string is the exact internal name the game
-itself uses (read live out of the name-pointer strings), not a made-up
-display name.
-
-Planet/case model
-------------------
-Like every other per-case address in core/address_maps/ps2.py, the array's
-base address moves every time a different case is loaded (SAC streams each
-case's Ratchet-gameplay code+data in as its own SN-Systems SNDLL module --
-see docs/), while the struct's internal field offsets stay fixed. So this
-module never hardcodes an address: set_base() rebinds every weapon to the
-newly-loaded case's array_base (or unbinds entirely when array_base is
-None), the same way core/planets.py's CaseInventory.set_case() rebinds
-everything else -- see core/address_maps/ps2.py's CaseAddresses.weapon_array
-and core/planets.py's set_case() call into WeaponInventory.set_base().
-
-Batched I/O
------------
-check()/apply_all()/strip_all() are the drop-in replacement for
-core/inventory.py's ItemInventory (same method names/signatures, so
-core/core.py's existing call sites don't change) but read/write every bound
-weapon's owned flag in ONE pine.batch_read_int32()/batch_write_int32() call
-instead of looping one weapon at a time -- see rac_size_matters/core/
-weapons.py's WeaponInventory.check() for the pattern this mirrors.
-read_ammo()/write_ammo() are the same batched shape, exposed separately so
-a future ammo-sync client (mirroring rac_size_matters/client/ammo_link.py)
-has a ready-made batched read/write pair to build on, without this module
-needing to know anything about the network side.
-"""
+"""Ratchet's WeaponData table -- the single 40-slot struct array that backs every weapon/tool/wrench-ability Ratchet can carry during SAC's Ratchet action sections (see constants/weapons.py's RATCHET_WEAPONS docstring for the separate, still-placeholder vendor-order list this does NOT replace)."""
 from __future__ import annotations
 
 from enum import IntEnum
@@ -132,48 +93,39 @@ WeaponSlot = IntEnum(
 
 
 class WeaponInt32Field:
-    """Descriptor for a 4-byte int field at a fixed offset within a
-    WeaponAddresses instance's struct entry. Every read/write here is a
-    single, un-batched pine call -- use WeaponInventory's batched
-    check()/apply_all()/strip_all()/read_ammo()/write_ammo() instead of this
-    for anything touching more than one weapon at a time."""
+    """Descriptor for a 4-byte int field at a fixed offset within a WeaponAddresses instance's struct entry."""
     __slots__ = ("offset",)
 
     def __init__(self, offset: int) -> None:
         self.offset = offset
 
-    def __get__(self, instance: "WeaponAddresses | None", owner: object = None) -> int:
+    def __get__(self, instance: WeaponAddresses | None, owner: object = None) -> int:
         if instance is None:
             return self  # type: ignore[return-value]
         return instance.pine.read_int32(instance.base + self.offset)
 
-    def __set__(self, instance: "WeaponAddresses", value: int) -> None:
+    def __set__(self, instance: WeaponAddresses, value: int) -> None:
         instance.pine.write_int32(instance.base + self.offset, value)
 
 
 class WeaponAddresses:
-    """One weapon's live struct entry. base is that weapon's own
-    array_base + slot_index * WEAPON_STRUCT_SIZE -- see build_weapons()."""
+    """One weapon's live struct entry."""
 
     ammo  = WeaponInt32Field(_OFFSET_CURRENT_AMMO)
     owned = WeaponInt32Field(_OFFSET_OWNED_FLAG)
 
-    def __init__(self, base: int, pine: "Pine") -> None:
+    def __init__(self, base: int, pine: Pine) -> None:
         self.base = base
         self.pine = pine
 
     def mod_installed(self, slot: int) -> bool:
-        """True if mod slot `slot` (0/1/2) is installed on this weapon --
-        see _OFFSET_MOD_SLOTS above."""
+        """True if mod slot `slot` (0/1/2) is installed on this weapon -- see _OFFSET_MOD_SLOTS above."""
         if not (0 <= slot < MOD_SLOT_COUNT):
             raise ValueError(f"mod slot must be 0-{MOD_SLOT_COUNT - 1}, got {slot}")
         return bool(self.pine.read_int8(self.base + _OFFSET_MOD_SLOTS + slot))
 
     def grant_mod(self, slot: int) -> None:
-        """Directly write the installed flag for mod slot `slot` (0/1/2) --
-        the same write SCRNMODVENDOR's purchase flow performs after
-        deducting bolts (see _OFFSET_MOD_SLOTS docstring), minus the
-        purchase. No bolts are spent."""
+        """Directly write the installed flag for mod slot `slot` (0/1/2) -- the same write SCRNMODVENDOR's purchase flow performs after deducting bolts (see _OFFSET_MOD_SLOTS docstring), minus the purchase."""
         if not (0 <= slot < MOD_SLOT_COUNT):
             raise ValueError(f"mod slot must be 0-{MOD_SLOT_COUNT - 1}, got {slot}")
         self.pine.write_int8(self.base + _OFFSET_MOD_SLOTS + slot, 1)
@@ -182,11 +134,8 @@ class WeaponAddresses:
         return f"WeaponAddresses(base=0x{self.base:X})"
 
 
-def build_weapons(array_base: int | None, pine: "Pine") -> dict[str, WeaponAddresses]:
-    """Bind every named slot in WEAPON_ORDER to its live struct entry.
-    Returns {} when array_base is None (no case loaded / unrecognized case)
-    -- mirrors rac_size_matters/core/weapons.py's build_weapons() exactly,
-    including skipping every None slot rather than creating all 40."""
+def build_weapons(array_base: int | None, pine: Pine) -> dict[str, WeaponAddresses]:
+    """Bind every named slot in WEAPON_ORDER to its live struct entry."""
     if array_base is None:
         return {}
     weapons: dict[str, WeaponAddresses] = {}
@@ -197,21 +146,9 @@ def build_weapons(array_base: int | None, pine: "Pine") -> dict[str, WeaponAddre
 
 
 class WeaponInventory:
-    """Drop-in replacement for core/inventory.py's ItemInventory, scoped to
-    Ratchet's WeaponData-table weapons -- same check()/apply_all()/
-    strip_all() method names and signatures as ItemInventory, so
-    core/core.py and core/planets.py don't need any call-site changes
-    beyond constructing this instead and calling set_base() instead of
-    set_addrs(). The difference is entirely internal: every weapon lives in
-    one contiguous struct array, so all I/O below is batched across every
-    bound weapon in a single pine call instead of looping one address at a
-    time.
+    """Drop-in replacement for core/inventory.py's ItemInventory, scoped to Ratchet's WeaponData-table weapons -- same check()/apply_all()/ strip_all() method names and signatures as ItemInventory, so core/core.py and core/planets.py don't need any call-site changes beyond constructing this instead and calling set_base() instead of set_addrs()."""
 
-    Planet/case-dependent: call set_base(array_base) whenever the loaded
-    case changes (see core/planets.py's CaseInventory.set_case(), which
-    passes CaseAddresses.weapon_array)."""
-
-    def __init__(self, pine: "Pine") -> None:
+    def __init__(self, pine: Pine) -> None:
         self.pine = pine
         self.weapons: dict[str, WeaponAddresses] = {}
         # Last-known owned state (0/1), used by check() to detect 0->1
@@ -222,8 +159,7 @@ class WeaponInventory:
         self._raw_mods: dict[str, list[int]] = {}
 
     def set_base(self, array_base: int | None) -> None:
-        """Rebind every weapon to the newly-loaded case's array base, or
-        unbind entirely when array_base is None (unrecognized/no case)."""
+        """Rebind every weapon to the newly-loaded case's array base, or unbind entirely when array_base is None (unrecognized/no case)."""
         self.weapons = build_weapons(array_base, self.pine)
         self._raw_owned = dict.fromkeys(self.weapons, 0)
         self._raw_mods = {name: [0] * MOD_SLOT_COUNT for name in self.weapons}
@@ -247,11 +183,7 @@ class WeaponInventory:
     # -- Batched unlock tracking (ItemInventory-compatible) -----------------
 
     def strip_all(self) -> None:
-        """Batched zero of every bound weapon's owned flag. Called on death
-        and at the start of every case transition (see core/core.py's
-        Core._strip_all_inventories()) so a stale bit from the previous
-        case's memory is never shown before apply_all() re-grants true AP
-        ownership once the new case is ready."""
+        """Batched zero of every bound weapon's owned flag."""
         if not self.weapons:
             return
         ops = [(w.base + _OFFSET_OWNED_FLAG, 0) for w in self.weapons.values()]
@@ -276,12 +208,7 @@ class WeaponInventory:
             self._raw_owned = {name: int(bool(value)) for name, value in zip(self.weapons, values)}
 
     def check(self) -> list[str]:
-        """Batched read of every bound weapon's owned flag, diffed against
-        the last-known state. Returns weapon names that flipped 0 -> 1
-        since the last call (i.e. picked up in-game this tick) -- same
-        return shape as ItemInventory.check(), so core/core.py's
-        `for name in self.case.ratchet_items.check(): self.send_location(name)`
-        keeps working unchanged."""
+        """Batched read of every bound weapon's owned flag, diffed against the last-known state."""
         if not self.weapons:
             return []
         names = list(self.weapons)
@@ -296,14 +223,7 @@ class WeaponInventory:
         return changed
 
     def check_mods(self) -> list[tuple[str, int]]:
-        """Batched read of every bound weapon's 3 mod-slot flags
-        (_OFFSET_MOD_SLOTS), diffed against last-known state. Returns
-        (weapon_name, slot) pairs that flipped 0 -> 1 since the last call
-        -- i.e. a weapon mod purchased/installed in-game this tick. Mirrors
-        check()'s shape/semantics but one level more granular (per mod slot
-        instead of per weapon). Uses individual reads (not yet a single
-        batch call across all 3*N bytes) since this is new/lightly-used
-        compared to the hot owned-flag path."""
+        """Batched read of every bound weapon's 3 mod-slot flags (_OFFSET_MOD_SLOTS), diffed against last-known state."""
         if not self.weapons:
             return []
         changed: list[tuple[str, int]] = []
@@ -320,9 +240,7 @@ class WeaponInventory:
     # ammo-count restore/consumable handling if that's ever added) ----------
 
     def read_ammo(self) -> dict[str, int]:
-        """Batched read of every currently-OWNED weapon's ammo. Owned-only
-        mirrors rac_size_matters/client/ammo_link.py's AmmoLinkMixin, which
-        only mirrors ammo for weapons the player actually has."""
+        """Batched read of every currently-OWNED weapon's ammo."""
         owned_names = [name for name in self.weapons if self._raw_owned.get(name)]
         if not owned_names:
             return {}
@@ -331,11 +249,7 @@ class WeaponInventory:
         return dict(zip(owned_names, values))
 
     def write_ammo(self, ammo: dict[str, int]) -> None:
-        """Batched write of ammo values, restricted to weapons that are both
-        currently bound (this case's array) and currently owned -- silently
-        drops anything else rather than raising, since an incoming
-        cross-player ammo-sync payload can legitimately reference a weapon
-        this player hasn't picked up yet on this case."""
+        """Batched write of ammo values, restricted to weapons that are both currently bound (this case's array) and currently owned -- silently drops anything else rather than raising, since an incoming cross-player ammo-sync payload can legitimately reference a weapon this player hasn't picked up yet on this case."""
         ops = [
             (self.weapons[name].base + _OFFSET_CURRENT_AMMO, value)
             for name, value in ammo.items()

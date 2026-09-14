@@ -1,11 +1,4 @@
-"""Generic bit-flag-tracked-location inventory, shared by every Inventory
-class whose locations are constants/types.py's CaseStructure entries with a
-per-location completion bit (missions, cutscenes, gadgetbot/special/ratchet
-challenges, skill points) -- they used to each hand-roll the same
-get/sync/check logic against their own name->address(+offset) dicts (see
-git history), which is now just this one class parameterized by which
-CaseStructure tuple it tracks. See core/missions.py etc. for the thin
-per-category subclasses."""
+"""Generic bit-flag-tracked-location inventory, shared by every Inventory class whose locations are constants/types.py's CaseStructure entries with a per-location completion bit (missions, cutscenes, gadgetbot/special/ratchet challenges, skill points) -- they used to each hand-roll the same get/sync/check logic against their own name->address(+offset) dicts (see git history), which is now just this one class parameterized by which CaseStructure tuple it tracks."""
 from typing import TYPE_CHECKING
 
 from ...constants.types import CaseStructure
@@ -15,16 +8,7 @@ if TYPE_CHECKING:
 
 
 def read_flag(pine: "Pine", entry: CaseStructure) -> bool:
-    """Read one CaseStructure's completion bit directly -- entry.event_address
-    == 0 means "not confirmed live yet", so that always reads as incomplete
-    rather than actually reading address 0. Standalone (not a method) so any
-    Inventory can read another's CaseStructure entries without needing a
-    reference to that Inventory's instance -- every Inventory shares the
-    same pine. NOTE: core/missions.py's MissionInventory no longer uses this
-    -- story missions are tracked via constants/missions.py's CHAPTER_ENTRIES
-    (each mission has its own dedicated address) instead of a shared bitmask
-    -- this is still used by cutscenes/gadgetbot/special/ratchet
-    challenges/skill points."""
+    """Read one CaseStructure's completion bit directly -- entry.event_address == 0 means "not confirmed live yet", so that always reads as incomplete rather than actually reading address 0."""
     if not entry.event_address:
         return False
     return entry.check_flag(pine.read_int8(entry.event_address))
@@ -51,13 +35,7 @@ class CaseEventInventory:
                 self.completed[name] = True
 
     def check(self) -> list[str]:
-        """Returns full display names that flipped 0 -> 1 since the last
-        call -- including ones already returned by an earlier check() but
-        never confirm()ed, so a name AP's client rejected (see
-        client/pine_mixin.py's _append_location_by_name) is retried
-        instead of silently lost. Only an entry that's still incomplete is
-        allowed to fall back to False here; a completed one stays
-        completed until confirm() says otherwise."""
+        """Returns full display names that flipped 0 -> 1 since the last call -- including ones already returned by an earlier check() but never confirm()ed, so a name AP's client rejected (see client/pine_mixin.py's _append_location_by_name) is retried instead of silently lost."""
         newly: list[str] = []
         for entry in self.entries:
             name = str(entry)
@@ -70,11 +48,7 @@ class CaseEventInventory:
         return newly
 
     def confirm(self, name: str) -> None:
-        """Mark a name check() returned as successfully delivered to AP --
-        only after this does check() stop re-including it. Call only once
-        Core.send_location(name) (core/core.py) has actually returned
-        True; otherwise a transient rejection (e.g. server_locations not
-        populated yet right after connecting) would drop it forever."""
+        """Mark a name check() returned as successfully delivered to AP -- only after this does check() stop re-including it."""
         self.completed[name] = True
 
     def __repr__(self) -> str:

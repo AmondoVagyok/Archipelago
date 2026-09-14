@@ -1,10 +1,4 @@
-"""Native keycard flag 0xAA: red bit 0, blue bit 1, yellow bit 2.
-
-The challenge descriptor associates Vaultbreakers (text ID 4610) with
-module 20, Inside the A-Eye. Card colors are confirmed by the native
-Keycard_GiveToPlayer color/message table (text IDs 887, 888, 889).
-The source areas for red and yellow were supplied by the user.
-"""
+"""Native keycard flag 0xAA: red bit 0, blue bit 1, yellow bit 2."""
 from dataclasses import dataclass
 
 from .planets import SACCases

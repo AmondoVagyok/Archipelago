@@ -18,8 +18,7 @@ class SACCommandProcessor(ClientCommandProcessor):
     ctx: "SACContext"
 
     def _match_case(self, case: str) -> "Case | None":
-        """Case-insensitive substring match against every known case name.
-        Logs and returns None on no match / an ambiguous match."""
+        """Case-insensitive substring match against every known case name."""
         matches = [c for c in ALL_CASES if case.lower() in c.name.lower()]
         if not matches:
             logger.warning(f"[SAC] No case matches {case!r}.")
@@ -50,10 +49,7 @@ class SACCommandProcessor(ClientCommandProcessor):
         return True
 
     def _cmd_sac_info(self) -> bool:
-        """Print the current slot options, then every active state's repr
-        -- read-only diagnostics only (user: "remove all the debug give
-        items to player from the command processor and instead just have
-        a print for the states"); no command here writes game memory."""
+        """Print the current slot options, then every active state's repr -- read-only diagnostics only (user: "remove all the debug give items to player from the command processor and instead just have a print for the states"); no command here writes game memory."""
         ctx = self.ctx
         options = "\n".join(f"{key}: {value}" for key, value in ctx.slot_data.items())
         logger.info(f"[SAC] Options:\n{options}")
@@ -69,17 +65,7 @@ class SACCommandProcessor(ClientCommandProcessor):
         return True
 
     def _cmd_mission_table(self) -> bool:
-        """Dump every resolved chapter-table slot (its live task count)
-        next to whichever case CASE_ID_TO_CASE currently assumes lives in
-        that slot (slot == case_id, only actually confirmed for Boltaire
-        Museum's case_id 1 so far) and whether the task counts match.
-
-        A MISMATCH means that case's CHAPTER_ENTRIES addresses are
-        currently being resolved off the wrong slot -- use this the same
-        way /force_case was used to pin down real case_id values: find
-        the slot whose task count actually matches that case's known
-        mission count (see constants/missions.py's CHAPTER_ENTRIES) and
-        fix up its case_id in constants/planets.py's ALL_CASES to match."""
+        """Dump every resolved chapter-table slot (its live task count) next to whichever case CASE_ID_TO_CASE currently assumes lives in that slot (slot == case_id, only actually confirmed for Boltaire Museum's case_id 1 so far) and whether the task counts match."""
         w = self.ctx._wiring
         rows = w.missions.dump_chapter_table()
         if not rows:
@@ -97,11 +83,7 @@ class SACCommandProcessor(ClientCommandProcessor):
         return True
 
     def _cmd_case_states(self, case: str = "") -> bool:
-        """Batch-read and print every case's current locked/unlocked byte.
-        Resolved off whichever case is currently loaded by default; pass a
-        case name (substring match) to anchor off that case instead --
-        useful for testing since automatic case-id detection isn't wired
-        up to real memory values yet (see CASE_ID_TO_CASE)."""
+        """Batch-read and print every case's current locked/unlocked byte."""
         w = self.ctx._wiring
 
         current_case_id = w.case.case_id
@@ -130,15 +112,7 @@ class SACCommandProcessor(ClientCommandProcessor):
         return True
 
     def _cmd_case_struct(self, case: str = "") -> bool:
-        """Batch-read and print every slot of the case-unlock table's
-        exact layout (see core/address_maps/ps2.py's
-        CASE_UNLOCK_TABLE_OFFSETS / core/case_struct.py's
-        CaseStructInventory) -- dumps each slot's raw value (typically 0 =
-        LOCKED or 3 = UNLOCKED) plus its identified case name if
-        CASE_UNLOCK_TABLE_SLOT_TO_CASE has one yet, so unidentified slots
-        stand out. Resolved off whichever case is currently loaded by
-        default; pass a case name (substring match) to anchor off that
-        case instead."""
+        """Batch-read and print every slot of the case-unlock table's exact layout (see core/address_maps/ps2.py's CASE_UNLOCK_TABLE_OFFSETS / core/case_struct.py's CaseStructInventory) -- dumps each slot's raw value (typically 0 = LOCKED or 3 = UNLOCKED) plus its identified case name if CASE_UNLOCK_TABLE_SLOT_TO_CASE has one yet, so unidentified slots stand out."""
         w = self.ctx._wiring
 
         current_case_id = w.case.case_id

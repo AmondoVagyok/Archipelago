@@ -1,15 +1,11 @@
-"""Read native checks before applying the received AP inventory.
-
-Level-dependent addresses come from the resident module's exports and are
-invalidated without writing to old memory when a transition is detected.
-Ownership received from AP is never evidence of a location completion.
-"""
+"""Read native checks before applying the received AP inventory."""
 import logging
 from collections.abc import Callable, Sequence
 
 from ..constants.missions import CHAPTER_ENTRIES
 from ..constants.operatives import SACOperatives
 from ..constants.planets import CASE_ID_TO_CASE, CASES_BY_OPERATIVE, SACCases
+from ..constants.clank_gadgets import BLACK_OUT_PEN, THERM_OPTIC_SHADES
 from ..constants.weapons import GADGET_INTERNAL_TO_DISPLAY, RATCHET_WEAPON_INTERNAL_TO_DISPLAY
 from .address_maps import BOLTS_ADDRESS, CHALLENGE_MODE_ADDRESS
 from .bolt_rewards import BoltRewards
@@ -161,9 +157,7 @@ class Core:
     def apply_inventory(
         self, *, ratchet: dict[str, bool], clank: dict[str, bool], received_names: Sequence[str] = (),
     ) -> None:
-        """Cache received items. tick() observes native events before writing
-        this snapshot, so an asynchronous ReceivedItems packet cannot erase
-        an unobserved purchase edge."""
+        """Cache received items."""
         self._inventory_initialized = True
         self.progression.receive(received_names)
         self.weapon_mods.received = set(received_names)
@@ -199,8 +193,8 @@ class Core:
         owned = dict(self._ap_owned["ratchet"])
         owned.update(self.wrench.entitlements())
         owned.update(self.progression.ownership())
-        owned["fountainpen"] = self._ap_owned["clank"].get("Black Out Pen", False)
-        owned["sunglasses"] = self._ap_owned["clank"].get("Therm-Optic Shades", False)
+        owned["fountainpen"] = self._ap_owned["clank"].get(BLACK_OUT_PEN, False)
+        owned["sunglasses"] = self._ap_owned["clank"].get(THERM_OPTIC_SHADES, False)
         return {slot: bool(owned[name]) for slot, name in enumerate(WEAPON_ORDER) if name in owned}
 
     def close(self):
@@ -258,8 +252,8 @@ class Core:
         owned.update(self.progression.ownership())
         # The pen is slot 17 of the SAME GadgetData array, not a separate
         # Clank-only byte table. Keep the legacy internal-name item compatible.
-        owned["fountainpen"] = owned.get("fountainpen", False) or self._ap_owned["clank"].get("Black Out Pen", False)
-        owned["sunglasses"] = owned.get("sunglasses", False) or self._ap_owned["clank"].get("Therm-Optic Shades", False)
+        owned["fountainpen"] = owned.get("fountainpen", False) or self._ap_owned["clank"].get(BLACK_OUT_PEN, False)
+        owned["sunglasses"] = owned.get("sunglasses", False) or self._ap_owned["clank"].get(THERM_OPTIC_SHADES, False)
         self.case.ratchet_items.apply_all(owned)
         self.case.clank_items.apply_all(self._ap_owned["clank"])
 
@@ -366,19 +360,7 @@ class Core:
             if not self.notifications.bind(self.case.symbols):
                 self._log("[SAC] Native receipt HUD layout could not be validated for this module.")
             self.keycards.bind(self.case.symbols)
-            # NOT self.cutscenes.sync() here -- unlike titanium
-            # bolts/skill points, an entry cutscene (e.g. Boltaire
-            # Museum's) can trigger the instant its case becomes ready, so
-            # baselining on every transition would eat that exact 0->1
-            # transition before check() ever saw it as new. Baselines only
-            # once, from its dict.fromkeys(..., False) initial state --
-            # TODO: means a reconnect after already seeing a cutscene this
-            # session re-reports it as new; not handled yet.
             self.on_case_ready()
-
-        # Expose received cases using their mission labels, including cases
-        # that share a loaded module. Gate the actual menu rows separately;
-        # locking a row must not erase completed mission progress.
         newly_accessible = self.case.case_menu.unlock_owned_missions(self._owned_cases)
         menu_screen = self.case.case_menu.screen_address
         if newly_accessible and menu_screen is not None and self.pine.read_int32(menu_screen) == 14:
@@ -419,35 +401,22 @@ class Core:
                 self.titanium_bolts.confirm(name)
 
         for name in self.vendor.poll_purchases():
-            # poll_purchases() returns a raw WEAPON_ORDER internal name
-            # (VendorState.read_items()'s weapon_name) -- same translation
-            # case.ratchet_items.check() applies below, needed before
-            # send_location() since self._location_name_to_id is keyed by
-            # the AP display name, not the raw one.
             name = _RATCHET_STRUCT_INTERNAL_TO_DISPLAY.get(name, name)
             if name not in self._checked_items and self.send_location(name):
                 self._checked_items.add(name)
 
         for name in self.case.ratchet_items.check():
             if name in VENDOR_LOCATIONS.values():
-                # Gameplay ownership never proves a vendor transaction.
                 continue
             if self.location_hooks.installed and name in {
-                    "fountainpen" if n == "Black Out Pen (Pickup)" else n
+                    "fountainpen" if n == f"{BLACK_OUT_PEN} (Pickup)" else n
                     for n in PICKUP_LOCATIONS.values()}:
                 continue
             if name == "fountainpen":
-                name = "Black Out Pen (Pickup)"
+                name = f"{BLACK_OUT_PEN} (Pickup)"
             elif name not in self._ap_owned["ratchet"]:
                 continue
             else:
-                # constants/weapons.py's SACRatchetWeapons / constants/
-                # clank_gadgets.py's SACClankGadgets item+location
-                # names are "Unlock: {Character} {internal name}", not the bare
-                # WEAPON_ORDER name check() returns -- translate before send_location().
-                # A name absent from both dicts (shouldn't happen for anything that
-                # passed the _ap_owned["ratchet"] membership check above) falls back
-                # to itself rather than silently dropping the location.
                 name = _RATCHET_STRUCT_INTERNAL_TO_DISPLAY.get(name, name)
             if name not in self._checked_items and self.send_location(name):
                 self._checked_items.add(name)

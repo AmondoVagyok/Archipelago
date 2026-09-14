@@ -1,9 +1,8 @@
-import struct
 import unittest
 from unittest.mock import Mock
 
 from ..core.core import Core
-from ..core.patches.wrench import WRENCH_MODS, WrenchProgression
+from ..core.patches.wrench import WrenchProgression
 from .test_runtime import Memory
 
 
@@ -45,6 +44,6 @@ class WrenchTests(unittest.TestCase):
     def test_received_copies_override_individual_mods(self):
         c = Core(self.p)
         c.wrench.enabled = True
-        c.apply_inventory(ratchet={}, clank={}, received_names=['Progressive Wrench'] * 3)
+        c.apply_inventory(ratchet={}, clank={}, received_names=["Progressive Wrench"] * 3)
         e = c._entitlements()
         self.assertEqual([e[n] for n in range(28, 32)], [True, True, False, False])

@@ -1,15 +1,4 @@
-"""Native titanium bolt IDs (one-based), from the USA game's count table.
-
-Numbered IDs identify save bits, not the order a player collects them.
-
-Display names follow the same "T-Bolt:" category label as
-worlds/rac_size_matters' Rac5TBolts (user: "titanium bolts should also
-have T-Bolt name layout same as Size Matters") -- CaseStructure's category
-field puts that label between the case and the per-case index, giving
-"{operative}: {case}: T-Bolt: {index}" (same operative-prefixed layout as
-every other per-case constants module here, cutscenes/skill points/alien
-codes included).
-"""
+"""Native titanium bolt IDs (one-based), from the USA game's count table."""
 from dataclasses import dataclass
 
 from .planets import SACCases
@@ -56,11 +45,7 @@ TITANIUM_BOLTS_BY_CASE: dict[str, tuple[str, ...]] = group_by_case(tuple(TITANIU
 
 @dataclass(frozen=True)
 class SACTitaniumBoltLocations:
-    """One named constant per titanium bolt location -- each value is the
-    exact full display name TITANIUM_BOLT_ENTRIES above builds via
-    CaseStructure.__str__, spelled out here so rules/<case>.py can
-    reference an individual location directly -- same one-name-per-location
-    layout as constants/weapons.py's SACRatchetWeapons."""
+    """One named constant per titanium bolt location -- each value is the exact full display name TITANIUM_BOLT_ENTRIES above builds via CaseStructure.__str__, spelled out here so rules/<case>.py can reference an individual location directly -- same one-name-per-location layout as constants/weapons.py's SACRatchetWeapons."""
 
     BOLTAIRE_MUSEUM_1 = "Clank: Boltaire Museum: T-Bolt: JetBoot around the pillar"
     BOLTAIRE_MUSEUM_2 = "Clank: Boltaire Museum: T-Bolt: Jump over the railings"

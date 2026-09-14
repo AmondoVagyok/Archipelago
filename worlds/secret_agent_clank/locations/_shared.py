@@ -1,9 +1,4 @@
-"""Shared, dependency-free building blocks for the per-case location files
-in this package -- kept in their own leaf module (no imports from `.` or
-from any case file) so every locations/<case>.py file can import them at
-module load time with no circular-import ordering concerns. The
-constants.missions import below is fine despite that -- constants/ never
-imports back from locations/, so it doesn't create a cycle."""
+"""Shared, dependency-free building blocks for the per-case location files in this package -- kept in their own leaf module (no imports from `.` or from any case file) so every locations/<case>.py file can import them at module load time with no circular-import ordering concerns."""
 from collections.abc import Callable
 from typing import NamedTuple
 
@@ -29,13 +24,7 @@ class SACLocationData(NamedTuple):
 def all_mission_locations(
     case_name: str, take_id: Callable[[], int],
 ) -> dict[str, "SACLocationData"]:
-    """Missions=all granularity's location set for one case: one location
-    per individual CHAPTER_ENTRIES mission belonging to case_name, each
-    getting its own id from take_id (a case file's own _take_id()) --
-    the finer-grained alternative to that same case file's *_MISSION_
-    LOCATIONS single "{case_name} Complete" entry (Missions=
-    level_completion). Empty dict if case_name has no CHAPTER_ENTRIES
-    (none currently, but tolerated rather than assumed)."""
+    """Missions=all granularity's location set for one case: one location per individual CHAPTER_ENTRIES mission belonging to case_name, each getting its own id from take_id (a case file's own _take_id()) -- the finer-grained alternative to that same case file's *_MISSION_ LOCATIONS single "{case_name} Complete" entry (Missions= level_completion)."""
     return {
         f"Mission: {entry.name}": SACLocationData(take_id(), case_name)
         for entry in CHAPTER_ENTRIES.get(case_name, ())

@@ -37,17 +37,17 @@ class WeaponModTests(unittest.TestCase):
         return regs[2]
 
     def test_catalog_filters_characters_and_postgame(self):
-        self.assertEqual(len(enabled_mods({'Ratchet': 1, 'Clank': 1}, 0)), 16)
-        self.assertEqual(len(enabled_mods({'Ratchet': 1, 'Clank': 1}, 1)), 19)
-        self.assertEqual(len(enabled_mods({'Clank': 1}, 2)), 3)
-        self.assertEqual(enabled_mods({'Qwark': 1}, 2), ())
+        self.assertEqual(len(enabled_mods({"Ratchet": 1, "Clank": 1}, 0)), 16)
+        self.assertEqual(len(enabled_mods({"Ratchet": 1, "Clank": 1}, 1)), 19)
+        self.assertEqual(len(enabled_mods({"Clank": 1}, 2)), 3)
+        self.assertEqual(enabled_mods({"Qwark": 1}, 2), ())
         self.assertEqual(len({mod.mod_id for mod in WEAPON_MODS}), 19)
         self.assertEqual(len({(mod.weapon, mod.slot) for mod in WEAPON_MODS}), 19)
 
     def test_ap_receipt_does_not_complete_purchase_or_grant_weapon(self):
-        capture = Path(__file__).parents[1] / '.research/showers_forced_graveyard.bin'
+        capture = Path(__file__).parents[1] / ".research/showers_forced_graveyard.bin"
         if not capture.exists():
-            self.skipTest('Local Graveyard capture not present')
+            self.skipTest("Local Graveyard capture not present")
         p = CaptureMemory()
         p.data[:] = capture.read_bytes()
         symbols = RuntimeSymbols.parse(p.data[:0x1000000], 0)
@@ -55,7 +55,7 @@ class WeaponModTests(unittest.TestCase):
         hooks.prepare(symbols, pickup_locations=PICKUP_LOCATIONS,
                       vendor_locations=VENDOR_LOCATIONS, entitlements={})
         mods = WeaponMods(p)
-        mods.configure({'weapon_mods': True, 'operatives': {'Ratchet': 1, 'Clank': 1}, 'ng_plus': 1})
+        mods.configure({"weapon_mods": True, "operatives": {"Ratchet": 1, "Clank": 1}, "ng_plus": 1})
         hooks.patches.extend(mods.prepare(symbols, hooks, 22, set(), True))
         hooks._install_plan()
         mod = WEAPON_MODS[0]
@@ -65,11 +65,11 @@ class WeaponModTests(unittest.TestCase):
         mods.sync()
         self.assertEqual(p.read_int8(gadget + 0x68 + mod.slot), 1)
         self.assertEqual(p.read_int32(gadget + 0x70), 0)
-        self.assertEqual(p.read_int8(hooks.tables['mods'] + mod.mod_id), 1)
+        self.assertEqual(p.read_int8(hooks.tables["mods"] + mod.mod_id), 1)
         self.assertNotIn(mod.location, hooks.poll())
         # Native transaction only latches the separate table. Keeping this
         # check confirmed does not supply ownership after an AP replay.
-        buy = symbols['SCRNVENDOR_ProcessPurchase__Fv']
+        buy = symbols["SCRNVENDOR_ProcessPurchase__Fv"]
         recorder = (p.read_int32(buy + 0x10C) & 0x3FFFFFF) << 2
         self.assertEqual(self.run_leaf(p, buy + 0x13C, mod.mod_id), 0)
         self.run_leaf(p, recorder, mod.mod_id)

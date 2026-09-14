@@ -15,10 +15,7 @@ class TestCaseUnlockState(unittest.TestCase):
 
 
 class TestCaseUnlockResolveTable(unittest.TestCase):
-    """_resolve_table() re-derives every case's address off whichever
-    case_id is passed in, using CASE_UNLOCK_TABLE_OFFSETS -- these tests
-    exercise that directly rather than the old guessed cumulative-offset
-    model (removed; see case_unlocks.py's module docstring)."""
+    """_resolve_table() re-derives every case's address off whichever case_id is passed in, using CASE_UNLOCK_TABLE_OFFSETS -- these tests exercise that directly rather than the old guessed cumulative-offset model (removed; see case_unlocks.py's module docstring)."""
 
     def test_every_confirmed_case_resolves_to_its_own_anchor(self):
         # Anchoring off case_id N and asking _resolve_table() for case_id
@@ -73,10 +70,7 @@ class TestCaseUnlockResolveTable(unittest.TestCase):
 
 
 class _FakePine:
-    """Minimal batch_read_int8/batch_write_int8 stand-in for apply_all()
-    tests -- per-address canned read values, and a log of what got
-    written (address -> value) so writes-that-should-have-been-skipped
-    can be asserted absent."""
+    """Minimal batch_read_int8/batch_write_int8 stand-in for apply_all() tests -- per-address canned read values, and a log of what got written (address -> value) so writes-that-should-have-been-skipped can be asserted absent."""
 
     def __init__(self, values_by_address: dict[int, int]) -> None:
         self._values = dict(values_by_address)
@@ -91,13 +85,7 @@ class _FakePine:
 
 
 class TestCaseUnlockApplyAllSkipsGarbageReadback(unittest.TestCase):
-    """CONFIRMED live (see apply_all()'s own docstring): the OLD case's
-    table memory can already read a non-enum garbage byte (observed: 192)
-    on the very same tick CURRENT_CASE_ADDRESS still reports the OLD case
-    id -- i.e. before is_ready has any reason to flip False. apply_all()
-    must not blindly write over a readback that isn't a recognized
-    CaseUnlockState, or it corrupts whatever's actually occupying that
-    memory during the transition's leading edge."""
+    """CONFIRMED live (see apply_all()'s own docstring): the OLD case's table memory can already read a non-enum garbage byte (observed: 192) on the very same tick CURRENT_CASE_ADDRESS still reports the OLD case id -- i.e."""
 
     def _table_addresses(self, anchor_case_id: int) -> dict[str, int]:
         inventory = CaseUnlockInventory(pine=None)
@@ -109,7 +97,7 @@ class TestCaseUnlockApplyAllSkipsGarbageReadback(unittest.TestCase):
         boltaire_gem_wing_addr = table[SACCases.BOLTAIRE_GEM_WING]
         # Boltaire Museum reads a legit LOCKED byte; Boltaire Gem Wing
         # reads 192 -- an in-flux/garbage value, not 0/2/3.
-        values = {addr: 0 for addr in table.values()}
+        values = dict.fromkeys(table.values(), 0)
         values[boltaire_gem_wing_addr] = 192
         pine = _FakePine(values)
         inventory = CaseUnlockInventory(pine=pine)
@@ -123,7 +111,7 @@ class TestCaseUnlockApplyAllSkipsGarbageReadback(unittest.TestCase):
         table = self._table_addresses(1)
         owned_addr = table[SACCases.BOLTAIRE_MUSEUM]
         unowned_addr = table[SACCases.BOLTAIRE_GEM_WING]
-        values = {addr: 0 for addr in table.values()}
+        values = dict.fromkeys(table.values(), 0)
         pine = _FakePine(values)
         inventory = CaseUnlockInventory(pine=pine)
 
@@ -135,7 +123,7 @@ class TestCaseUnlockApplyAllSkipsGarbageReadback(unittest.TestCase):
     def test_already_permanently_unlocked_is_skipped_same_as_before(self):
         table = self._table_addresses(1)
         owned_addr = table[SACCases.BOLTAIRE_MUSEUM]
-        values = {addr: 0 for addr in table.values()}
+        values = dict.fromkeys(table.values(), 0)
         values[owned_addr] = CaseUnlockState.PERMANENTLY_UNLOCKED.value
         pine = _FakePine(values)
         inventory = CaseUnlockInventory(pine=pine)
@@ -147,7 +135,7 @@ class TestCaseUnlockApplyAllSkipsGarbageReadback(unittest.TestCase):
     def test_unowned_native_unlock_is_revoked(self):
         table = self._table_addresses(1)
         address = table[SACCases.BOLTAIRE_GEM_WING]
-        values = {addr: 0 for addr in table.values()}
+        values = dict.fromkeys(table.values(), 0)
         values[address] = 3
         pine = _FakePine(values)
         CaseUnlockInventory(pine).apply_all(set(), 1)

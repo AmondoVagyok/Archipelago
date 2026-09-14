@@ -1,14 +1,8 @@
-"""Runtime-facing API for native location interception on SCUS-97623 --
-picks the applicable patch plan (patches/weapon_pickup.py's common case, or
-patches/vendor_only.py for modules like Treehouse with a vendor but no
-WeaponPickup code) and owns install/poll/sync/restore against a live PINE
-connection.
-
-Experimental: these patches require an explicit idle vendor test before
-runtime enablement."""
+"""Runtime-facing API for native location interception on SCUS-97623 -- picks the applicable patch plan (patches/weapon_pickup.py's common case, or patches/vendor_only.py for modules like Treehouse with a vendor but no WeaponPickup code) and owns install/poll/sync/restore against a live PINE connection."""
+from ...constants.native_functions import NativeFunctions
 from .asm import MARKER
-from .vendor_only import build_vendor_only_plan
-from .weapon_pickup import build_weapon_pickup_plan
+from .vendor_only import VendorOnly
+from .weapon_pickup import WeaponPickup
 
 
 class LocationHooks:
@@ -29,12 +23,12 @@ class LocationHooks:
         if self.installed:
             raise RuntimeError("Restore installed hooks before preparing a new plan")
         p = self.pine
-        give = symbols.get("WeaponPickup_GiveWeapon__FP4Moby")
+        give = symbols.get(NativeFunctions.WEAPON_PICKUP_GIVE_WEAPON)
         if give is None:
-            plan = build_vendor_only_plan(p, symbols, vendor_locations, checked, entitlements)
+            plan = VendorOnly(p).prepare(symbols, vendor_locations, checked, entitlements)
         else:
-            plan = build_weapon_pickup_plan(
-                p, symbols, give, pickup_locations=pickup_locations,
+            plan = WeaponPickup(p).prepare(
+                symbols, give, pickup_locations=pickup_locations,
                 vendor_locations=vendor_locations, checked=checked, entitlements=entitlements,
             )
         self.patches = plan.patches
