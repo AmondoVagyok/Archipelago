@@ -78,8 +78,8 @@ GADGET_PICKUP_BY_CASE: dict[str, str] = {
 class SACGadgetPickupLocations:
     """One named constant per "{gadget} (Pickup)" location -- same values as GADGET_PICKUP_BY_CASE, spelled out here so rules/<case>.py can reference an individual location directly instead of a case-name-keyed lookup -- same one-name-per-location layout as constants/weapons.py's SACRatchetWeapons."""
 
-    BOLTAIRE_MUSEUM = "Boltaire Museum (Clank) - Not The Guided Tour: Blackout Pen Pickup"
-    ROOFTOP_DEATHTRAP = "Boltaire Museum (Clank) - Escape the Ravine: Therm-Optic Shades Pickup"
+    BOLTAIRE_MUSEUM = "Boltaire (Clank) - Boltaire Museum: Blackout Pen Pickup"
+    ROOFTOP_DEATHTRAP = "Boltaire (Clank) - Boltaire Museum: Therm-Optic Shades Pickup"
 
 assert {v for k, v in vars(SACGadgetPickupLocations).items() if not k.startswith("_")} == set(
     GADGET_PICKUP_BY_CASE.values()
