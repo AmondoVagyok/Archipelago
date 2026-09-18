@@ -10,8 +10,8 @@ from .constants import (
     ALL_CASES,
     CASE_NAME_TO_CASE,
     CASES_BY_OPERATIVE,
-    GOAL_CASE,
     KEYCARDS,
+    SACCases,
     SACOperatives,
 )
 from .constants.clank_gadgets import THERM_OPTIC_SHADES
@@ -217,7 +217,7 @@ def _create_victory(
         add_victory(f"Victory: {title}", case_regions[entries[0].case_name], rule)
 
     if goal in (Goal.option_defeat_klunk, Goal.option_any) and not clank_disabled:
-        case = GOAL_CASE
+        case = CASE_NAME_TO_CASE[SACCases.KLUNKS_LAIR]
         add_victory("Victory: Defeat Klunk", case_regions[case.name], case_access_rule(world, case))
 
     if goal in (Goal.option_qwark_opera, Goal.option_any) and not qwark_disabled:

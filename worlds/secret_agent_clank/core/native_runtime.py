@@ -20,6 +20,7 @@ class NativeRuntime:
         self.progression = None
         self.weapon_mods = None
         self.vendor_modules = None
+        self.presentation = None
         self.starting_case = StartingCase(pine, log)
 
     def configure_vendors(self, case_names):
@@ -75,6 +76,8 @@ class NativeRuntime:
                         self.hooks.patches.extend(TitanOffers(p).prepare(symbols))
                     self.hooks.patches.extend(self.progression.prepare(
                         symbols, self.hooks, target, vendor_enabled=vendor_enabled))
+                if self.presentation is not None and vendor_enabled:
+                    self.hooks.patches.extend(self.presentation.prepare(symbols, self.hooks))
                 self.hooks.install_at_loader_gate(self.gate)
                 self.generation += 1
                 self.gate.release()

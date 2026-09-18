@@ -4,14 +4,13 @@ from .clank_gadgets import (
     BLACK_OUT_PEN,
     CLANK_GADGET_BY_CASE_ID,
     CLANK_GADGETS,
-    GADGET_PICKUP_BY_CASE,
     THERM_OPTIC_SHADES,
     SACClankGadgets,
     SACClankWeapons,
     SACGadgetPickupLocations,
     SACProgressiveClankWeapons,
 )
-from .cutscenes import CUTSCENE_TO_CASE, CUTSCENES_BY_CASE, SACCutsceneLocations, SACCutscenes
+from .cutscenes import CUTSCENE_TO_CASE, SACCutsceneLocations, SACCutscenes
 from .gadgetbot_challenges import GADGETBOT_CHALLENGES_BY_CASE, SACGadgetbotChallengeLocations, SACGadgetbotChallenges
 from .keycards import KEYCARDS, KEYCARDS_BY_CASE, SACKeycards
 from .missions import MISSION_TO_CASE, SACMissionLocations, SACMissions
@@ -30,8 +29,6 @@ from .planets import (
     CASE_NAME_TO_PLANET,
     CASES_BY_OPERATIVE,
     CASES_BY_PLANET,
-    GOAL_CASE,
-    MENU_ID_TO_CASE,
     OPERATIVE_NAMES,
     PLANET_ACCESS_ITEM_NAME,
     PLANET_NAMES,
@@ -42,7 +39,7 @@ from .planets import (
 from .ratchet_challenges import RATCHET_CHALLENGES_BY_CASE, SACRatchetChallengeLocations, SACRatchetChallenges
 from .skillpoints import SKILL_POINTS_BY_CASE, SACSkillPointLocations, SACSkillPoints
 from .special_challenges import SPECIAL_CHALLENGES_BY_CASE, SACSpecialChallengeLocations, SACSpecialChallenges
-from .titanium_bolts import TITANIUM_BOLT_CASES, TITANIUM_BOLT_ENTRIES, TITANIUM_BOLTS_BY_CASE, SACTitaniumBoltLocations
+from .titanium_bolts import TITANIUM_BOLT_CASES, TITANIUM_BOLT_ENTRIES, SACTitaniumBoltLocations
 from .weapons import (
     GADGET_DISPLAY_TO_INTERNAL,
     GADGET_INTERNAL_TO_DISPLAY,
@@ -75,18 +72,14 @@ __all__ = [
     "CLANK_GADGET_BY_CASE_ID",
     "CLANK_GADGETS",
     "CUTSCENE_TO_CASE",
-    "CUTSCENES_BY_CASE",
     "Case",
     "GADGET_DISPLAY_TO_INTERNAL",
     "GADGET_INTERNAL_TO_DISPLAY",
-    "GADGET_PICKUP_BY_CASE",
     "GADGETBOT_CHALLENGES_BY_CASE",
     "GADGETS_BY_CASE",
     "GADGETS_FROM_WEAPON_TABLE",
-    "GOAL_CASE",
     "KEYCARDS",
     "KEYCARDS_BY_CASE",
-    "MENU_ID_TO_CASE",
     "MISSION_TO_CASE",
     "OPERATIVE_NAMES",
     "PLANET_ACCESS_ITEM_NAME",
@@ -129,6 +122,5 @@ __all__ = [
     "THERM_OPTIC_SHADES",
     "TITANIUM_BOLT_CASES",
     "TITANIUM_BOLT_ENTRIES",
-    "TITANIUM_BOLTS_BY_CASE",
     "WEAPONS_BY_CASE",
 ]

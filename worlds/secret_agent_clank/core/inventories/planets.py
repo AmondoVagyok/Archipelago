@@ -26,6 +26,7 @@ class CaseInventory:
         self.ratchet = CharacterState(pine)
         self.clank   = CharacterState(pine)
         self.qwark   = CharacterState(pine)
+        # Historical attribute name: this array contains both characters' gear.
         self.ratchet_items = WeaponInventory(pine)
         self.clank_items   = ItemInventory(pine)
         self.vendor        = VendorState(pine)
@@ -38,10 +39,7 @@ class CaseInventory:
         self.is_ready:    bool = False
         self._prev_case_id: int | None = None
 
-        # Fired the moment a transition begins (leaving a known case,
-        # before the new case's addresses are bound) -- Core wires this to
-        # strip every character's item state so nothing stale from the
-        # previous case lingers across the load. Fired again on death.
+        # Invalidate bindings before a transition; death handling is separate.
         self.on_transition_start: Callable[[], None] = lambda: None
         self.on_death:            Callable[[], None] = lambda: None
         self.on_respawn:          Callable[[], None] = lambda: None

@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 
 from .planets import SACCases
-from .types import CaseStructure, group_by_case
+from .types import CaseStructure
 
 
 @dataclass(frozen=True)
@@ -28,15 +28,12 @@ class SACCutscenes:
 
 # One CaseStructure per cutscene -- pairs each short SACCutscenes title
 # with its case and its confirmed address/flag in the shared
-# 0x206BE0-0x206BF4 bitmask region. Assigned to a name where a later entry
-# (CUTSCENE_EXTRA_REQUIREMENTS below) needs to refer back to it.
-_boltaire_gem_wing_complete = CaseStructure(
-    SACCases.BOLTAIRE_GEM_WING, SACCutscenes.COMPLETE_CASE_CUTSCENE, event_flag=0b00000100, event_address=0x206BE0,
-)
-
+# 0x206BE0-0x206BF4 bitmask region.
 CUTSCENES: tuple[CaseStructure, ...] = (
     CaseStructure(SACCases.BOLTAIRE_MUSEUM, SACCutscenes.ENTER_CUTSCENE, event_flag=0b00000001, event_address=0x206BE0),
-    _boltaire_gem_wing_complete,
+    CaseStructure(
+        SACCases.BOLTAIRE_GEM_WING, SACCutscenes.COMPLETE_CASE_CUTSCENE, event_flag=0b00000100, event_address=0x206BE0,
+    ),
     CaseStructure(SACCases.MAX_SECURITY_CELLS, SACCutscenes.ENTER_CUTSCENE, event_flag=0b00001000, event_address=0x206BE0),
     CaseStructure(SACCases.ROOFTOP_DEATHTRAP, SACCutscenes.ENTER_CUTSCENE, event_flag=0b00000001, event_address=0x206BE2),
     CaseStructure(
@@ -64,7 +61,6 @@ CUTSCENES: tuple[CaseStructure, ...] = (
         SACCases.HIGH_ROLLERS_CASINO, SACCutscenes.COMPLETE_CUTSCENE, event_flag=0b00000011, event_address=0x206BE8,
     ),
     CaseStructure(SACCases.THE_EXERCISE_YARD, SACCutscenes.COMPLETE_CUTSCENE, event_flag=0b00000100, event_address=0x206BE8),
-    CaseStructure(SACCases.HIGH_STAKES_ROOM, SACCutscenes.COMPLETE_CUTSCENE, event_flag=0b00000110, event_address=0x206BE8),
     CaseStructure(SACCases.VENANTONIO_LABS, SACCutscenes.ENTER_CUTSCENE, event_flag=0b00000001, event_address=0x206BEA),
     CaseStructure(
         SACCases.VENANTONIO_LABS, SACCutscenes.OPEN_GREEN_DOOR_CUTSCENE, event_flag=0b00000010, event_address=0x206BEA,
@@ -118,73 +114,54 @@ CUTSCENES: tuple[CaseStructure, ...] = (
     ),
 )
 
-@dataclass(frozen=True)
-class SACCutsceneLocations:
-    """One named constant per cutscene location -- each value is the exact full display name CUTSCENES above builds via CaseStructure.__str__ (case + short SACCutscenes title), spelled out here so rules/<case>.py can reference an individual location directly (e.g."""
-
-    BOLTAIRE_MUSEUM_ENTER_CUTSCENE = "Clank: Boltaire Museum: Enter Cutscene"
-    BOLTAIRE_GEM_WING_COMPLETE_CASE_CUTSCENE = "Special Missions: Boltaire Gem Wing: Complete Case Cutscene"
-    MAX_SECURITY_CELLS_ENTER_CUTSCENE = "Ratchet: Max-Security Cells: Enter Cutscene"
-    ROOFTOP_DEATHTRAP_ENTER_CUTSCENE = "Gadgetbots: Rooftop Deathtrap: Enter Cutscene"
-    ROOFTOP_DEATHTRAP_RESCURE_CLANK_CUTSCENE = "Gadgetbots: Rooftop Deathtrap: Rescure Clank Cutscene"
-    ASYANICA_ROOFTOPS_ENTER_CUTSCENE = "Clank: Asyanica Rooftops: Enter Cutscene"
-    LARGER_THAN_LIFE_ENTER_CUTSCENE = "Qwark: Larger Than Life: Enter Cutscene"
-    LARGER_THAN_LIFE_GODZILLA_LAZER_BEAM = "Qwark: Larger Than Life: Godzilla Lazer Beam"
-    LARGER_THAN_LIFE_COMPLETE_CUTSCENE = "Qwark: Larger Than Life: Complete Cutscene"
-    COUNTESS_VILLA_ENTER_THE_MANSION = "Special Missions: Countess's Villa: Enter the mansion"
-    COUNTESS_VILLA_COMPLETE_DANCE_CUTSCENE = "Special Missions: Countess's Villa: Complete Dance Cutscene"
-    THE_MESS_HALL_ENTER_CUTSCENE = "Ratchet: The Mess Hall: Enter Cutscene"
-    AZCOTAL_ALLEY_ENTER_CUTSCENE = "Clank: Azcotal Alley: Enter Cutscene"
-    AZCOTAL_ALLEY_MEET_JACK_CUTSCENE = "Clank: Azcotal Alley: Meet Jack Cutscene"
-    GONDOLA_ASCENT_FINISH_GONDOLA_CUTSCENE = "Clank: Gondola Ascent: Finish Gondola Cutscene"
-    SUCK_AND_JIVE_DEFEAT_JACK_CUTSCENE = "Qwark: Suck and Jive: Defeat Jack Cutscene"
-    HIGH_ROLLERS_CASINO_ENTER_CUTSCENE = "Clank: High-Rollers Casino: Enter Cutscene"
-    HIGH_ROLLERS_CASINO_COMPLETE_CUTSCENE = "Clank: High-Rollers Casino: Complete Cutscene"
-    THE_EXERCISE_YARD_COMPLETE_CUTSCENE = "Ratchet: The Exercise Yard: Complete Cutscene"
-    HIGH_STAKES_ROOM_COMPLETE_CUTSCENE = "Special Missions: High Stakes Room: Complete Cutscene"
-    VENANTONIO_LABS_ENTER_CUTSCENE = "Clank: Venantonio Labs: Enter Cutscene"
-    VENANTONIO_LABS_OPEN_GREEN_DOOR_CUTSCENE = "Clank: Venantonio Labs: Open Green Door Cutscene"
-    VENANTONIO_LABS_COMPLETE_CUTSCENE = "Clank: Venantonio Labs: Complete Cutscene"
-    VENANTONIO_CANALS_COMPLETE_CUTSCENE = "Special Missions: Venantonio Canals: Complete Cutscene"
-    MADAM_BUTTERQWARK_ENTER_CUTSCENE = "Qwark: Madam Butterqwark: Enter Cutscene"
-    MADAM_BUTTERQWARK_COMPLETE_CUTSCENE = "Qwark: Madam Butterqwark: Complete Cutscene"
-    GALACTIC_BOLT_RESERVE_ENTER_CUTSCENE = "Clank: Galactic Bolt Reserve: Enter Cutscene"
-    GALACTIC_BOLT_RESERVE_COMPLETE_CUTSCENE = "Clank: Galactic Bolt Reserve: Complete Cutscene"
-    INSIDE_THE_A_EYE_COMPLETE_CUTSCENE = "Gadgetbots: Inside the A-Eye: Complete Cutscene"
-    THE_SHOWERS_ENTER_CUTSCENE = "Ratchet: The Showers: Enter Cutscene"
-    SPACESHIP_GRAVEYARD_ENTER_CUTSCENE = "Clank: Spaceship Graveyard: Enter Cutscene"
-    SPACESHIP_GRAVEYARD_COMPLETE_CUTSCENE = "Clank: Spaceship Graveyard: Complete Cutscene"
-    SAINT_QWARK_ENTERE_CUTSCENE = "Qwark: Saint Qwark: Entere Cutscene"
-    PRISON_BREAKOUT_ENTER_CUTSCENE = "Ratchet: Prison Breakout!: Enter Cutscene"
-    DAMS_EDGE_HYDRANO_ENTER_CUTSCENE = "Special Missions: Dam's Edge, Hydrano: Enter Cutscene"
-    DAMS_EDGE_HYDRANO_COMPLETE_CUTSCENE = "Special Missions: Dam's Edge, Hydrano: Complete Cutscene"
-    A_FICTION_FULL_OF_DOLLARS_ENTER_CUTSCENE = "Qwark: A Fiction Full Of Dollars: Enter Cutscene"
-    A_FICTION_FULL_OF_DOLLARS_COMPLETE_CUTSCENE = "Qwark: A Fiction Full Of Dollars: Complete Cutscene"
-    BULKHEAD_LOCK_ENTER_CUTSCENE = "Gadgetbots: Bulkhead Lock: Enter Cutscene"
-    KLUNKS_LAIR_ENTERE_CUTSCENE = "Clank: Klunk's Lair: Entere Cutscene"
-    KLUNKS_LAIR_MID_FIGHT_CUTSCENE_FOR_ROBO_RATCHET = "Clank: Klunk's Lair: Mid Fight Cutscene for Robo Ratchet"
-    KLUNKS_LAIR_COMPLETE_CUTSCENE = "Clank: Klunk's Lair: Complete Cutscene"
-    KLUNKS_LAIR_HIGH_IMPACT_GAMES_CUTSCENE_WITH_GIANT_CLANK = "Clank: Klunk's Lair: High Impact Games Cutscene with Giant Clank"
-
 
 # Cutscene full display name -> the case it belongs to, derived from
 # CUTSCENES above -- kept for callers that want a flat name->case lookup
 # instead of iterating CUTSCENES (locations.py, notably).
 CUTSCENE_TO_CASE: dict[str, str] = {str(entry): entry.case_name for entry in CUTSCENES}
 
-# Case name -> its cutscenes' full display names, same group_by_case shape
-# as SKILL_POINTS_BY_CASE/ALIEN_CODES_BY_CASE -- lets rules/<case>.py
-# reference these locations by constant instead of hand-typing them.
-CUTSCENES_BY_CASE: dict[str, tuple[str, ...]] = group_by_case(CUTSCENES)
-
-# Cutscene name -> extra item requirements beyond the case's own infobot
-# gate (CASE_NAME_TO_INFOBOT in constants/planets.py). Item names are TODO
-# -- ink pen, bowtie and jet boots don't exist as AP items yet (see
-# constants/clank_gadgets.py, items.py); not wired into rules.py until they
-# do.
-CUTSCENE_EXTRA_REQUIREMENTS: dict[str, tuple[str, ...]] = {
-    str(_boltaire_gem_wing_complete): ("Ink Pen", "Bowtie", "Jet Boots"),
-}
-
-assert {v for k, v in vars(SACCutsceneLocations).items() if not k.startswith("_")} == set(CUTSCENE_TO_CASE), \
-    "SACCutsceneLocations drifted out of sync with CUTSCENES -- regenerate its literals"
+@dataclass(frozen=True)
+class SACCutsceneLocations:
+    BOLTAIRE_MUSEUM_ENTER_CUTSCENE = 'Clank: Boltaire Museum: Enter Cutscene'
+    BOLTAIRE_GEM_WING_COMPLETE_CASE_CUTSCENE = 'Special Missions: Boltaire Gem Wing: Complete Case Cutscene'
+    MAX_SECURITY_CELLS_ENTER_CUTSCENE = 'Ratchet: Max-Security Cells: Enter Cutscene'
+    ROOFTOP_DEATHTRAP_ENTER_CUTSCENE = 'Gadgetbots: Rooftop Deathtrap: Enter Cutscene'
+    ROOFTOP_DEATHTRAP_RESCURE_CLANK_CUTSCENE = 'Gadgetbots: Rooftop Deathtrap: Rescure Clank Cutscene'
+    ASYANICA_ROOFTOPS_ENTER_CUTSCENE = 'Clank: Asyanica Rooftops: Enter Cutscene'
+    LARGER_THAN_LIFE_ENTER_CUTSCENE = 'Qwark: Larger Than Life: Enter Cutscene'
+    LARGER_THAN_LIFE_GODZILLA_LAZER_BEAM = 'Qwark: Larger Than Life: Godzilla Lazer Beam'
+    LARGER_THAN_LIFE_COMPLETE_CUTSCENE = 'Qwark: Larger Than Life: Complete Cutscene'
+    COUNTESS_VILLA_ENTER_THE_MANSION = "Special Missions: Countess's Villa: Enter the mansion"
+    COUNTESS_VILLA_COMPLETE_DANCE_CUTSCENE = "Special Missions: Countess's Villa: Complete Dance Cutscene"
+    THE_MESS_HALL_ENTER_CUTSCENE = 'Ratchet: The Mess Hall: Enter Cutscene'
+    AZCOTAL_ALLEY_ENTER_CUTSCENE = 'Clank: Azcotal Alley: Enter Cutscene'
+    AZCOTAL_ALLEY_MEET_JACK_CUTSCENE = 'Clank: Azcotal Alley: Meet Jack Cutscene'
+    GONDOLA_ASCENT_FINISH_GONDOLA_CUTSCENE = 'Clank: Gondola Ascent: Finish Gondola Cutscene'
+    SUCK_AND_JIVE_DEFEAT_JACK_CUTSCENE = 'Qwark: Suck and Jive: Defeat Jack Cutscene'
+    HIGH_ROLLERS_CASINO_ENTER_CUTSCENE = 'Clank: High-Rollers Casino: Enter Cutscene'
+    HIGH_ROLLERS_CASINO_COMPLETE_CUTSCENE = 'Clank: High-Rollers Casino: Complete Cutscene'
+    THE_EXERCISE_YARD_COMPLETE_CUTSCENE = 'Ratchet: The Exercise Yard: Complete Cutscene'
+    HIGH_STAKES_ROOM_COMPLETE_CUTSCENE = 'Special Missions: High Stakes Room: Complete Cutscene'
+    VENANTONIO_LABS_ENTER_CUTSCENE = 'Clank: Venantonio Labs: Enter Cutscene'
+    VENANTONIO_LABS_OPEN_GREEN_DOOR_CUTSCENE = 'Clank: Venantonio Labs: Open Green Door Cutscene'
+    VENANTONIO_LABS_COMPLETE_CUTSCENE = 'Clank: Venantonio Labs: Complete Cutscene'
+    VENANTONIO_CANALS_COMPLETE_CUTSCENE = 'Special Missions: Venantonio Canals: Complete Cutscene'
+    MADAM_BUTTERQWARK_ENTER_CUTSCENE = 'Qwark: Madam Butterqwark: Enter Cutscene'
+    MADAM_BUTTERQWARK_COMPLETE_CUTSCENE = 'Qwark: Madam Butterqwark: Complete Cutscene'
+    GALACTIC_BOLT_RESERVE_ENTER_CUTSCENE = 'Clank: Galactic Bolt Reserve: Enter Cutscene'
+    GALACTIC_BOLT_RESERVE_COMPLETE_CUTSCENE = 'Clank: Galactic Bolt Reserve: Complete Cutscene'
+    INSIDE_THE_A_EYE_COMPLETE_CUTSCENE = 'Gadgetbots: Inside the A-Eye: Complete Cutscene'
+    THE_SHOWERS_ENTER_CUTSCENE = 'Ratchet: The Showers: Enter Cutscene'
+    SPACESHIP_GRAVEYARD_ENTER_CUTSCENE = 'Clank: Spaceship Graveyard: Enter Cutscene'
+    SPACESHIP_GRAVEYARD_COMPLETE_CUTSCENE = 'Clank: Spaceship Graveyard: Complete Cutscene'
+    SAINT_QWARK_ENTERE_CUTSCENE = 'Qwark: Saint Qwark: Entere Cutscene'
+    PRISON_BREAKOUT_ENTER_CUTSCENE = 'Ratchet: Prison Breakout!: Enter Cutscene'
+    DAMS_EDGE_HYDRANO_ENTER_CUTSCENE = "Special Missions: Dam's Edge, Hydrano: Enter Cutscene"
+    DAMS_EDGE_HYDRANO_COMPLETE_CUTSCENE = "Special Missions: Dam's Edge, Hydrano: Complete Cutscene"
+    A_FICTION_FULL_OF_DOLLARS_ENTER_CUTSCENE = 'Qwark: A Fiction Full Of Dollars: Enter Cutscene'
+    A_FICTION_FULL_OF_DOLLARS_COMPLETE_CUTSCENE = 'Qwark: A Fiction Full Of Dollars: Complete Cutscene'
+    BULKHEAD_LOCK_ENTER_CUTSCENE = 'Gadgetbots: Bulkhead Lock: Enter Cutscene'
+    KLUNKS_LAIR_ENTERE_CUTSCENE = "Clank: Klunk's Lair: Entere Cutscene"
+    KLUNKS_LAIR_MID_FIGHT_CUTSCENE_FOR_ROBO_RATCHET = "Clank: Klunk's Lair: Mid Fight Cutscene for Robo Ratchet"
+    KLUNKS_LAIR_COMPLETE_CUTSCENE = "Clank: Klunk's Lair: Complete Cutscene"
+    KLUNKS_LAIR_HIGH_IMPACT_GAMES_CUTSCENE_WITH_GIANT_CLANK = "Clank: Klunk's Lair: High Impact Games Cutscene with Giant Clank"

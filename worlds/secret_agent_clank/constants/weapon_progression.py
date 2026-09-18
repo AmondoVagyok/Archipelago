@@ -1,8 +1,7 @@
 """Only native multi-level weapons participate; tools stay single unlocks."""
 from .clank_gadgets import SACClankWeapons, SACProgressiveClankWeapons
 from .weapons import (
-    GADGET_DISPLAY_TO_INTERNAL,
-    RATCHET_WEAPON_DISPLAY_TO_INTERNAL,
+    EQUIPMENT_DISPLAY_TO_INTERNAL,
     SACProgressiveRatchetWeapons,
     SACRatchetWeapons,
 )
@@ -23,15 +22,14 @@ def _attrs(cls):
 # {character}: {weapon}" (see constants/weapons.py, constants/clank_gadgets.py).
 _UNLOCK_ATTRS = {**_attrs(SACRatchetWeapons), **_attrs(SACClankWeapons)}
 _PROGRESSIVE_ATTRS = {**_attrs(SACProgressiveRatchetWeapons), **_attrs(SACProgressiveClankWeapons)}
-_DISPLAY_TO_INTERNAL = {**RATCHET_WEAPON_DISPLAY_TO_INTERNAL, **GADGET_DISPLAY_TO_INTERNAL}
 
 UNLOCK_TO_PROGRESSIVE = {
     _UNLOCK_ATTRS[attr]: _PROGRESSIVE_ATTRS[attr]
     for attr in _PROGRESSIVE_ATTRS
-    if attr in _UNLOCK_ATTRS and _DISPLAY_TO_INTERNAL.get(_UNLOCK_ATTRS[attr]) in LEVELLED_INTERNALS
+    if attr in _UNLOCK_ATTRS and EQUIPMENT_DISPLAY_TO_INTERNAL.get(_UNLOCK_ATTRS[attr]) in LEVELLED_INTERNALS
 }
 PROGRESSIVE_TO_INTERNAL = {
-    progressive: _DISPLAY_TO_INTERNAL[unlock] for unlock, progressive in UNLOCK_TO_PROGRESSIVE.items()
+    progressive: EQUIPMENT_DISPLAY_TO_INTERNAL[unlock] for unlock, progressive in UNLOCK_TO_PROGRESSIVE.items()
 }
 def max_level(internal, ng_plus):
     return 4 if internal == "ryno" or not ng_plus else 8

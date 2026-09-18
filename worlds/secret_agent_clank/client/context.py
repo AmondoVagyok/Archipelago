@@ -20,20 +20,10 @@ try:
 except ImportError:
     DYNAMIC_PINE_VERSION = None
 
-from ..constants.weapons import GADGET_DISPLAY_TO_INTERNAL, RATCHET_WEAPON_DISPLAY_TO_INTERNAL
+from ..constants.weapons import EQUIPMENT_DISPLAY_TO_INTERNAL
 from ..core.core import Core
 from ..items import GADGET_ITEM_TABLE, TRAP_ITEM_TABLE, WEAPON_ITEM_TABLE
 
-# WEAPON_ITEM_TABLE's keys are AP-facing "Unlock: {Character} {internal name}"
-# display names (constants/weapons.py's SACRatchetWeapons / constants/
-# clank_gadgets.py's SACClankGadgets) -- Core's
-# apply_inventory()/case.ratchet_items expect raw WEAPON_ORDER internal names
-# instead (e.g. "shockrocket"), so this is the display -> internal translation
-# for _apply_received_items()'s `ratchet` dict below.
-_WEAPON_TABLE_DISPLAY_TO_INTERNAL: dict[str, str] = {
-    **RATCHET_WEAPON_DISPLAY_TO_INTERNAL,
-    **GADGET_DISPLAY_TO_INTERNAL,
-}
 from ..locations import ALL_LOCATIONS
 from ..pypine import Pine
 from ..rules.vendor_access import VENDOR_REQUIREMENTS
@@ -42,6 +32,7 @@ from .constants import GAME_NAME
 from .deathlink import DeathLinkMixin
 from .pine_mixin import PineMixin
 from .vendor_scouts import VendorScouts
+from .item_names import canonical_item_name
 
 
 class SACContext(PineMixin, DeathLinkMixin, CommonContext):
@@ -84,6 +75,7 @@ class SACContext(PineMixin, DeathLinkMixin, CommonContext):
         self._notification_slot = None
 
         self._wiring = Core(self.pine, log=logger.info)
+        self._wiring.vendor_rewards.scouts = self.vendor_scouts
         self._wiring.native_runtime.configure_vendors(
             name for name, rule in VENDOR_REQUIREMENTS.items() if not isinstance(rule, False_))
 
@@ -101,13 +93,19 @@ class SACContext(PineMixin, DeathLinkMixin, CommonContext):
         self.stored_data.pop(delivered_key, None)
         self.stored_data.pop(pending_key, None)
         await self.send_msgs([
-            {"cmd": "Set", "key": delivered_key, "operations": [
+            {"cmd": "Set", "key": delivered_key, "want_reply": True, "operations": [
                 {"operation": "default", "value": {"count": 0, "starting_delivered": False}}]},
-            {"cmd": "Set", "key": pending_key, "operations": [{"operation": "default", "value": None}]},
+            {"cmd": "Set", "key": pending_key, "want_reply": True,
+             "operations": [{"operation": "default", "value": None}]},
         ])
         while delivered_key not in self.stored_data or pending_key not in self.stored_data:
             await asyncio.sleep(0.1)
         delivered = self.stored_data[delivered_key]
+        if not isinstance(delivered, dict):
+            # Pre-dict-schema leftover from an older client version stored a bare
+            # count at this key -- treat it as that count with nothing yet marked
+            # as the starting-bolts grant, rather than crashing this task forever.
+            delivered = {"count": int(delivered), "starting_delivered": False}
         self._wiring.bolt_rewards.configure(
             starting_bolts=int(self.slot_data.get("starting_bolts", 0)),
             delivered=delivered["count"],
@@ -131,7 +129,9 @@ class SACContext(PineMixin, DeathLinkMixin, CommonContext):
         """Fetch this slot's processed-trap-count from the AP server before _apply_new_traps() is allowed to run -- items_received is the full historical list every time a client (re)connects, so without this a fresh client process would start counting from 0 again and replay activate_trap() for every trap item ever received this seed."""
         key = self._trap_storage_key()
         self.stored_data.pop(key, None)
-        await self.send_msgs([{"cmd": "Set", "key": key, "operations": [{"operation": "default", "value": 0}]}])
+        await self.send_msgs([
+            {"cmd": "Set", "key": key, "want_reply": True, "operations": [{"operation": "default", "value": 0}]},
+        ])
         while key not in self.stored_data:
             await asyncio.sleep(0.1)
         self._processed_trap_count = self.stored_data[key]
@@ -152,11 +152,11 @@ class SACContext(PineMixin, DeathLinkMixin, CommonContext):
         if self.slot is None or not self.pine_connected:
             return
         received_names = [
-            self.item_names[self.game].get(network_item.item, "")
+            canonical_item_name(self.item_names[self.game].get(network_item.item, ""))
             for network_item in self.items_received
         ]
         ratchet = {
-            _WEAPON_TABLE_DISPLAY_TO_INTERNAL[name]: name in received_names
+            EQUIPMENT_DISPLAY_TO_INTERNAL[name]: name in received_names
             for name in WEAPON_ITEM_TABLE
         }
         clank   = {name: name in received_names for name in GADGET_ITEM_TABLE}
@@ -181,19 +181,16 @@ class SACContext(PineMixin, DeathLinkMixin, CommonContext):
         """Fires activate_trap() once per trap item beyond what's already been processed -- received_names is index-ordered, so slicing from _processed_trap_count only sees genuinely new items."""
         if self._processed_trap_count is None:
             return
-        new_traps = [name for name in received_names[self._processed_trap_count:] if name in TRAP_ITEM_TABLE]
-        self._processed_trap_count = len(received_names)
-        self._save_trap_state(self._processed_trap_count)
-        if not new_traps:
-            return
         async with self._pine_lock:
             try:
-                for name in new_traps:
-                    self._wiring.activate_trap(name)
+                for index in range(self._processed_trap_count, len(received_names)):
+                    name = received_names[index]
+                    if name in TRAP_ITEM_TABLE and not self._wiring.activate_trap(name):
+                        break
+                    self._processed_trap_count = index + 1
+                    self._save_trap_state(self._processed_trap_count)
             except Exception as exc:
-                logger.warning(f"[SAC] PINE call failed while activating a trap: {exc}. "
-                                "If syncing stops working, use /reconnect.")
-                self.pine_connected = False
+                logger.warning(f"[SAC] Trap activation deferred: {exc}")
 
     def _checked_location_names(self) -> set[str]:
         id_to_name = {v: k for k, v in self._location_name_to_id.items()}
@@ -254,7 +251,9 @@ class SACContext(PineMixin, DeathLinkMixin, CommonContext):
             self._wiring.progression.configure(self.slot_data)
             self._wiring.weapon_mods.configure(self.slot_data)
             self._wiring.wrench.enabled = bool(self.slot_data.get("progressive_wrench", False))
+            self._wiring.progressive_planets = self.slot_data.get("progressive_planets")
             self._wiring.character_unlocks = int(self.slot_data.get("infobots", 1)) == 3
+            self._wiring.traps.durations.update(self.slot_data.get("trap_duration", {}))
             self._wiring.goal = int(self.slot_data.get("goal", 0))
             self._wiring._goal_sent = False  # Resend after reconnect if the earlier status was lost.
             self._death_link_enabled = bool(self.slot_data.get("death_link", False))

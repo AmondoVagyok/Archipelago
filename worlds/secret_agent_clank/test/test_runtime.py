@@ -62,6 +62,39 @@ class RuntimeTests(unittest.TestCase):
         self.assertEqual(memory.read_int32(0x100000 + 17 * 0x74 + 0x70), 1)
         self.assertEqual(core.case.ratchet_items.check(), [])
 
+    def test_all_equipment_names_write_matching_native_slots(self):
+        from ..constants.weapons import EQUIPMENT_DISPLAY_TO_INTERNAL, CLANK_PICKUP_TO_INTERNAL
+        from ..core.inventories.weapons import WEAPON_ORDER
+        from ..items import WEAPON_ITEM_TABLE, GADGET_ITEM_TABLE
+        self.assertEqual(set(EQUIPMENT_DISPLAY_TO_INTERNAL), set(WEAPON_ITEM_TABLE))
+        self.assertEqual(set(CLANK_PICKUP_TO_INTERNAL), set(GADGET_ITEM_TABLE))
+        for display, internal in {**EQUIPMENT_DISPLAY_TO_INTERNAL, **CLANK_PICKUP_TO_INTERNAL}.items():
+            with self.subTest(item=display):
+                core = Core(Memory())
+                core.case.ratchet_items.set_base(0x100000)
+                core.apply_inventory(
+                    ratchet={name: display == item for item, name in EQUIPMENT_DISPLAY_TO_INTERNAL.items()},
+                    clank={item: display == item for item in GADGET_ITEM_TABLE})
+                core._reapply_all_inventories()
+                slot = WEAPON_ORDER.index(internal)
+                self.assertTrue(core._entitlements()[slot])
+                self.assertEqual(core.pine.read_int32(0x100000 + slot * 0x74 + 0x70), 1)
+                self.assertEqual(core.case.ratchet_items.check(), [])
+                core.apply_inventory(ratchet=dict.fromkeys(EQUIPMENT_DISPLAY_TO_INTERNAL.values(), False),
+                                     clank=dict.fromkeys(GADGET_ITEM_TABLE, False))
+                core._reapply_all_inventories()
+                self.assertFalse(core._entitlements()[slot])
+                self.assertEqual(core.pine.read_int32(0x100000 + slot * 0x74 + 0x70), 0)
+
+    def test_legacy_pickup_names_use_same_hook_and_write_ownership(self):
+        core = Core(Memory())
+        core.case.ratchet_items.set_base(0x100000)
+        core.apply_inventory(ratchet={"fountainpen": True, "sunglasses": True}, clank={})
+        core._reapply_all_inventories()
+        for slot in (17, 25):
+            self.assertTrue(core._entitlements()[slot])
+            self.assertEqual(core.pine.read_int32(0x100000 + slot * 0x74 + 0x70), 1)
+
     def test_symbol_uses_following_value_not_previous_export(self):
         data = bytearray(512)
         data[128:134] = b"target"

@@ -1,8 +1,6 @@
 """Clank item names."""
 from dataclasses import dataclass
 
-from .planets import CASE_ID_TO_CASE
-
 
 @dataclass(frozen=True)
 class SACClankWeapons:
@@ -25,9 +23,7 @@ class SACProgressiveClankWeapons:
     TANGLEVINE        = "Progressive: Clank: Tanglevine"
     FLAMETHROWERPEN   = "Progressive: Clank: Flamethrower Briefcase"
     HOLOKNUCKLES      = "Progressive: Clank: HoloKnuckles"
-    SUPERKICK         = "Progressive: Clank: Superkick"
     LIGHTNINGUMBRELLA = "Progressive: Clank: Umbrella"
-    KICKSPLOSION      = "Progressive: Clank: Kicksplosion"
 
 
 @dataclass(frozen=True)
@@ -62,25 +58,8 @@ CLANK_GADGET_BY_CASE_ID: dict[int, str] = {
 # CLANK_GADGET_BY_CASE_ID's insertion order (Python dicts preserve it).
 CLANK_GADGETS: tuple[str, ...] = tuple(CLANK_GADGET_BY_CASE_ID.values())
 
-# Case name -> that case's "{gadget} (Pickup)" location name, derived from
-# CLANK_GADGET_BY_CASE_ID above (see locations/<case>.py's identical
-# `f"{CLANK_GADGET_BY_CASE_ID[_CASE_ID]} (Pickup)"` construction) -- lets
-# rules/<case>.py reference this location by constant instead of
-# hand-typing the same string a second time.
-GADGET_PICKUP_BY_CASE: dict[str, str] = {
-    CASE_ID_TO_CASE[case_id].name: f"{gadget} (Pickup)"
-    for case_id, gadget in CLANK_GADGET_BY_CASE_ID.items()
-    if case_id in CASE_ID_TO_CASE
-}
-
 
 @dataclass(frozen=True)
 class SACGadgetPickupLocations:
-    """One named constant per "{gadget} (Pickup)" location -- same values as GADGET_PICKUP_BY_CASE, spelled out here so rules/<case>.py can reference an individual location directly instead of a case-name-keyed lookup -- same one-name-per-location layout as constants/weapons.py's SACRatchetWeapons."""
-
-    BOLTAIRE_MUSEUM = "Gadget: Clank: Black Out Pen (Pickup)"
-    ROOFTOP_DEATHTRAP = "Gadget: Clank: Therm-Optic Shades (Pickup)"
-
-assert {v for k, v in vars(SACGadgetPickupLocations).items() if not k.startswith("_")} == set(
-    GADGET_PICKUP_BY_CASE.values()
-), "SACGadgetPickupLocations drifted out of sync with GADGET_PICKUP_BY_CASE -- regenerate its literals"
+    BOLTAIRE_MUSEUM = 'Gadget: Clank: Black Out Pen (Pickup)'
+    ROOFTOP_DEATHTRAP = 'Gadget: Clank: Therm-Optic Shades (Pickup)'

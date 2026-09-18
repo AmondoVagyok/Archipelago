@@ -134,7 +134,7 @@ class LocationHookTests(unittest.TestCase):
                              {0: 0, 11: 1, 39: 1}.get(slot, 7))
 
     def test_hook_locations_exist_and_sources_do_not_overlap(self):
-        from ..core.core import _RATCHET_STRUCT_INTERNAL_TO_DISPLAY
+        from ..constants.weapons import EQUIPMENT_INTERNAL_TO_DISPLAY
         from ..locations import ALL_LOCATIONS
         # PICKUP_LOCATIONS/VENDOR_LOCATIONS are raw WEAPON_ORDER internal
         # names (e.g. "throwTie"), not AP display names -- translate the
@@ -143,8 +143,8 @@ class LocationHookTests(unittest.TestCase):
         # already in display form (e.g. "Black Out Pen (Pickup)") aren't in
         # the dict and pass through unchanged.
         self.assertFalse(set(PICKUP_LOCATIONS) & set(VENDOR_LOCATIONS))
-        pickup_names = {_RATCHET_STRUCT_INTERNAL_TO_DISPLAY.get(n, n) for n in PICKUP_LOCATIONS.values()}
-        vendor_names = {_RATCHET_STRUCT_INTERNAL_TO_DISPLAY.get(n, n) for n in VENDOR_LOCATIONS.values()}
+        pickup_names = {EQUIPMENT_INTERNAL_TO_DISPLAY.get(n, n) for n in PICKUP_LOCATIONS.values()}
+        vendor_names = {EQUIPMENT_INTERNAL_TO_DISPLAY.get(n, n) for n in VENDOR_LOCATIONS.values()}
         self.assertTrue(pickup_names <= set(ALL_LOCATIONS))
         self.assertTrue(vendor_names <= set(ALL_LOCATIONS))
 
