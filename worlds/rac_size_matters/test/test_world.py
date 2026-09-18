@@ -53,8 +53,6 @@ class TestDefaultGeneration(RACSizeMatterTestBase):
             self.assertIn(name, names)
 
     def test_all_armour_pickups_present(self) -> None:
-        # Giant Clank and Challenge Mode are off by default, so their armour
-        # pieces are excluded from generation (see test_giant_clank.py).
         names = {loc.name for loc in self.multiworld.get_locations(self.player)}
         for name in ARMOUR_PICKUP_LOCATIONS:
             if name in GIANT_CLANK_LOCATIONS:
@@ -64,8 +62,6 @@ class TestDefaultGeneration(RACSizeMatterTestBase):
             self.assertIn(name, names)
 
     def test_all_vendor_locations_present(self) -> None:
-        # Challenge Mode is off by default, so RYNO's vendor listing and the
-        # 10 Challenge-Mode-only mods are excluded from generation.
         names = {loc.name for loc in self.multiworld.get_locations(self.player)}
         for name in WEAPON_VENDOR_LOCATIONS:
             if name in CHALLENGE_MODE_RYNO_LOCATION:

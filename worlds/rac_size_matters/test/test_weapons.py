@@ -9,8 +9,6 @@ from .bases import RACSizeMatterTestBase
 
 
 class TestProgressiveWeapons(RACSizeMatterTestBase):
-    # Extra location categories must be enabled to hold the larger
-    # progressive-weapons item pool (more copies needed for level-ups).
     options = {
         "progressive_weapons": 1,
         "all_cutscenes": 1,

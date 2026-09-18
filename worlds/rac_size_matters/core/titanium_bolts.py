@@ -15,8 +15,6 @@ __all__ = [
     "TitaniumBoltInventory",
 ]
 
-# Layout (identical on PSP and PS2), relative to TITANIUM_BOLT_BASE: +0x00 pickup
-# (5-byte bitmask, one bit per bolt), +0x05 total (informational, not location-tracked).
 _PICKUP_ADDR = TITANIUM_BOLT_BASE + 0x00
 _TOTAL_ADDR  = TITANIUM_BOLT_BASE + 0x05
 

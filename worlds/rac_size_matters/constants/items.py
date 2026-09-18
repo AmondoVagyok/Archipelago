@@ -55,12 +55,15 @@ class Rac5ProgressiveArmours:
     PROGRESSIVE_HYPERBOREAN = "Progressive Hyperborean Armor"
     PROGRESSIVE_CHAMELEON = "Progressive Chameleon Armor"
 
+    PROGRESSIVE_ARMOUR = "Progressive Armour"
+
 
 @dataclass(frozen=True)
 class Rac5Infobots:
     """String constants for each infobot"""
 
-    POKITARU = "Infobot: Pokitaru and Ryllus"
+    POKITARU = "Infobot: Pokitaru"
+    RYLLUS = "Infobot: Ryllus"
     KALIDON = "Infobot: Kalidon"
     METALIS = "Infobot: Metalis"
     OUTPOST_OMEGA = "Infobot: Outpost Omega"

@@ -12,12 +12,16 @@ from ..core import (
 )
 from ..core.address_maps import PLAYER_BOLT_COUNT
 from ..core.player_bolts import MAX_PLAYER_BOLTS
+from ..core.notifications import receipt_text
 from ..items import (
     ARMOUR_DISPLAY_TO_INTERNAL,
     ARMOUR_PIECE_BITMASKS,
     ARMOUR_SET_DISPLAY_TO_INTERNAL,
+    ARMOUR_SETS,
     GADGET_DISPLAY_TO_INTERNAL,
     PROGRESSIVE_ARMOUR_NAME,
+    PROGRESSIVE_ARMOUR_UNIFIED_NAME,
+    PROGRESSIVE_CHALLENGE_MODE_NAME,
     PROGRESSIVE_MOD_NAME,
     PROGRESSIVE_WEAPON_NAME,
     WEAPON_DISPLAY_TO_INTERNAL,
@@ -25,15 +29,12 @@ from ..items import (
 )
 from ..locations import GADGET_INTERNAL_TO_LOCATION, WEAPON_INTERNAL_TO_LOCATION
 
-# Mirrors _OUTPOST_OMEGA_1_ID in core/orchestration/_planet_lifecycle.py.
 _OUTPOST_OMEGA_1_PLANET_ID = 0x06
 
 PROGRESSIVE_WEAPON_NAME_REVERSE = {v: k for k, v in PROGRESSIVE_WEAPON_NAME.items()}
 PROGRESSIVE_ARMOUR_NAME_REVERSE = {v: k for k, v in PROGRESSIVE_ARMOUR_NAME.items()}
 PROGRESSIVE_MOD_NAME_REVERSE = {v: k for k, v in PROGRESSIVE_MOD_NAME.items()}
 
-# WEAPON_MOD_NAME_TO_SLOT / progressive-mod counts give 1-indexed slot
-# numbers — WeaponInventory.set_mod() wants the struct field name.
 _SLOT_ATTR: dict[int, str] = {1: "mod_slot_one", 2: "mod_slot_two", 3: "mod_slot_three"}
 
 
@@ -57,8 +58,6 @@ class VendorHandlerMixin:
             loc_id = self._location_name_to_id.get(name)
             if loc_id is None or loc_id in self._already_hinted or loc_id in checked:
                 continue
-            # Slot options can remove locations from the world entirely, so
-            # skip anything the server doesn't know about for this slot.
             if server_locations is not None and loc_id not in server_locations:
                 continue
             new_ids.append(loc_id)
@@ -70,8 +69,6 @@ class VendorHandlerMixin:
         self._already_hinted.update(new_ids)
 
 
-# Inventory application: parses items_received into internal-name structures for Core.apply_inventory().
-# Bolt/trap filler grants below are the exception — they poke pine directly.
 
 class InventoryMixin:
     def _parse_inventory(self) -> dict:
@@ -79,6 +76,8 @@ class InventoryMixin:
         weapon_prog_counts:     dict[str, int] = {}
         weapon_mod_prog_counts: dict[str, int] = {}
         armour_prog_counts:     dict[str, int] = {}
+        unified_armour_count = 0
+        challenge_mode_count = 0
         weapon_unlocked:  dict[str, bool]     = {}
         gadget_unlocked:  dict[str, bool]     = {}
         weapon_mod_slots: dict[str, set[str]] = {}
@@ -87,6 +86,9 @@ class InventoryMixin:
 
         for network_item in self.items_received:
             item_name = self.item_names[self.game].get(network_item.item, "")
+            if item_name == "Infobot: Pokitaru and Ryllus":
+                infobot_planets.update(("POKITARU", "RYLLUS"))
+                continue
 
             if item_name in PROGRESSIVE_WEAPON_NAME_REVERSE:
                 display = PROGRESSIVE_WEAPON_NAME_REVERSE[item_name]
@@ -101,6 +103,12 @@ class InventoryMixin:
                 mod_internal = WEAPON_DISPLAY_TO_INTERNAL.get(mod_display)
                 if mod_internal:
                     weapon_mod_slots.setdefault(mod_internal, set()).add(_SLOT_ATTR[slot])
+                continue
+            if item_name == PROGRESSIVE_ARMOUR_UNIFIED_NAME:
+                unified_armour_count += 1
+                continue
+            if item_name == PROGRESSIVE_CHALLENGE_MODE_NAME:
+                challenge_mode_count += 1
                 continue
             if item_name in PROGRESSIVE_ARMOUR_NAME_REVERSE:
                 display = PROGRESSIVE_ARMOUR_NAME_REVERSE[item_name]
@@ -127,7 +135,18 @@ class InventoryMixin:
                     bitmask |= bit
             armour_unlocked[internal] = armour_unlocked.get(internal, 0) | bitmask
 
-        # Progressive weapons: first copy unlocks, each further copy levels up
+        remaining = unified_armour_count
+        for _display, internal in ARMOUR_SETS:
+            if remaining <= 0:
+                break
+            pieces = min(remaining, len(ARMOUR_PIECE_BITMASKS))
+            bitmask = 0
+            for i, bit in enumerate(ARMOUR_PIECE_BITMASKS):
+                if i < pieces:
+                    bitmask |= bit
+            armour_unlocked[internal] = armour_unlocked.get(internal, 0) | bitmask
+            remaining -= pieces
+
         weapon_levels: dict[str, int] = {}
         for display, count in weapon_prog_counts.items():
             internal = WEAPON_DISPLAY_TO_INTERNAL.get(display)
@@ -137,7 +156,6 @@ class InventoryMixin:
                 weapon_unlocked[internal] = True
             weapon_levels[internal] = min(max(0, count - 1), WEAPON_MAX_LEVELS.get(internal, 1) - 1)
 
-        # Progressive mods: each copy unlocks the next mod slot in sequence
         for display, count in weapon_mod_prog_counts.items():
             internal = WEAPON_DISPLAY_TO_INTERNAL.get(display)
             if not internal:
@@ -145,8 +163,6 @@ class InventoryMixin:
             slots = {_SLOT_ATTR[i] for i in range(1, count + 1) if i in _SLOT_ATTR}
             weapon_mod_slots.setdefault(internal, set()).update(slots)
 
-        # Outpost Omega 1's facility puzzle requires the Shrink Ray regardless of AP ownership —
-        # force it on here (not recorded as owned) so it stays unlocked without granting the item.
         if self._wiring.planet.planet_id == _OUTPOST_OMEGA_1_PLANET_ID:
             gadget_unlocked["shrink_ray"] = True
 
@@ -157,35 +173,46 @@ class InventoryMixin:
             "weapon_mods":     weapon_mod_slots,
             "armour_unlocked": armour_unlocked,
             "infobot_planets": infobot_planets,
+            "challenge_mode":  challenge_mode_count,
         }
 
     async def force_sync(self) -> None:
         """Force the player's in-game state to match AP, wiping the current planet's weapon/gadget/mod
-        array first. Skipped if the planet isn't ready or a vendor is open, which already zero/restore."""
+        array first. Skipped if the planet isn't ready or a vendor is open, which already zero/restore.
+        Also skipped entirely while no save is loaded (see Core.at_main_menu) — apply_inventory()/
+        restore_world_states() already no-op in that case, but weapons.wipe() below doesn't
+        go through either of them and would otherwise write to a stale/invalid planet base."""
         if not self.pine_connected:
             return
         inventory = self._parse_inventory()
         checked   = self._checked_location_names()
         async with self._pine_lock:
             wiring = self._wiring
+            if wiring.at_main_menu:
+                return
             if wiring.planet.is_ready and not wiring.vendor_active:
                 wiring.planet.weapons.wipe()
             wiring.apply_inventory(**inventory)
             wiring.restore_world_states(checked)
             wiring.restore_armour_from_locations(checked)
+        self._try_restore_weapon_state()
         self._pending_item_apply = False
 
     async def _apply_received_items(self) -> None:
+        if self._wiring.native.waiting:
+            self._pending_item_apply = True
+            return
         if not self.pine_connected:
             self._pending_item_apply = True
             return
         if not self.items_received:
             return
+        if self._wiring.at_main_menu:
+            self._pending_item_apply = True
+            return
         inventory = self._parse_inventory()
         async with self._pine_lock:
             self._wiring.apply_inventory(**inventory)
-            # Bolts/traps use global addresses, so apply them regardless of
-            # planet readiness.
             if self._filler_checkpoint_synced:
                 self._grant_new_bolt_items()
                 self._grant_new_trap_items()
@@ -215,7 +242,6 @@ class InventoryMixin:
             self._wiring.restore_world_states(checked)
             self._wiring.restore_armour_from_locations(checked)
 
-    # Bonus weapon pickup / intro-scripted vendor locations
 
     def _grant_random_bonus_item(self, trigger_name: str) -> None:
         """Called when lacerator/acid_bomb_glove/concussion_gun's unlocked bit transitions 0->1, from
@@ -259,18 +285,12 @@ class InventoryMixin:
         self._notification_item_index = len(self.items_received)
         if not new_items or not self.pine_connected:
             return
-        net_item = new_items[-1]
-        item_name   = self.item_names[self.game].get(net_item.item, "???")
-        player_name = self.player_names.get(net_item.player, f"Player {net_item.player}")
-        msg = colored_text(
-            "Received ", TextColour.PURPLE, item_name,
-            TextColour.WHITE, " from ", TextColour.ORANGE, player_name, TextColour.WHITE,
-        )
-        self._write_notification_text(msg)
+        for net_item in new_items:
+            item_name = self.item_names[self.game].get(net_item.item, "???")
+            player_name = self.player_names.get(net_item.player, f"Player {net_item.player}")
+            self._write_notification_text(receipt_text(item_name, player_name, bool(net_item.flags & 4)))
 
     def _grant_new_bolt_items(self) -> None:
-        # Starting bolts are granted separately by _grant_starting_items(); this scan just needs
-        # to avoid double-counting that precollected item, which is always the earliest entry.
         starting_bolts = int(self.slot_data.get("starting_bolts", 0))
         skipped_precollected = self._processed_item_count != 0
         new_items = self.items_received[self._processed_item_count:]
@@ -294,15 +314,11 @@ class InventoryMixin:
                 grant = min(200000, max(75000, int(current * 0.2)))
                 current = min(current + grant, MAX_PLAYER_BOLTS)
             self.pine.write_int32(PLAYER_BOLT_COUNT, current)
-            # Rebaseline so Core's per-tick apply_boost() doesn't treat this
-            # one-shot filler grant as organic gameplay gain.
             self._wiring.player_bolts.rebaseline(current)
         except Exception as exc:
             self._log(f"[RAC] Could not grant bolts: {exc}", "warning")
 
     def _grant_new_trap_items(self) -> None:
-        # Trap addresses (DREAMTIME_EFFECT, BRIGHTNESS_ADDRESS, CHEATS) are
-        # all global, safe to write mid-transition.
         new_items = self.items_received[self._processed_trap_count:]
         self._processed_trap_count = len(self.items_received)
 

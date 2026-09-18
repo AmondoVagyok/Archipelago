@@ -8,8 +8,6 @@ from ..locations import (
 )
 from .bases import RACSizeMatterTestBase
 
-# Challenge Mode armour is off by default in both classes below, so it's always
-# excluded regardless of Giant Clank.
 _CHALLENGE_MODE_ARMOUR_LOCATIONS = CHALLENGE_MODE_1_ARMOUR_LOCATIONS | CHALLENGE_MODE_2_ARMOUR_LOCATIONS
 
 

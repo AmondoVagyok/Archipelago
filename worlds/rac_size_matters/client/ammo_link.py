@@ -5,8 +5,6 @@ import time
 
 from CommonClient import logger
 
-# Throttle ammo change detection/push — ammo can tick down every shot,
-# so pushing every poll tick would spam the server for no benefit.
 _AMMO_LINK_PUSH_INTERVAL: float = 0.5
 
 
@@ -31,7 +29,6 @@ class AmmoLinkMixin:
         if not self._wiring.planet.is_ready:
             return
         if self._wiring.vendor.ammo_link_paused:
-            # Vendor's buy-new view shows a fake ammo count; don't push that out to other players.
             return
         now = time.monotonic()
         if now - self._last_ammo_link_push < _AMMO_LINK_PUSH_INTERVAL:
@@ -52,8 +49,6 @@ class AmmoLinkMixin:
             "key": self._ammo_link_key(),
             "default": {},
             "want_reply": False,
-            # "update" merges just our own entries into the shared key; "replace" would blow away
-            # other linked players' entries since each push only carries our own subset.
             "operations": [{"operation": "update", "value": data}],
         }])
 
@@ -63,7 +58,6 @@ class AmmoLinkMixin:
         if not self._ammo_link_enabled or not self._wiring.planet.is_ready:
             return
         if self._wiring.vendor.ammo_link_paused:
-            # Don't let an incoming update clobber the fake vendor-view ammo count mid-display.
             return
         data = self.stored_data.get(self._ammo_link_key())
         if not isinstance(data, dict) or data == self._applied_ammo_link:
@@ -75,8 +69,6 @@ class AmmoLinkMixin:
                 continue
             if weapons.get_ammo(name) != value:
                 weapons.set_ammo(name, value)
-        # Rebaseline the push-side cache too, otherwise the peer's own write would look like
-        # a local change and get echoed straight back out.
         self._pushed_ammo_link = {
             name: weapons.get_ammo(name) for name, owned in weapons.weapons.items() if owned
         }

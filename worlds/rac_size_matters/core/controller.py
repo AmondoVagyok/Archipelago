@@ -25,7 +25,6 @@ class ControllerButtons(IntFlag):
     SQUARE   = 0x80
 
 
-# Held together, forces the Planet Menu open via MenuState.set_menu(PLANET_MENU).
 PLANET_MENU_HOTKEY: tuple[PauseSelectButtons | ControllerButtons, ...] = (
     ControllerButtons.L1,
     ControllerButtons.L2,
@@ -51,8 +50,6 @@ class GlobalButtonState:
         pause_select_addr = addrs.controller_pause_select_v2 if addrs is not None else None
         if pause_select_addr is None:
             return None
-        # Values in the table are stored short-form (no 0x20 EE-RAM prefix),
-        # matching the convention used for controller_pause_select.
         full_addr = 0x20000000 | pause_select_addr
         return cls(
             ipc.read_int8(full_addr),
@@ -76,5 +73,4 @@ class GlobalButtonState:
         return self.pressed(*PLANET_MENU_HOTKEY)
 
     def __repr__(self) -> str:
-        # !r forces repr() — since Python 3.11, IntFlag's __str__ no longer shows flag names.
         return f"GlobalButtonState(pause_sel={self.pause_sel!r}, buttons={self.buttons!r})"

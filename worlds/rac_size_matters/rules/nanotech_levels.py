@@ -8,8 +8,6 @@ from ._helpers import HasGoodExpPlanet
 if TYPE_CHECKING:
     from ..world import RACSizeMatterWorld
 
-# Nanotech Levels above this need access to a good EXP planet — mirrors
-# rules/weapon_levels.py's HasGoodExpPlanet gating.
 _GOOD_EXP_PLANET_THRESHOLD: int = 20
 
 

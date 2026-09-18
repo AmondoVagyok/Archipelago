@@ -7,6 +7,7 @@ from rule_builder.rules import Has
 from ..constants import Rac5Weapons
 from ..core.weapons import WEAPON_DATA
 from ..items import PROGRESSIVE_WEAPON_NAME, WEAPON_DISPLAY_TO_INTERNAL
+from ..items import enabled_weapon_names
 from ..locations import (
     CHALLENGE_MODE_MAX_LEVEL_LOCATIONS,
     CHALLENGE_MODE_SUB_MAX_LEVEL_LOCATIONS,
@@ -14,16 +15,14 @@ from ..locations import (
     WEAPON_LEVEL_LOOKUP,
     WEAPON_MAX_LEVEL_LOCATIONS,
     WEAPON_SUB_MAX_LEVEL_LOCATIONS,
+    disabled_weapon_location_names,
 )
 from ..options import WeaponLevelChecks
-from ._helpers import HasGoodExpPlanet, HasWeapon
+from ._helpers import HasChallengeMode, HasGoodExpPlanet, HasWeapon
 
 if TYPE_CHECKING:
     from ..world import RACSizeMatterWorld
 
-# These three weapons only gain experience at a meaningful rate on specific
-# planets/gadget combos (see HasGoodExpPlanet) — every other weapon levels
-# fine anywhere, so this extra requirement is scoped to just these.
 _NEEDS_GOOD_EXP_PLANET: frozenset[str] = frozenset({
     Rac5Weapons.RYNO, Rac5Weapons.LASER_TRACER, Rac5Weapons.STATIC_BARRIER,
 })
@@ -53,17 +52,13 @@ def set_weapon_level_rules(world: RACSizeMatterWorld) -> None:
     if wants_sub_levels:
         created |= set(WEAPON_SUB_MAX_LEVEL_LOCATIONS)
     if not world.options.ng_plus_items:
-        # RYNO's own levels never got created (regions.py excludes them the
-        # same way) — must match here too, or set_rule() below targets a
-        # Location that was never actually built.
         created -= NG_PLUS_WEAPON_LEVEL_LOCATIONS
     if world.options.challenge_mode.value >= 1:
-        # Levels 5-8 (Challenge Mode Titan variant) — same gating as
-        # regions.py uses to create them.
         if wants_level_8:
             created |= set(CHALLENGE_MODE_MAX_LEVEL_LOCATIONS)
         if wants_sub_levels:
             created |= set(CHALLENGE_MODE_SUB_MAX_LEVEL_LOCATIONS)
+    created -= disabled_weapon_location_names(enabled_weapon_names(dict(world.options.enabled_weapons.value)))
 
     player = world.player
     mw = world.multiworld
@@ -75,6 +70,8 @@ def set_weapon_level_rules(world: RACSizeMatterWorld) -> None:
             if loc_name not in created:
                 continue
             rule = Has(PROGRESSIVE_WEAPON_NAME[display], level) if progressive else HasWeapon(display)
+            if level >= 5:
+                rule = rule & HasChallengeMode(world, 1)
             if display in _NEEDS_GOOD_EXP_PLANET:
                 rule = rule & HasGoodExpPlanet()
             world.set_rule(mw.get_location(loc_name, player), rule)

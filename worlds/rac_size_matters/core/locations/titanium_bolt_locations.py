@@ -7,11 +7,9 @@ from ...constants import Rac5Planets, Rac5TBolts
 
 @dataclass(frozen=True)
 class TitaniumBolt:
-    # Usually a single planet ID; a tuple for locations reachable/registered
-    # under more than one planet (e.g. Outpost Omega Dream, visited twice).
     planet_id: int | tuple[int, ...]
-    bit:       int  # bit position in the pickup int64
-    region:    str  # AP region name
+    bit:       int
+    region:    str
 
     @property
     def delta(self) -> int:
@@ -45,7 +43,6 @@ TITANIUM_BOLTS: dict[str, TitaniumBolt] = {
     Rac5TBolts.QUODRONA_DUMMIES:   TitaniumBolt(0x0A, 36, Rac5Planets.QUODRONA),
 }
 
-# (planet_id, delta) → location name — used by the client for unambiguous detection
 BOLT_BY_PLANET_AND_DELTA: dict[tuple[int, int], str] = {
     (planet_id, bolt.delta): name
     for name, bolt in TITANIUM_BOLTS.items()

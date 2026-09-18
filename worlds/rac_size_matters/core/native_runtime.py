@@ -1,0 +1,230 @@
+"""Install native checks before level startup and consume their journals."""
+from collections import deque
+
+from ..constants import Rac5Locations
+from ..locations import GADGET_INTERNAL_TO_LOCATION, WEAPON_INTERNAL_TO_LOCATION, TITAN_INTERNAL_TO_LOCATION
+from .address_maps import PLANET_ADDRESSES, CURRENT_PLANET_ADDRESS, NEW_PLANET_START_LOAD_ADDR
+from .armour import ARMOUR_PICKUPS, ArmourStruct, ArmourPiece
+from .menu import MenuStateValue
+from .patches import armour_pickup, item_toast, pokitaru_ship, sprout_pickup, vendor as vendor_patch
+from .patches.loader_gate import LoaderGate
+from .vendor import WEAPON_VENDOR_IDS
+from . import vendor_presentation
+
+
+class NativeRuntime:
+    def __init__(self, pine, vendor, send_location, log, shrink_ray=None):
+        self.pine, self.vendor = pine, vendor
+        self.send_location, self.log = send_location, log
+        self.gate = LoaderGate(pine)
+        self.shrink_ray = shrink_ray
+        self.vendor_scouts = None
+        self.presentation = None
+        self.enabled = False
+        self.checked = set()
+        self.allowed_locations = None
+        self.notifications = deque()
+        self.plans = []
+        self.module = None
+        self.pickup = None
+        self.toast = None
+        self.armour = None
+        self._released = False
+        self._attach_reload_requested = False
+        self.waiting = False
+
+    def close(self):
+        try:
+            if self.presentation is not None:
+                self.presentation.close()
+            if (self.shrink_ray is not None and self.shrink_ray.plan is not None
+                    and self.shrink_ray.plan.installed
+                    and self.pine.get_game_id() == "SCUS-97615"
+                    and self.pine.read_int32(CURRENT_PLANET_ADDRESS) == self.shrink_ray.planet):
+                self.shrink_ray.plan.restore()
+        finally:
+            if self.gate.armed and self.pine.get_game_id() == "SCUS-97615":
+                self.gate.release()
+
+    def _prepare(self, target, base):
+        planet = self.vendor.planet
+        planet.is_ready = False
+        planet._pending_planet_id = target
+        planet._prev_gate = -1
+        self.presentation = None
+        self.plans = []
+        self.pickup = None
+        self.toast = None
+        self.armour = None
+        self.vendor.native_plan = None
+        if target not in PLANET_ADDRESSES:
+            return
+        p = self.pine
+        code = b"".join(p.read_bytes(base + offset, 0x10000)
+                        for offset in range(0, 0x240000, 0x10000))
+        if self.shrink_ray is not None:
+            self.shrink_ray.bind(target, base, code)
+        if self.vendor_scouts is not None:
+            self.presentation = vendor_presentation.prepare(p, base, code)
+        base_locations = {
+            WEAPON_VENDOR_IDS[name]: loc
+            for name, loc in (WEAPON_INTERNAL_TO_LOCATION | GADGET_INTERNAL_TO_LOCATION).items()
+            if self.allowed_locations is None or loc in self.allowed_locations
+        }
+        titans = {WEAPON_VENDOR_IDS[name]: loc for name, loc in TITAN_INTERNAL_TO_LOCATION.items()
+                  if self.allowed_locations is None or loc in self.allowed_locations}
+        plan = vendor_patch.prepare(p, code_start=base, code=code,
+                                    base_locations=base_locations, titan_locations=titans,
+                                    checked=self.checked)
+        self.plans.append(plan)
+        box = PLANET_ADDRESSES[target].small_text_box
+        if box is not None:
+            self.toast = item_toast.prepare(p, code_start=base, code=code,
+                                           small_box=box, starter=plan.starter)
+            self.plans.append(self.toast)
+        pieces = [ArmourPiece.CHESTPLATE, ArmourPiece.HELMET, ArmourPiece.GLOVES, ArmourPiece.BOOTS]
+        armour_locations = {
+            ArmourStruct.SET_FIELDS.index(pickup.set_key) * 4 + pieces.index(pickup.piece): pickup.name
+            for pickup in ARMOUR_PICKUPS
+            if self.allowed_locations is None or pickup.name in self.allowed_locations
+        }
+        self.armour = armour_pickup.prepare(p, code_start=base, code=code,
+                                           locations=armour_locations, checked=self.checked)
+        if self.armour is not None:
+            self.plans.append(self.armour)
+        if target == 1:
+            self.plans.append(pokitaru_ship.prepare(p, gate=self.gate))
+        elif target == 2:
+            self.pickup = sprout_pickup.prepare(
+                p, gate=self.gate, checked=Rac5Locations.RYLLUS_SPROUT in self.checked)
+            self.plans.append(self.pickup)
+        installed = []
+        try:
+            for patch in self.plans:
+                patch.install()
+                installed.append(patch)
+        except Exception:
+            for patch in reversed(installed):
+                patch.restore()
+            self.plans = []
+            self.pickup = None
+            raise
+        self.vendor.native_plan = plan
+        self.module = target
+        self._attach_reload_requested = False
+        self.log(f"[RAC] Native vendor checks active for planet {target}.")
+
+    def _eligible_titans(self):
+        if not self.vendor.planet.is_ready or self.vendor.planet.planet_id != self.module:
+            return set()
+        return {WEAPON_VENDOR_IDS[name] for name in TITAN_INTERNAL_TO_LOCATION
+                if self.vendor._is_titan_pending(name)}
+
+    def notify(self, text):
+        self.notifications.append(text)
+
+    def _report(self, name):
+        if name not in self.checked and (self.allowed_locations is None or name in self.allowed_locations):
+            self.send_location(name)
+            self.checked.add(name)
+
+    def _poll(self):
+        if self.presentation is not None and self.vendor.planet.is_ready:
+            try:
+                self.presentation.tick(
+                    self.vendor.planet.menu.get() == MenuStateValue.WEAPONS_VENDOR, self.vendor_scouts)
+            except RuntimeError as exc:
+                self.log(f"[RAC] Vendor display disabled for this level: {exc}")
+                try:
+                    self.presentation.close()
+                except RuntimeError as cleanup:
+                    self.log(f"[RAC] Vendor display cleanup needs a level reload: {cleanup}")
+                self.presentation = None
+        plan = self.vendor.native_plan
+        if plan is None:
+            return
+        plan._validate(replacement=True)
+        for kind, table in plan.tables.items():
+            flags = self.pine.read_bytes(table, 32 if kind == "base" else 16)
+            for slot, name in plan.locations[kind].items():
+                if flags[slot] == 2 and name not in self.checked:
+                    self.vendor.record_native_purchase(kind, name)
+                    self._report(name)
+                elif name in self.checked and flags[slot] != 2:
+                    self.pine.write_int8(table + slot, 2)
+        table = plan.tables["titan"]
+        for slot in self._eligible_titans():
+            if self.pine.read_int8(table + slot) == 3:
+                self.pine.write_int8(table + slot, 1)
+        if self.pickup is not None:
+            self.pickup._validate(replacement=True)
+            if self.pine.read_int8(sprout_pickup.JOURNAL) == 2:
+                self._report(Rac5Locations.RYLLUS_SPROUT)
+            elif Rac5Locations.RYLLUS_SPROUT in self.checked:
+                self.pine.write_int8(sprout_pickup.JOURNAL, 2)
+        if self.armour is not None:
+            self.armour._validate(replacement=True)
+            flags = self.pine.read_bytes(self.armour.table, 32)
+            for slot, name in self.armour.locations.items():
+                if flags[slot] == 2:
+                    self._report(name)
+                elif name in self.checked:
+                    self.pine.write_int8(self.armour.table + slot, 2)
+        if (self.toast is not None and self.notifications and self.vendor.planet.is_ready
+                and self.vendor.planet.menu.get() == MenuStateValue.CLOSED
+                and self.pine.read_int32(self.toast.timer) == 0):
+            item_toast.show(self.toast, self.notifications[0])
+            self.notifications.popleft()
+
+    def tick(self):
+        """Return True while normal Core polling must wait for the loader."""
+        self.waiting = self._tick()
+        return self.waiting
+
+    def _tick(self):
+        if not self.enabled:
+            return False
+        p = self.pine
+        state = p.read_int32(self.gate.STATE)
+        if self._released:
+            if state == 4:
+                return True
+            self._released = False
+        if self.gate.armed and p.read_int32(self.gate.SITE) == self.gate.ORIGINAL:
+            self.gate.armed = False
+        self.gate.arm()
+        held = self.gate.held_module()
+        if held is not None:
+            try:
+                self._prepare(*held)
+            finally:
+                self.gate.release()
+                self._released = True
+            return True
+        if state != 6:
+            if self.presentation is not None:
+                try:
+                    self.presentation.close()
+                except RuntimeError:
+                    pass
+                self.presentation = None
+            return state in (4, 5)
+        target = p.read_int32(CURRENT_PLANET_ADDRESS)
+        if self.module == target and self.vendor.native_plan is not None:
+            try:
+                self.vendor.native_plan._validate(replacement=True)
+                if self.shrink_ray is not None and self.shrink_ray.plan is not None:
+                    self.shrink_ray.plan._validate(replacement=self.shrink_ray.plan.installed)
+            except RuntimeError:
+                self.module = None
+            else:
+                self._poll()
+                return False
+        if target in PLANET_ADDRESSES and self.module != target and not self._attach_reload_requested:
+            if p.read_int32(NEW_PLANET_START_LOAD_ADDR) == 0xFFFFFFFF:
+                self._attach_reload_requested = True
+                self.vendor.planet.is_ready = False
+                p.write_int32(NEW_PLANET_START_LOAD_ADDR, target)
+                self.log("[RAC] Reloading this planet once to install native checks before object initialization.")
+                return True
+        return False

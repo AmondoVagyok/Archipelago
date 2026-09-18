@@ -16,7 +16,7 @@ from ..constants import (
 )
 from ..locations import enabled_clank_challenge_names
 from ..options import ShrinkRayOptions
-from ._helpers import HasProjectileWeapon, HasTitanPrereq
+from ._helpers import HasShrinkRayDoorAccess, HasChallengeMode, HasProjectileWeapon, HasTitanPrereq, weapon_enabled
 
 if TYPE_CHECKING:
     from ..world import RACSizeMatterWorld
@@ -27,7 +27,7 @@ def set_dayni_moon_rules(world: "RACSizeMatterWorld") -> None:
     mw = world.multiworld
 
     _base       = Has(Rac5Gadgets.SPROUT_O_MATIC) & HasProjectileWeapon()
-    _shrink_ray = _base & Has(Rac5Gadgets.SHRINK_RAY)
+    _shrink_ray = _base & HasShrinkRayDoorAccess(world)
 
     if world.options.skill_points.value >= 1:
         world.set_rule(mw.get_location(Rac5SkillPoints.DAYNI_MOON_BOUNCY, player), _base)
@@ -48,10 +48,6 @@ def set_dayni_moon_rules(world: "RACSizeMatterWorld") -> None:
 
     world.set_rule(mw.get_location(Rac5Locations.DAYNI_MOON_HELMET, player), _base)
 
-    # Clank Challenges — item rewards (clank_challenges >= 1) and individual
-    # completions (clank_challenges >= 2), both further filtered by
-    # ClankChallengeGroups — must match regions.py's own filtering, or
-    # set_rule() below would target a Location that was never created.
     enabled_names = enabled_clank_challenge_names(dict(world.options.clank_challenge_groups.value))
     if world.options.clank_challenges.value >= 1:
         for name in (Rac5ClankChallenges.DAYNI_MOON_SHOWDOWN, Rac5ClankChallenges.DAYNI_MOON_INFINITE):
@@ -71,7 +67,8 @@ def set_dayni_moon_rules(world: "RACSizeMatterWorld") -> None:
             if name in enabled_names:
                 world.set_rule(mw.get_location(name, player), True_())
 
-    world.set_rule(mw.get_location(Rac5VendorLocations.DAYNI_MOON_SHOCK, player), True_())
+    if weapon_enabled(world, Rac5Weapons.SHOCK_ROCKET):
+        world.set_rule(mw.get_location(Rac5VendorLocations.DAYNI_MOON_SHOCK, player), True_())
     world.set_rule(mw.get_location(Rac5VendorLocations.DAYNI_MOON_MAP, player), True_())
 
     if world.options.shrink_ray_options.value == ShrinkRayOptions.option_locations:
@@ -84,20 +81,12 @@ def set_dayni_moon_rules(world: "RACSizeMatterWorld") -> None:
                     ),
         )
 
-    # Challenge Mode — NG+ Items only controls the item pool, not location
-    # existence (see regions.py, which both tables must agree with on
-    # which of these locations actually exist).
     if world.options.challenge_mode.value >= 1:
-        # Mootator has no base vendor listing at all — unlike every other
-        # Titan-eligible weapon, its Titan purchase can't piggyback on a
-        # base-purchase rule, so it still needs real progression (see
-        # core/vendor.py's _is_titan_pending()/_purchasable_names()).
-        world.set_rule(
-            mw.get_location(Rac5TitanVendorLocations.DAYNI_MOON_MOOTATOR_TITAN, player),
-            HasTitanPrereq(world, Rac5Weapons.MOOTATOR),
-        )
-        # Shock Rocket's Titan variant available once the base weapon is
-        # purchasable at its own vendor — buying it there is what actually
-        # unlocks the Titan re-purchase in-game now, matching
-        # DAYNI_MOON_SHOCK's own rule above.
-        world.set_rule(mw.get_location(Rac5TitanVendorLocations.DAYNI_MOON_SHOCK_TITAN, player), True_())
+        tier1 = HasChallengeMode(world, 1)
+        if weapon_enabled(world, Rac5Weapons.MOOTATOR):
+            world.set_rule(
+                mw.get_location(Rac5TitanVendorLocations.DAYNI_MOON_MOOTATOR_TITAN, player),
+                HasTitanPrereq(world, Rac5Weapons.MOOTATOR) & tier1,
+            )
+        if weapon_enabled(world, Rac5Weapons.SHOCK_ROCKET):
+            world.set_rule(mw.get_location(Rac5TitanVendorLocations.DAYNI_MOON_SHOCK_TITAN, player), tier1)

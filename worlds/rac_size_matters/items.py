@@ -84,17 +84,9 @@ ARMOUR_DISPLAY_TO_INTERNAL: dict[str, tuple[str, int]] = {
     Rac5Armours.CHAMELEON_BOOTS:         ("chameleon",    0x10),
 }
 
-# NG+ Items option (options.py's NgPlusItems): with it off, RYNO and the
-# Chameleon/Hyperborean armour sets are excluded from the pool. world.py,
-# rules/weapon_levels.py, rules/armour_sets.py, and regions.py must all
-# agree on this same exclusion.
 NG_PLUS_WEAPONS: frozenset[str] = frozenset({Rac5Weapons.RYNO})
 NG_PLUS_ARMOUR_SETS: frozenset[str] = frozenset({"hyperborean", "chameleon"})
 
-# Challenge Mode weapon mods: real vendor-purchase locations only exist for
-# these (see rules/challenge_mode.py + regions.py), but like RYNO/Hyperborean/
-# Chameleon above, they're only ever placed in the pool at all when NG+ Items
-# is on.
 NG_PLUS_WEAPON_MODS: frozenset[str] = frozenset({
     Rac5WeaponMods.AGENTS_OF_DOOM_MOD_EXPLOSIVE,
     Rac5WeaponMods.SCORCHER_MOD_SUNFLARE,
@@ -113,8 +105,6 @@ WEAPON_ITEM_TABLE: dict[str, RACItemData] = {
     for idx, (name, internal) in enumerate(WEAPON_DISPLAY_TO_INTERNAL.items(), start=1)
 }
 
-# Steps for the "Progressive {Weapon}" item: 1 copy unlocks the weapon, each
-# subsequent copy grants the next level up.
 WEAPON_PROGRESSIVE_STEPS: dict[str, int] = {
     display: 1 + max(0, WEAPON_MAX_LEVELS.get(internal, 1) - 1)
     for display, internal in WEAPON_DISPLAY_TO_INTERNAL.items()
@@ -141,7 +131,6 @@ WEAPON_PROGRESSIVE_ITEM_TABLE: dict[str, RACItemData] = {
     for idx, display in enumerate(WEAPON_DISPLAY_TO_INTERNAL)
 }
 
-# Weapons with at least one mod slot (suck_cannon/mootator/ryno have none).
 _WEAPONS_WITH_MODS: list[str] = [
     display for display, internal in WEAPON_DISPLAY_TO_INTERNAL.items()
     if WEAPON_MOD_COUNTS.get(internal, 0) > 0
@@ -161,15 +150,11 @@ PROGRESSIVE_MOD_NAME: dict[str, str] = {
     Rac5Weapons.SUCK_CANNON:     Rac5ProgressiveWeaponMods.SUCK_CANNON,
 }
 
-# One "Progressive {Weapon} Mod" item per mod slot — each additional copy
-# unlocks the next mod slot, independent of the weapon's unlock/level item.
 WEAPON_PROGRESSIVE_MOD_ITEM_TABLE: dict[str, RACItemData] = {
     PROGRESSIVE_MOD_NAME[display]: RACItemData(BASE_ID + 380 + idx, ItemClassification.useful)
     for idx, display in enumerate(_WEAPONS_WITH_MODS)
 }
 
-# Named mod item per mod slot, in slot order, used when Progressive Mods is off —
-# one item per mod slot, each independently grants that specific slot.
 WEAPON_MOD_SLOT_NAMES: dict[str, list[str]] = {
     Rac5Weapons.LACERATOR: [
         Rac5WeaponMods.LACERATOR_MOD_LOCK_ON,
@@ -184,9 +169,6 @@ WEAPON_MOD_SLOT_NAMES: dict[str, list[str]] = {
         Rac5WeaponMods.ACID_BOMB_GLOVE_MOD_ACID_BOMB,
         Rac5WeaponMods.ACID_BOMB_GLOVE_MOD_EPOXY,
     ],
-    # Launcher (normal) before Explosive (Challenge Mode only) — Progressive
-    # Mod items unlock slots in this list order, so the non-NG+ mod must
-    # come first or a reduced (NG+-off) copy count would unlock the wrong one.
     Rac5Weapons.AGENTS_OF_DOOM: [
         Rac5WeaponMods.AGENTS_OF_DOOM_MOD_LAUNCHER,
         Rac5WeaponMods.AGENTS_OF_DOOM_MOD_EXPLOSIVE,
@@ -216,7 +198,6 @@ WEAPON_MOD_SLOT_NAMES: dict[str, list[str]] = {
         Rac5WeaponMods.LASER_TRACER_MOD_PIERCE,
         Rac5WeaponMods.LASER_TRACER_MOD_RICOCHET,
     ],
-    # Challenge Mode only — Suck Cannon has no mod in vanilla.
     Rac5Weapons.SUCK_CANNON: [
         Rac5WeaponMods.SUCK_CANNON_MOD_BOUNCE,
     ],
@@ -231,18 +212,12 @@ WEAPON_MOD_ITEM_TABLE: dict[str, RACItemData] = {
     )
 }
 
-# mod item name -> (weapon display name, 1-indexed slot number)
 WEAPON_MOD_NAME_TO_SLOT: dict[str, tuple[str, int]] = {
     name: (display, i)
     for display in _WEAPONS_WITH_MODS
     for i, name in enumerate(WEAPON_MOD_SLOT_NAMES[display], start=1)
 }
 
-# internal weapon key -> count of that weapon's mods gated behind NG+ Items
-# (the Challenge Mode subset of NG_PLUS_WEAPON_MODS) — world.py subtracts
-# this from WEAPON_MOD_COUNTS when sizing each weapon's Progressive Mod item
-# count with NG+ Items off, since a Progressive Mod item is one item per
-# weapon (not per individual mod).
 WEAPON_NG_PLUS_MOD_COUNTS: dict[str, int] = {
     WEAPON_DISPLAY_TO_INTERNAL[display]: sum(1 for name in mods if name in NG_PLUS_WEAPON_MODS)
     for display, mods in WEAPON_MOD_SLOT_NAMES.items()
@@ -289,6 +264,12 @@ ARMOUR_PROGRESSIVE_ITEM_TABLE: dict[str, RACItemData] = {
     for idx, (display, _) in enumerate(ARMOUR_SETS)
 }
 
+PROGRESSIVE_ARMOUR_UNIFIED_NAME: str = Rac5ProgressiveArmours.PROGRESSIVE_ARMOUR
+
+ARMOUR_PROGRESSIVE_UNIFIED_ITEM_TABLE: dict[str, RACItemData] = {
+    PROGRESSIVE_ARMOUR_UNIFIED_NAME: RACItemData(BASE_ID + 377, ItemClassification.useful),
+}
+
 FILLER_ITEM_TABLE: dict[str, RACItemData] = {
     Rac5Filler.BOLTS: RACItemData(BASE_ID + 400, ItemClassification.filler),
 }
@@ -303,18 +284,14 @@ TRAP_ITEM_TABLE: dict[str, RACItemData] = {
     for idx, name in enumerate(TRAP_DURATIONS, start=1)
 }
 
-# Virtual item for Universal Tracker's glitched-logic sweep only (see
-# world.glitches_item_name / worlds/tracker/TrackerCore.py) — collected into
-# a separate alternate-reachability state UT uses purely for its own
-# glitched-location highlighting. Never added to create_items()'s real pool,
-# so it can never appear in an actual seed; still needs a registered
-# code/classification here since UT creates it via the normal
-# multiworld.create_item() path.
 GLITCHES_ITEM_NAME = "Glitches"
 GLITCHES_ITEM_TABLE: dict[str, RACItemData] = {
-    # +900, not +700: WEAPON_MOD_ITEM_TABLE already starts at BASE_ID + 700
-    # (its enumerate() starts at 0), so +700 collided with Suck Cannon's mod.
     GLITCHES_ITEM_NAME: RACItemData(BASE_ID + 900, ItemClassification.progression),
+}
+
+PROGRESSIVE_CHALLENGE_MODE_NAME = "Progressive Challenge Mode"
+PROGRESSIVE_CHALLENGE_MODE_ITEM_TABLE: dict[str, RACItemData] = {
+    PROGRESSIVE_CHALLENGE_MODE_NAME: RACItemData(BASE_ID + 378, ItemClassification.progression),
 }
 
 ALL_ITEMS: dict[str, RACItemData] = {
@@ -325,10 +302,27 @@ ALL_ITEMS: dict[str, RACItemData] = {
     **WEAPON_PROGRESSIVE_MOD_ITEM_TABLE,
     **WEAPON_MOD_ITEM_TABLE,
     **ARMOUR_PROGRESSIVE_ITEM_TABLE,
+    **ARMOUR_PROGRESSIVE_UNIFIED_ITEM_TABLE,
+    **PROGRESSIVE_CHALLENGE_MODE_ITEM_TABLE,
     **INFOBOT_ITEM_TABLE,
     **FILLER_ITEM_TABLE,
     **TRAP_ITEM_TABLE,
     **GLITCHES_ITEM_TABLE,
 }
+
+DEFAULT_ENABLED_WEAPONS: dict[str, int] = dict.fromkeys(WEAPON_DISPLAY_TO_INTERNAL, 1)
+
+
+def enabled_weapon_names(weights: dict[str, int]) -> frozenset[str]:
+    """Weapon display names the EnabledWeapons option keeps in the pool — shared by
+    world.py (item pool), regions.py (location creation), and every rules/<planet>.py
+    file (rule assignment), all of which must agree on the same exclusion.
+
+    Presence in `weights`, not `.get(name, 1) > 0` — ItemDict (see options.py's
+    EnabledWeapons) culls zero-valued entries on its own __init__, so a weapon the
+    player explicitly disabled is simply absent here, not present with value 0.
+    Defaulting a missing key to "enabled" would silently re-enable exactly the
+    weapon the player turned off."""
+    return frozenset(name for name in WEAPON_DISPLAY_TO_INTERNAL if name in weights)
 
 ITEM_ID_TO_NAME: dict[int, str] = {data.code: name for name, data in ALL_ITEMS.items()}

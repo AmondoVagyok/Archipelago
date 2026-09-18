@@ -12,8 +12,6 @@ if TYPE_CHECKING:
 
 _ZERO_BYTES = bytes(4 * len(QuickSelectStruct.SLOT_ORDER))
 
-# After writing the snapshot, ignore incoming changes for this long — prevents the
-# game's own default-gadget slot writes from polluting the snapshot right after ours.
 _WRITE_COOLDOWN_S: float = 0.3
 
 
@@ -26,8 +24,6 @@ class QuickSelectState(BaseState):
         self._polling = False
         self._write_time: float = 0.0
         self.on_save: Callable[[dict[str, int]], None] = lambda _: None
-        # Weapon-cycler-id -> AP ownership check, wired by Core. Defaults to
-        # permissive so nothing filters before it's wired up.
         self.is_ap_owned: Callable[[int], bool] = lambda _weapon_id: True
 
     def load(self, data: dict[str, int]) -> None:

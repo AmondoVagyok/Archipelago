@@ -7,8 +7,6 @@ from .address_maps import PLAYER_HEALTH_EXP
 if TYPE_CHECKING:
     from ..pypine import Pine
 
-# Nanotech level runs 1-75; max_health itself is the level number (e.g. a
-# reading of 6.0 means Nanotech Level 6) — no separate threshold table.
 _MIN_NANOTECH_LEVEL = 1
 _MAX_NANOTECH_LEVEL = 75
 
@@ -29,12 +27,8 @@ class PlayerHealthExpInventory:
 
     def __init__(self, pine: Pine) -> None:
         self.pine = pine
-        # 1 = no boost (default/off); set directly by the client from slot_data.
         self.multiplier: int = 1
-        # Last-seen raw value, used to diff this tick's gain — see apply_boost().
         self._prev: int | None = None
-        # Last-seen Nanotech level derived from max_health, used to detect newly-reached
-        # levels — see check_level(). Starts at 5 (default starting level, never a location).
         self._last_level: int = 5
 
     def get(self) -> int:

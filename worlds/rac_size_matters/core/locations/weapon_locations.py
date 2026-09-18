@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-# Location-derived lookups transitively import back into core.weapons, so
-# they're built lazily on first use to avoid an import cycle.
 _LOC_DATA_LOADED = False
 VENDOR_WEAPON_LOC: dict[str, str] = {}
 VENDOR_GADGET_LOC: dict[str, str] = {}
@@ -18,12 +16,8 @@ _SLOT_TO_UNLOCK_ATTR: dict[str, str] = {
     "mod_slot_three": "mod_unlock_three",
 }
 
-# (internal_weapon, mod_unlock_attr) -> vendor planet. Drives mod_unlock_N's
-# "purchasable" byte, gated by weapon ownership (and extra gadgets on Challax).
 MOD_UNLOCK_PLANET: dict[tuple[str, str], str] = {}
 
-# Planets whose mod vendor requires extra gadgets beyond owning the weapon
-# itself, mirroring that planet's AP access_rule for its mod locations.
 MOD_UNLOCK_EXTRA_GADGETS: dict[str, tuple[str, ...]] = {}
 
 
@@ -65,7 +59,6 @@ def _ensure_loc_data() -> None:
 
 
 def __getattr__(name: str):
-    # Resolve the lazily-built location lookups on attribute access.
     if name in (
         "VENDOR_WEAPON_LOC", "VENDOR_GADGET_LOC",
         "WEAPON_INTERNAL_TO_LOCATION", "GADGET_INTERNAL_TO_LOCATION",

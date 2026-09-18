@@ -18,8 +18,6 @@ from .locations.challenge_locations import (
 if TYPE_CHECKING:
     from ..pypine import Pine
 
-# Distinct addresses for every tracked clank-challenge byte, batch-read together
-# once per check()/sync() call instead of one pine.read_int8 per location.
 _CLANK_ADDRESSES: tuple[int, ...] = tuple(ALL_CLANK_ADDRESS_MAP)
 
 
@@ -112,8 +110,6 @@ class ChallengeInventory:
         return f"ChallengeInventory(completed={len(self.completed)}/{len(ALL_CLANK_ADDRESS_MAP)})"
 
 
-# Distinct addresses for every tracked skyboard-race byte, batch-read together once
-# per check()/sync() call — several races on the same planet share one byte.
 _SKYBOARD_ADDRESSES: tuple[int, ...] = tuple({address for address, _mask in SKYBOARD_ADDRESS_MASK_MAP})
 
 

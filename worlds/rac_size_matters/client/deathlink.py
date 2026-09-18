@@ -124,6 +124,8 @@ class DeathLinkMixin:
             self._kill_player_sync()
 
     def _kill_player_sync(self) -> None:
+        if self._wiring.at_main_menu:
+            return
         planet_id = self._wiring.planet.planet_id
         state_addr, health_addr = PLAYER_ADDRS.get(planet_id, (PLAYER_STATE, PLAYER_HEALTH))
         death_state = random.choice(list(_DEATH_CAUSES))

@@ -7,8 +7,6 @@ from .address_maps import PLAYER_BOLT_COUNT
 if TYPE_CHECKING:
     from ..pypine import Pine
 
-# Bolt balance never exceeds this regardless of source — also imported directly
-# by client/handlers.py and client/vendor.py for grants written outside this class.
 MAX_PLAYER_BOLTS = 20_000_000
 
 
@@ -18,9 +16,7 @@ class PlayerBoltInventory:
 
     def __init__(self, pine: Pine) -> None:
         self.pine = pine
-        # 1 = no boost (default/off); set directly by the client from slot_data.
         self.multiplier: int = 1
-        # Last-seen raw value, used to diff this tick's gain — see apply_boost().
         self._prev: int | None = None
 
     def get(self) -> int:

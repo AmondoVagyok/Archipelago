@@ -26,7 +26,7 @@ class Rac5Locations:
     METALIS_ESCAPE = "Metalis: Escape the planet (Giant Clank)"
     METALIS_GLOVES = "Metalis: Electroshock Gloves from Giant Clank"
 
-    DREAMTIME_COMPLETE = "Dreamtime: Complete Dreamtime"  # Replaces "??????????"
+    DREAMTIME_COMPLETE = "Dreamtime: Complete Dreamtime"
     DREAMTIME_CHESTPLATE = "Dreamtime: Crystallix Chestplate after Giant Clank chase"
 
     OUTPOST_OMEGA_ESCAPE = "Outpost Omega: Escape the medical facility"
@@ -39,7 +39,7 @@ class Rac5Locations:
 
     DAYNI_MOON = "Dayni Moon: Catch Luna"
     DAYNI_MOON_HELMET = "Dayni Moon: Mega Bomb Helmet before Luna fight"
-    DAYNI_MOON_LUNA = "Dayni Moon: Defeat Luna"  # Replaces "'Disable' Luna"
+    DAYNI_MOON_LUNA = "Dayni Moon: Defeat Luna"
 
     INSIDE_CLANK_TECHNOMITES = "Inside Clank: Defeat all Technomites"
     INSIDE_CLANK_ESCAPE = "Inside Clank: Escape from Clank"
@@ -48,8 +48,6 @@ class Rac5Locations:
     QUODRONA_FIND = "Quodrona: Find Otto Destruct"
     QUODRONA_GOAL = "Quodrona: Defeat Otto Destruct"
 
-    # Challenge Mode armour pickups (Challenge Mode 1+ for Hyperborean,
-    # Challenge Mode 2 for Chameleon).
     POKITARU_HYPERBOREAN_GLOVES = "Pokitaru: Hyperborean Gloves"
     RYLLUS_HYPERBOREAN_BOOTS = "Ryllus: Hyperborean Boots"
     DREAMTIME_HYPERBOREAN_CHESTPLATE = "Dreamtime: Hyperborean Chestplate"

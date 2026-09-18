@@ -31,7 +31,6 @@ class Rac5VendorLocations:
 
     QUODRONA_LASER = "Quodrona: Gadgetron Vendor: Laser Tracer - 85,000"
 
-    # Challenge Mode 1+ only — RYNO has no normal-game vendor listing.
     POKITARU_RYNO = "Pokitaru: Gadgetron Vendor: RYNO - 9,990,000"
 
 
@@ -54,7 +53,6 @@ class Rac5ModVendorLocations:
     QUODRONA_SHOCK_LOCK = "Quodrona: Slim Cognito: Shock Rocket Lock On Mod - 5,000"
     QUODRONA_SHOCK_AFTER = "Quodrona: Slim Cognito: Shock Rocket After Shock Mod - 25,000"
 
-    # Challenge Mode 1+ only.
     KALIDON_AGENTS_EXPLOSIVE = "Kalidon: Slim Cognito: Agents of Doom Explosive Mod - 450,000"
     KALIDON_SCORCHER_SUNFLARE = "Kalidon: Slim Cognito: Scorcher Sunflare Mod - 200,000"
     KALIDON_SUCK_CANNON_BOUNCE = "Kalidon: Slim Cognito: Suck Cannon Bounce Mod - 600,000"

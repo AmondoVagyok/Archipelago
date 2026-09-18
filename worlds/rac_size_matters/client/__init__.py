@@ -25,7 +25,6 @@ async def main(args: Namespace) -> None:
         ctx.run_gui()
     ctx.run_cli()
 
-    # The first PINE connect attempt is triggered from the "Connected" AP handler in context.py, not here.
     asyncio.create_task(ctx.game_watcher(), name="RAC game watcher")
 
     await ctx.exit_event.wait()

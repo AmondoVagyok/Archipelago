@@ -11,7 +11,9 @@ from ..constants import (
     Rac5TBolts,
     Rac5TitanVendorLocations,
     Rac5VendorLocations,
+    Rac5Weapons,
 )
+from ._helpers import HasChallengeMode, weapon_enabled
 
 if TYPE_CHECKING:
     from ..world import RACSizeMatterWorld
@@ -29,31 +31,28 @@ def set_outpost_omega_rules(world: "RACSizeMatterWorld") -> None:
     if world.options.all_missions:
         world.set_rule(mw.get_location(Rac5CutsceneLocations.OUTPOST_OMEGA_ESCAPE, player), _facility)
 
-    # Challenge Mode — NG+ Items only controls the item pool, not location
-    # existence (see regions.py, which both tables must agree with on
-    # which of these locations actually exist).
     if world.options.challenge_mode.value >= 1:
-        # Titan variant available once the base weapon is purchasable at
-        # its own vendor — buying it there is what actually unlocks the
-        # Titan re-purchase in-game now (see core/vendor.py), matching
-        # OUTPOST_OMEGA_BEE's own rule in set_outpost_omega_two_rules()
-        # below.
-        world.set_rule(mw.get_location(Rac5TitanVendorLocations.OUTPOST_OMEGA_BEE_TITAN, player), True_())
+        if weapon_enabled(world, Rac5Weapons.BEE_MINE_GLOVE):
+            world.set_rule(
+                mw.get_location(Rac5TitanVendorLocations.OUTPOST_OMEGA_BEE_TITAN, player), HasChallengeMode(world, 1)
+            )
     if world.options.challenge_mode.value >= 2:
-        world.set_rule(mw.get_location(Rac5Locations.OUTPOST_OMEGA_CHAMELEON_GLOVES, player), True_())
+        world.set_rule(
+            mw.get_location(Rac5Locations.OUTPOST_OMEGA_CHAMELEON_GLOVES, player), HasChallengeMode(world, 2)
+        )
 
 
 def set_outpost_omega_two_rules(world: "RACSizeMatterWorld") -> None:
     player = world.player
     mw = world.multiworld
 
-    world.set_rule(mw.get_location(Rac5VendorLocations.OUTPOST_OMEGA_BEE, player), True_())
+    if weapon_enabled(world, Rac5Weapons.BEE_MINE_GLOVE):
+        world.set_rule(mw.get_location(Rac5VendorLocations.OUTPOST_OMEGA_BEE, player), True_())
     if world.options.enable_skyboard_challenge_skill_points:
         world.set_rule(mw.get_location(Rac5SkillPoints.OUTPOST_OMEGA_AWESOME, player), True_())
 
-    if world.options.all_missions:
-        rematch_rule = True_() if world.options.skyboard_challenges.value >= 1 else Has(Rac5Gadgets.POLARIZER)
-        world.set_rule(mw.get_location(Rac5CutsceneLocations.OUTPOST_OMEGA_REMATCH, player), rematch_rule)
+    if world.options.all_missions and world.options.skyboard_challenges.value >= 1:
+        world.set_rule(mw.get_location(Rac5CutsceneLocations.OUTPOST_OMEGA_REMATCH, player), True_())
 
     world.set_rule(mw.get_location(Rac5TBolts.OUTPOST_OMEGA_DREAM, player), True_())
 

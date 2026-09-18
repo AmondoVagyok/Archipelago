@@ -46,6 +46,9 @@ def setup_options_from_slot_data(world: "RACSizeMatterWorld") -> None:
             world.options.progressive_weapons.value = world.passthrough["progressive_weapons"]
             world.options.progressive_mods.value = world.passthrough.get("progressive_mods", False)
             world.options.progressive_armour.value = world.passthrough["progressive_armour"]
+            world.options.enabled_weapons.value = world.passthrough.get(
+                "enabled_weapons", dict(world.options.enabled_weapons.default)
+            )
             world.options.death_link.value = world.passthrough["death_link"]
             world.options.clank_challenges.value = world.passthrough.get("clank_challenges", 0)
             world.options.clank_challenge_groups.value = world.passthrough.get(
@@ -62,6 +65,8 @@ def setup_options_from_slot_data(world: "RACSizeMatterWorld") -> None:
             world.options.armour_set_checks.value = world.passthrough["armour_set_checks"]
             world.options.ng_plus_items.value = world.passthrough.get("ng_plus_items", True)
             world.options.challenge_mode.value = world.passthrough.get("challenge_mode", 0)
+            world.options.progressive_challenge_mode.value = \
+                world.passthrough.get("progressive_challenge_mode", False)
             world.options.random_starting_planet.value = world.passthrough.get("random_starting_planet", 0)
             world.options.starting_weapons.value = world.passthrough["starting_weapons"]
             world.options.starting_gadgets.value = world.passthrough["starting_gadgets"]

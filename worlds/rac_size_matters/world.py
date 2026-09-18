@@ -13,6 +13,7 @@ from .items import (
     ARMOUR_DISPLAY_TO_INTERNAL,
     ARMOUR_ITEM_TABLE,
     ARMOUR_PROGRESSIVE_ITEM_TABLE,
+    ARMOUR_PROGRESSIVE_UNIFIED_ITEM_TABLE,
     ARMOUR_SETS,
     GADGET_ITEM_TABLE,
     GLITCHES_ITEM_NAME,
@@ -21,14 +22,18 @@ from .items import (
     NG_PLUS_WEAPON_MODS,
     NG_PLUS_WEAPONS,
     PROGRESSIVE_ARMOUR_NAME,
+    PROGRESSIVE_ARMOUR_UNIFIED_NAME,
+    PROGRESSIVE_CHALLENGE_MODE_NAME,
     PROGRESSIVE_MOD_NAME,
     PROGRESSIVE_WEAPON_NAME,
     TRAP_ITEM_TABLE,
     WEAPON_DISPLAY_TO_INTERNAL,
     WEAPON_ITEM_TABLE,
     WEAPON_MOD_ITEM_TABLE,
+    WEAPON_MOD_NAME_TO_SLOT,
     WEAPON_NG_PLUS_MOD_COUNTS,
     WEAPON_PROGRESSIVE_STEPS,
+    enabled_weapon_names,
 )
 from .locations import ALL_LOCATIONS
 from .options import (
@@ -38,6 +43,7 @@ from .options import (
     ClankChallenges,
     EnableClankChallengeSkillPoints,
     EnableSkyboardChallengeSkillPoints,
+    ProgressiveArmour,
     ProgressiveWeapons,
     RACSizeMatterOptions,
     RandomStartingPlanet,
@@ -105,42 +111,22 @@ class RACSizeMatterWorld(World):
     passthrough: dict[str, Any]
     ut_can_gen_without_yaml: bool = True
     disable_ut: bool = False
-    # Universal Tracker glitched-logic support: naming this virtual item
-    # (never placed in a real seed — see items.py's GLITCHES_ITEM_TABLE
-    # comment) tells UT to collect it into its own separate alternate-
-    # reachability sweep, used only to highlight glitch-only locations in
-    # the tracker. Rules that OR in Has(GLITCHES_ITEM_NAME) are unaffected
-    # during real generation, since that item is never actually created
-    # there.
     glitches_item_name: ClassVar[str] = GLITCHES_ITEM_NAME
     tracker_world: ClassVar = tracker_world
     dynamic_pine = _DYNAMIC_PINE_SPEC
 
-    # Random Starting Planet: the runtime planet id the client should
-    # force-load into on its very first boot-in, instead of the game's
-    # hardcoded Pokitaru start. None when the option is off. Set in
-    # create_items() (via _choose_preplaced_items()), read by fill_slot_data().
     starting_planet_id: int | None = None
 
-    # Item names precollected ahead of the pool (starting-planet infobots,
-    # Starting Weapons/Gadgets rolls) -- set by _choose_preplaced_items(),
-    # called from create_items().
     preplaced_items: list[str]
 
     def create_item(self, name: str) -> RACItem:
         data = ALL_ITEMS[name]
         classification = data.classification
-        # Armour pieces gate armour set check locations, so they must be tracked
-        # as progression items for AP's reachability sweep to work correctly.
         if (classification == ItemClassification.useful
                 and self.options.armour_set_checks
-                and (name in ARMOUR_ITEM_TABLE or name in ARMOUR_PROGRESSIVE_ITEM_TABLE)):
+                and (name in ARMOUR_ITEM_TABLE or name in ARMOUR_PROGRESSIVE_ITEM_TABLE
+                     or name in ARMOUR_PROGRESSIVE_UNIFIED_ITEM_TABLE)):
             classification = ItemClassification.progression_skip_balancing
-        # Static Barrier/Suck Cannon are the only "useful" weapons, but Weapon
-        # Level Checks gates their own level locations behind owning them
-        # (HasWeapon rule), so they must be progression too when that option
-        # is on — otherwise the fill algorithm can place them somewhere that
-        # never becomes reachable, same issue armour pieces had above.
         if (classification == ItemClassification.useful
                 and self.options.weapon_level_checks
                 and name in WEAPON_ITEM_TABLE):
@@ -169,32 +155,27 @@ class RACSizeMatterWorld(World):
 
         random_start = self.options.random_starting_planet.value
         if random_start != RandomStartingPlanet.option_off:
-            # Two random planets replace the fixed Pokitaru/Ryllus start; their
-            # infobots stay in the normal item pool like any other infobot.
-            weighted = random_start == RandomStartingPlanet.option_logic
+            weighted = random_start == RandomStartingPlanet.option_weighted
             planets = choose_starting_planets(self, weighted=weighted)
-            # The client force-loads into the first pick on its very first
-            # boot-in, since the game itself always boots a fresh save into
-            # Pokitaru regardless of which planets are actually unlocked.
             self.starting_planet_id = PLANET_TO_ID[planets[0]]
             preplaced += [PLANET_TO_INFOBOT[planet] for planet in planets]
         else:
-            # Pokitaru and Ryllus are always the starting planets, unlocked
-            # together by their single merged infobot.
             preplaced += [Rac5Infobots.POKITARU]
 
         ng_plus = bool(self.options.ng_plus_items)
+        enabled_weapons = enabled_weapon_names(dict(self.options.enabled_weapons.value))
         weapon_count = self.options.starting_weapons.value
         if weapon_count > 0:
-            # Sampled from the static item tables rather than the itempool,
-            # so NG+-locked weapons (e.g. RYNO) must be excluded here too.
             if self.options.progressive_weapons:
                 weapon_pool = [
                     PROGRESSIVE_WEAPON_NAME[display] for display in WEAPON_PROGRESSIVE_STEPS
-                    if ng_plus or display not in NG_PLUS_WEAPONS
+                    if (ng_plus or display not in NG_PLUS_WEAPONS) and display in enabled_weapons
                 ]
             else:
-                weapon_pool = [name for name in WEAPON_ITEM_TABLE if ng_plus or name not in NG_PLUS_WEAPONS]
+                weapon_pool = [
+                    name for name in WEAPON_ITEM_TABLE
+                    if (ng_plus or name not in NG_PLUS_WEAPONS) and name in enabled_weapons
+                ]
             preplaced += self.random.sample(weapon_pool, min(weapon_count, len(weapon_pool)))
 
         gadget_count = self.options.starting_gadgets.value
@@ -209,36 +190,73 @@ class RACSizeMatterWorld(World):
 
         pool: list[str] = []
         ng_plus = bool(self.options.ng_plus_items)
+        enabled_weapons = enabled_weapon_names(dict(self.options.enabled_weapons.value))
         if self.options.progressive_weapons:
             for display, steps in WEAPON_PROGRESSIVE_STEPS.items():
                 if not ng_plus and display in NG_PLUS_WEAPONS:
                     continue
+                if display not in enabled_weapons:
+                    continue
                 pool += [PROGRESSIVE_WEAPON_NAME[display]] * steps
         else:
-            pool += [name for name in WEAPON_ITEM_TABLE if ng_plus or name not in NG_PLUS_WEAPONS]
+            pool += [
+                name for name in WEAPON_ITEM_TABLE
+                if (ng_plus or name not in NG_PLUS_WEAPONS) and name in enabled_weapons
+            ]
 
         if self.options.progressive_mods:
             for display in PROGRESSIVE_MOD_NAME:
+                if display not in enabled_weapons:
+                    continue
                 internal = WEAPON_DISPLAY_TO_INTERNAL[display]
                 steps = WEAPON_MOD_COUNTS.get(internal, 0)
                 if not ng_plus:
                     steps -= WEAPON_NG_PLUS_MOD_COUNTS.get(internal, 0)
                 pool += [PROGRESSIVE_MOD_NAME[display]] * steps
         else:
-            pool += [name for name in WEAPON_MOD_ITEM_TABLE if ng_plus or name not in NG_PLUS_WEAPON_MODS]
+            pool += [
+                name for name in WEAPON_MOD_ITEM_TABLE
+                if (ng_plus or name not in NG_PLUS_WEAPON_MODS)
+                and WEAPON_MOD_NAME_TO_SLOT[name][0] in enabled_weapons
+            ]
 
         pool += list(GADGET_ITEM_TABLE)
         pool += list(INFOBOT_ITEM_TABLE)
 
-        if self.options.progressive_armour:
+        if self.options.progressive_challenge_mode:
+            pool += [PROGRESSIVE_CHALLENGE_MODE_NAME] * self.options.challenge_mode.value
+
+        # Hyperborean/Chameleon are also gated behind Challenge Mode tiers 1/2
+        # (see locations/shared.py's CHALLENGE_MODE_1_ARMOUR_LOCATIONS/
+        # CHALLENGE_MODE_2_ARMOUR_LOCATIONS, which regions.py excludes below
+        # that tier) -- independent of the NG+ Items toggle above, so both
+        # must be satisfied or the item pool ends up with Chameleon/Hyperborean
+        # pieces that have no matching location, landing on an unrelated check
+        # and letting that armour appear in-game below its intended tier.
+        challenge_mode = self.options.challenge_mode.value
+
+        def _armour_set_enabled(internal: str) -> bool:
+            if not ng_plus and internal in NG_PLUS_ARMOUR_SETS:
+                return False
+            if internal == "hyperborean" and challenge_mode < 1:
+                return False
+            if internal == "chameleon" and challenge_mode < 2:
+                return False
+            return True
+
+        progressive_armour_mode = self.options.progressive_armour.value
+        if progressive_armour_mode == ProgressiveArmour.option_per_set:
             for display, internal in ARMOUR_SETS:
-                if not ng_plus and internal in NG_PLUS_ARMOUR_SETS:
+                if not _armour_set_enabled(internal):
                     continue
                 pool += [PROGRESSIVE_ARMOUR_NAME[display]] * 4
+        elif progressive_armour_mode == ProgressiveArmour.option_unified:
+            steps = sum(4 for _display, internal in ARMOUR_SETS if _armour_set_enabled(internal))
+            pool += [PROGRESSIVE_ARMOUR_UNIFIED_NAME] * steps
         else:
             pool += [
                 name for name in ARMOUR_ITEM_TABLE
-                if ng_plus or ARMOUR_DISPLAY_TO_INTERNAL[name][0] not in NG_PLUS_ARMOUR_SETS
+                if _armour_set_enabled(ARMOUR_DISPLAY_TO_INTERNAL[name][0])
             ]
 
         for name in self.preplaced_items:
@@ -248,23 +266,14 @@ class RACSizeMatterWorld(World):
         if self.options.starting_bolts.value > 0:
             self.multiworld.push_precollected(self.create_item("Bolts"))
 
-        # Fill any remaining slots
         unfilled = len(self.multiworld.get_unfilled_locations(self.player))
         deficit = len(pool) - unfilled
         filler_count = -deficit
 
-        # excluded_locations must end up filler-only; if there's more of them
-        # than filler we're about to generate, they can't all be covered.
-        # Solo-only, since a multiworld's other players supply plenty of
-        # their own filler overall.
         excluded_count = self.get_excluded_count()
         if excluded_count > filler_count and self.multiworld.players == 1:
             self.handle_not_enough_locations(excluded_count - filler_count)
 
-        # Unlike above, this is not gated on players == 1: a deficit means
-        # this world generated more progression/useful items than it has
-        # locations of its own, which is always fatal regardless of
-        # multiworld size.
         if deficit > 0:
             self.handle_not_enough_locations(deficit)
         pool += [self.get_filler_item_name() for _ in range(max(0, filler_count))]
@@ -302,7 +311,7 @@ class RACSizeMatterWorld(World):
         if excluded_count > 10:
             option_list.append("Exclude Locations")
         if not option_list:
-            option_list = ["dunno"]  # Â¯\_(ãƒ„)_/Â¯
+            option_list = ["dunno"]
 
         player_name = self.multiworld.get_player_name(self.player)
         message = (
@@ -321,13 +330,10 @@ class RACSizeMatterWorld(World):
 
     def fill_slot_data(self) -> dict[str, Any]:
         return {
+            "split_infobots": True,
             "death_link": bool(self.options.death_link.value),
             "ammo_link": bool(self.options.ammo_link.value),
             "bolt_link": bool(self.options.bolt_link.value),
-            # AND'd with the host.yaml kill switch (settings.py) — the host
-            # can shut Ghost Link off multiworld-wide regardless of what any
-            # individual player set in their own YAML. DeathLink/AmmoLink/
-            # BoltLink have no such switch, so they aren't gated here.
             "ghost_link": bool(self.options.ghost_link.value) and bool(self.settings.ghost_link),
             "ghost_link_update_interval": int(self.options.ghost_link_update_interval.value),
             "all_missions": bool(self.options.all_missions.value),
@@ -344,11 +350,13 @@ class RACSizeMatterWorld(World):
             "armour_set_checks": bool(self.options.armour_set_checks.value),
             "ng_plus_items": bool(self.options.ng_plus_items.value),
             "challenge_mode": self.options.challenge_mode.value,
+            "progressive_challenge_mode": bool(self.options.progressive_challenge_mode.value),
             "starting_bolts": self.options.starting_bolts.value,
             "death_amnesty": self.options.death_amnesty.value,
             "progressive_weapons": self.options.progressive_weapons.value,
             "progressive_mods": self.options.progressive_mods.value,
             "progressive_armour": self.options.progressive_armour.value,
+            "enabled_weapons": dict(self.options.enabled_weapons.value),
             "starting_weapons": self.options.starting_weapons.value,
             "starting_gadgets": self.options.starting_gadgets.value,
             "random_starting_planet": self.options.random_starting_planet.value,

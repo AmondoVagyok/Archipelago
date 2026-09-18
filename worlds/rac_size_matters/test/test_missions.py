@@ -45,7 +45,7 @@ class TestMissionPlanetGating(unittest.TestCase):
     def test_bit_still_fires_once_on_the_owning_planet(self) -> None:
         self.pine.mem[self.address] = self.mask
         other_planet = self.owning_planet + 1
-        self.inventory.check(other_planet)  # observed while off-planet, ignored
+        self.inventory.check(other_planet)
         self.assertEqual(self.inventory.check(self.owning_planet), [self.name])
         self.assertIn(self.name, self.inventory.completed)
 

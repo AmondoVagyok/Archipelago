@@ -9,7 +9,7 @@ from worlds.LauncherComponents import (
 )
 
 from worlds.rac_size_matters.world import (
-    RACSizeMatterWorld,  # noqa: F401 — registers world
+    RACSizeMatterWorld,
 )
 
 

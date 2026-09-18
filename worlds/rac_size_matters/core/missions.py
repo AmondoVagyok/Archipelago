@@ -12,14 +12,10 @@ __all__ = [
     "MissionInventory",
 ]
 
-# name -> (address, mask), the same data VALIDATED_MISSION_MAP holds the other way
-# round.
 _NAME_TO_ADDR_MASK: dict[str, tuple[int, int]] = {
     name: (address, mask) for (address, mask), name in VALIDATED_MISSION_MAP.items()
 }
 
-# Distinct addresses to batch-read each call — several location names can share one
-# planet's address (each owning a different mask bit within it).
 _ADDRESSES: tuple[int, ...] = tuple(sorted({address for address, _mask in _NAME_TO_ADDR_MASK.values()}))
 
 

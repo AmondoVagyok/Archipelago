@@ -10,7 +10,9 @@ from ..constants import (
     Rac5TBolts,
     Rac5TitanVendorLocations,
     Rac5VendorLocations,
+    Rac5Weapons,
 )
+from ._helpers import HasChallengeMode, weapon_enabled
 
 if TYPE_CHECKING:
     from ..world import RACSizeMatterWorld
@@ -39,15 +41,11 @@ def set_ryllus_rules(world: "RACSizeMatterWorld") -> None:
     world.set_rule(mw.get_location(Rac5Locations.RYLLUS_HELMET, player), _full)
     world.set_rule(mw.get_location(Rac5Locations.RYLLUS_BOOTS, player), Has(Rac5Gadgets.SPROUT_O_MATIC))
 
-    world.set_rule(mw.get_location(Rac5VendorLocations.RYLLUS_AGENTS, player), True_())
+    if weapon_enabled(world, Rac5Weapons.AGENTS_OF_DOOM):
+        world.set_rule(mw.get_location(Rac5VendorLocations.RYLLUS_AGENTS, player), True_())
 
-    # Challenge Mode — NG+ Items only controls the item pool, not location
-    # existence (see regions.py, which both tables must agree with on
-    # which of these locations actually exist).
     if world.options.challenge_mode.value >= 1:
-        world.set_rule(mw.get_location(Rac5Locations.RYLLUS_HYPERBOREAN_BOOTS, player), _full)
-        # Titan variant available once the base weapon is purchasable at
-        # its own vendor — buying it there is what actually unlocks the
-        # Titan re-purchase in-game now (see core/vendor.py), matching
-        # RYLLUS_AGENTS's own rule above.
-        world.set_rule(mw.get_location(Rac5TitanVendorLocations.RYLLUS_AGENTS_TITAN, player), True_())
+        tier1 = HasChallengeMode(world, 1)
+        world.set_rule(mw.get_location(Rac5Locations.RYLLUS_HYPERBOREAN_BOOTS, player), _full & tier1)
+        if weapon_enabled(world, Rac5Weapons.AGENTS_OF_DOOM):
+            world.set_rule(mw.get_location(Rac5TitanVendorLocations.RYLLUS_AGENTS_TITAN, player), tier1)

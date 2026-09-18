@@ -14,7 +14,7 @@ def set_entrance_rules(world: "RACSizeMatterWorld") -> None:
     mw = world.multiworld
 
     world.set_rule(mw.get_entrance("To Pokitaru", player), HasInfobot(Rac5Infobots.POKITARU))
-    world.set_rule(mw.get_entrance("To Ryllus", player), HasInfobot(Rac5Infobots.POKITARU))
+    world.set_rule(mw.get_entrance("To Ryllus", player), HasInfobot(Rac5Infobots.RYLLUS))
     world.set_rule(mw.get_entrance("To Kalidon", player), HasInfobot(Rac5Infobots.KALIDON))
     world.set_rule(mw.get_entrance("To Metalis", player), HasInfobot(Rac5Infobots.METALIS))
     world.set_rule(
