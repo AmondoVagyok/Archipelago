@@ -2,7 +2,7 @@
 from dataclasses import dataclass
 
 from .planets import SACCases
-from .types import CaseStructure, group_by_case
+from .types import CaseStructure, SACTags, group_by_case
 
 
 @dataclass(frozen=True)
@@ -12,12 +12,10 @@ class SACKeycards:
     YELLOW_KEYCARD = "Yellow Keycard"
 
 
-_CATEGORY = "Keycard"
-
 KEYCARDS: tuple[CaseStructure, ...] = (
-    CaseStructure(SACCases.ASYANICA_ROOFTOPS, SACKeycards.RED_KEYCARD, _CATEGORY),
-    CaseStructure(SACCases.INSIDE_THE_A_EYE, SACKeycards.BLUE_KEYCARD, _CATEGORY),
-    CaseStructure(SACCases.SAINT_QWARK, SACKeycards.YELLOW_KEYCARD, _CATEGORY),
+    CaseStructure(SACCases.ASYANICA_ROOFTOPS, SACKeycards.RED_KEYCARD, SACTags.KEYCARD),
+    CaseStructure(SACCases.INSIDE_THE_A_EYE, SACKeycards.BLUE_KEYCARD, SACTags.KEYCARD),
+    CaseStructure(SACCases.SAINT_QWARK, SACKeycards.YELLOW_KEYCARD, SACTags.KEYCARD),
 )
 
 KEYCARDS_BY_CASE: dict[str, tuple[str, ...]] = group_by_case(

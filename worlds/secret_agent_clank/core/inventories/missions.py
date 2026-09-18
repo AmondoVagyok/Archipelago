@@ -26,7 +26,7 @@ _CHAPTER_TABLE_SLOTS = 33
 _TASK_ENTRY_SIZE = 0x60        # bytes per task entry within a chapter's task array
 
 # Every mission AP location (both granularities) is prefixed "Mission: "
-# (see constants/missions.py's SACMissionLocations) -- internal bookkeeping
+# (see constants/missions.py's SACMissions/STORY_MISSION_MAP) -- internal bookkeeping
 # below (self.completed/self._reported) stays keyed by the RAW native name
 # throughout (matches core/core.py's own raw entry.name lookups), and this
 # prefix is applied/stripped only at the two boundaries that actually talk

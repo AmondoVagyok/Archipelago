@@ -10,8 +10,6 @@ from ..universal_tracker import PLANET_ID_TO_REGION
 from .constants import EXPECTED_GAME_ID, PINE_CONNECT_SETTLE_DELAY_S, POLL_INTERVAL
 from .other_ratchet_games import GAME_ID_TO_OTHER_RATCHET
 
-# Throttle weapon level/experience pushes — experience changes continuously during combat,
-# so pushing every poll tick would spam the server for no benefit.
 _WEAPON_STATE_PUSH_INTERVAL: float = 5.0
 
 
@@ -22,6 +20,10 @@ class PineMixin:
     async def _teardown_pine_connection(self) -> None:
         """Drop the raw socket. Safe to call even if it's already down."""
         self.pine_connected = False
+        try:
+            self._wiring.native.close()
+        except Exception:
+            logger.debug("[RAC] Could not release native loader gate during teardown", exc_info=True)
         try:
             self.pine.disconnect()
         except Exception:
@@ -39,8 +41,6 @@ class PineMixin:
                 f"PCSX2 is now running {known_game or game_id} — Size Matters client disconnected. "
                 "Use /reconnect once R&C: Size Matters is loaded again."
             )
-            # handle_connection_loss() reads sys.exc_info(), so it must be
-            # called from inside an except block.
             try:
                 raise ConnectionError(msg)
             except ConnectionError:
@@ -57,8 +57,6 @@ class PineMixin:
             await self._teardown_pine_connection()
 
     async def _attempt_pine_connect(self, is_reconnect: bool = False) -> None:
-        # PINE calls run in-line on the event loop, never via run_in_executor — a blocked
-        # thread-pool worker would hold _pine_lock and freeze every other PINE consumer.
         async with self._pine_lock:
             def _connect_and_get_game_id() -> str:
                 self.pine.connect()
@@ -74,8 +72,6 @@ class PineMixin:
             await self._reject_wrong_game(game_id, is_disconnect=False)
             return
 
-        # Dynamic Pine boots PCSX2 straight into the ISO, so gameplay state may not be valid
-        # yet even though PINE is reachable — give it a moment before the first real read.
         await asyncio.sleep(PINE_CONNECT_SETTLE_DELAY_S)
 
         async with self._pine_lock:
@@ -87,27 +83,24 @@ class PineMixin:
             self.pine_connected = True
             try:
                 self._read_initial_state_sync()
-                # Trap bookkeeping isn't persisted, so reconcile now to clear any trap left
-                # stuck in game memory from before (crash, PINE drop).
-                reconcile_traps(self.pine)
+                if not self._wiring.at_main_menu:
+                    reconcile_traps(self.pine)
             except Exception as exc:
                 logger.warning(
                     f"[RAC] Initial state read failed: {exc}. Use /reconnect once the game is fully loaded."
                 )
                 await self._teardown_pine_connection()
                 return
-            # Confirm the connection in-game now, before the steps below that
-            # can still fail transiently without PINE itself being lost.
             self._write_notification_text(colored_text(
                 "Reconnected to " if is_reconnect else "Connected to ", TextColour.YELLOW,
                 "PCSX2", TextColour.WHITE,
             ))
 
         try:
-            # Baseline first so the catch-up batch of already-received items
-            # doesn't pop a notification.
             self._notification_item_index = len(self.items_received)
-            await self._apply_received_items()
+            if is_reconnect:
+                self._weapon_state_restored = False
+            await self.force_sync()
             await self._send_map_page(self.current_planet)
         except Exception as exc:
             logger.warning(f"[RAC] Lost PCSX2 connection while starting up: {exc}. Use /reconnect.")
@@ -127,17 +120,25 @@ class PineMixin:
         self.current_planet = PLANET_ID_TO_REGION.get(planet_id, "Galaxy")
 
     async def game_watcher(self) -> None:
-        while not self.exit_event.is_set():
-            await asyncio.sleep(POLL_INTERVAL)
-            if not self.pine_connected:
-                continue
+        try:
+            while not self.exit_event.is_set():
+                await asyncio.sleep(POLL_INTERVAL)
+                if not self.pine_connected:
+                    continue
+                try:
+                    await self._poll_game()
+                except Exception as exc:
+                    logger.warning(f"[RAC] Lost PINE connection or poll failed: {exc}")
+                    try:
+                        self._wiring.native.close()
+                    except Exception:
+                        logger.debug("[RAC] Could not release native loader gate after poll failure", exc_info=True)
+                    self.pine_connected = False
+        finally:
             try:
-                await self._poll_game()
-            except Exception as exc:
-                # Soft flag only — a dead socket keeps failing every
-                # subsequent poll, so /reconnect remains available.
-                logger.warning(f"[RAC] Lost PINE connection or poll failed: {exc}")
-                self.pine_connected = False
+                self._wiring.native.close()
+            except Exception:
+                logger.debug("[RAC] Could not release native loader gate on shutdown", exc_info=True)
 
     async def _poll_game(self) -> None:
         async with self._pine_lock:
@@ -153,8 +154,6 @@ class PineMixin:
         if self.current_planet != prev_planet:
             await self._send_map_page(self.current_planet)
 
-        # Re-applied every cycle rather than only at event boundaries, to self-heal drift — safe
-        # since apply_inventory() already no-ops writes it must not make mid-vendor/mid-death.
         await self._apply_received_items()
         self._maybe_persist_weapon_state()
         self._maybe_sync_ammo_link()
@@ -201,7 +200,5 @@ class PineMixin:
             return
         self._locally_checked_locations.add(loc_id)
         self._log(f"[RAC] Location checked: {name}")
-        # Refresh the vendor-purchase cache immediately, since a check made just before opening
-        # the vendor menu must be visible right away.
         self._wiring.planet.weapons.sync_from_ap(self._checked_location_names())
         asyncio.create_task(self.check_locations({loc_id}))

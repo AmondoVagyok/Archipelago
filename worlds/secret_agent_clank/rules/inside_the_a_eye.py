@@ -7,7 +7,6 @@ from ..constants.clank_gadgets import SACClankGadgets
 from ..constants.cutscenes import SACCutsceneLocations
 from ..constants.gadgetbot_challenges import SACGadgetbotChallengeLocations
 from ..constants.missions import SACMissionLocations
-from ..constants.skillpoints import SACSkillPointLocations
 from ..constants.weapons import SACRatchetWeapons
 from ..options import Missions
 
@@ -44,4 +43,4 @@ def set_inside_the_a_eye_rules(world: "SecretAgentClankWorld") -> None:
 
     # Skill point (SkillPoints)
     if world.options.skill_points:
-        world.set_rule(mw.get_location(SACSkillPointLocations.INSIDE_THE_A_EYE_DIA_DE_LOS_MUERTOS, player), True_())
+        world.set_rule(mw.get_location('Gadgetbots: Inside the A-Eye: Skill Point: El Día de los Muertos', player), True_())

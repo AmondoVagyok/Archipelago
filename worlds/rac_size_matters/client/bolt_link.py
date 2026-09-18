@@ -5,7 +5,6 @@ import time
 
 from CommonClient import logger
 
-# Same rationale as AmmoLink's push throttle — bounds how often we bother AP data storage.
 _BOLT_LINK_PUSH_INTERVAL: float = 0.5
 
 
@@ -60,7 +59,5 @@ class BoltLinkMixin:
         bolts = self._wiring.player_bolts
         if bolts.get() != value:
             bolts.set(value)
-            # Rebaseline apply_boost()'s diff tracking, otherwise it reads this mirrored
-            # change as organic gain and multiplies it by the bolt multiplier option.
             bolts.rebaseline(value)
         self._pushed_bolt_link = value

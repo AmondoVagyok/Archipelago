@@ -2,8 +2,6 @@ from __future__ import annotations
 
 from ...constants import Rac5WeaponKeys, Rac5WeaponLevels
 
-# (internal weapon key) -> {level -> location name}, written explicitly (not via getattr)
-# so a typo/rename is a NameError at import time. Levels 5-8 are the Titan variant; RYNO has none.
 WEAPON_LEVEL_NAMES: dict[str, dict[int, str]] = {
     Rac5WeaponKeys.LACERATOR: {
         2: Rac5WeaponLevels.LACERATOR_LEVEL_2,

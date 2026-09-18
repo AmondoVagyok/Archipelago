@@ -29,7 +29,8 @@ class CaseUnlockState(IntEnum):
     PERMANENTLY_UNLOCKED = 3
 
 
-def resolve_owned_cases(received_names: list[str], *, character_unlocks: bool = False) -> set[str]:
+def resolve_owned_cases(received_names: list[str], *, character_unlocks: bool = False,
+                        progressive_planets: list[str] | None = None) -> set[str]:
     """Every case name the player currently has logical access to, derived from received item names alone."""
     owned: set[str] = set()
 
@@ -43,7 +44,8 @@ def resolve_owned_cases(received_names: list[str], *, character_unlocks: bool = 
 
     progressive_count = received_names.count(PROGRESSIVE_PLANET_ITEM_NAME)
     if progressive_count:
-        for planet in PLANET_NAMES[1:1 + progressive_count]:
+        planets = PLANET_NAMES[1:] if progressive_planets is None else progressive_planets
+        for planet in planets[:progressive_count]:
             owned.update(case.name for case in CASES_BY_PLANET.get(planet, ()))
 
     if character_unlocks:

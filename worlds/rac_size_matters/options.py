@@ -16,6 +16,7 @@ from Options import (
 )
 
 from .core.traps import TRAP_DURATIONS
+from .items import DEFAULT_ENABLED_WEAPONS, WEAPON_DISPLAY_TO_INTERNAL
 from .locations import (
     CHALLENGE_GROUP_DERBY,
     CHALLENGE_GROUP_GADGETBOT,
@@ -49,9 +50,35 @@ class ProgressiveMods(Toggle):
     display_name = "Progressive Mods"
 
 
-class ProgressiveArmour(Toggle):
-    """Unlock armour pieces in a fixed order via Progressive Armour items rather than as individual pieces."""
+class ProgressiveArmour(Choice):
+    """Controls how armour pieces are unlocked.
+    off: each armour piece is its own individual item (vanilla-style, shuffled independently).
+    per_set: each armour set has its own Progressive item (Progressive Wildfire, Progressive
+    Sludge Mk9, etc.) — 4 copies of a set's item unlock that set's 4 pieces in order,
+    independently of every other set.
+    unified: a single "Progressive Armour" item replaces every per-set item. Copies grant
+    pieces one set at a time, in a fixed order: Wildfire, Sludge Mk9, Crystallix,
+    Electroshock, Mega Bomb, Hyperborean, Chameleon — so every Wildfire piece is granted
+    before the first Sludge Mk9 piece, and so on."""
     display_name = "Progressive Armour"
+    option_off      = 0
+    option_per_set  = 1
+    option_unified  = 2
+    default = 0
+
+
+class EnabledWeapons(ItemDict):
+    """Selects which weapons are included in generation at all. Set a weapon to 0 to
+    remove it entirely: its own item(s) (including its Progressive Weapon/Mod items),
+    its vendor/collectible location, its mod-vendor locations, and its Weapon Level
+    Checks locations are all excluded from the pool, exactly as if the weapon didn't
+    exist in this seed. Default 1 includes every weapon."""
+    display_name = "Enabled Weapons"
+    verify_item_name = False
+    min = 0
+    max = 1
+    valid_keys = tuple(WEAPON_DISPLAY_TO_INTERNAL.keys())
+    default = DEFAULT_ENABLED_WEAPONS
 
 
 class ClankChallenges(Choice):
@@ -93,8 +120,8 @@ class ShrinkRayOptions(Choice):
     """Controls how Shrink Ray puzzles are handled.
     off: normal vanilla behavior — puzzles must be solved as usual, no checks.
     locations: include Shrink Ray puzzle completions as location checks.
-    skip: writes every tracked puzzle-gate bit to solved every tick, bypassing
-    whatever it would otherwise block."""
+    skip: unlock puzzle doors directly, without owning or activating the Shrink
+    Ray. Puzzle completion checks are not included."""
     display_name = "Shrink Ray Options"
     option_off       = 0
     option_locations = 1
@@ -197,6 +224,22 @@ class ChallengeMode(Range):
     default = 0
 
 
+class ProgressiveChallengeMode(Toggle):
+    """Gates Challenge Mode content behind a "Progressive Challenge Mode" item instead
+    of it being unconditionally accessible as soon as the Challenge Mode option enables
+    it. Challenge Mode still controls the ceiling — how many copies end up in the pool,
+    and how far generation reaches — this only changes when that content becomes
+    logically reachable.
+    off (default): Challenge Mode content (RYNO, Titan variants, Challenge-Mode-only
+    mods, Hyperborean/Chameleon pickups) is reachable as soon as its planet is, same as
+    today.
+    on: one "Progressive Challenge Mode" item per tier is added to the pool (so Challenge
+    Mode 2 adds 2 copies); tier-1 content requires 1 copy received, tier-2 content
+    requires 2. The in-game Challenge Mode tier itself now rises as copies come in,
+    instead of being fixed at connect."""
+    display_name = "Progressive Challenge Mode"
+
+
 class SkillPoints(Choice):
     """Include skill point challenges as location checks.
     off: no skill point checks.
@@ -242,21 +285,21 @@ class StartingGadgets(Range):
 
 class RandomStartingPlanet(Choice):
     """Randomizes which two planets Ratchet starts with access to, instead of always
-    starting on Pokitaru and Ryllus. Their infobots go back into the normal item pool
+    starting on Pokitaru. Its infobot goes back into the normal item pool
     and two random planets' infobots are precollected in their place. Dreamtime,
     Inside Clank, and Quodrona are never candidates: the first two need extra gadgets
     beyond their own infobot to enter, and Quodrona is the goal planet.
-    off: always start on Pokitaru and Ryllus, as in vanilla.
-    logic: candidate planets are weighted by how many locations they offer under the
+    off: start on Pokitaru; Ryllus requires its separate infobot.
+    weighted: candidate planets are weighted by how many locations they offer under the
     current options, so denser planets are more likely to be picked. Weapon/Gadget
     Vendor locations only count towards a planet's weight if Starting Weapons/Starting
     Gadgets is set above 0.
-    no_logic: two of the 6 candidate planets are chosen completely at random, ignoring
+    unweighted: two of the 7 candidate planets are chosen completely at random, ignoring
     location counts entirely."""
     display_name = "Random Starting Planet"
-    option_off      = 0
-    option_logic    = 1
-    option_no_logic = 2
+    option_off        = 0
+    option_weighted   = 1
+    option_unweighted = 2
     default = 0
 
 
@@ -336,11 +379,15 @@ class NanotechExperienceMultiplier(Range):
 
 
 class NanotechLevelInterval(Choice):
-    """Include reaching Nanotech (health) Levels as location checks, one every N
-    levels (e.g. every_5 checks levels 10, 15, 20, ...). See Nanotech Level Max
-    for where this stops. Levels above 20 require access to a good EXP planet."""
+    """Include reaching Nanotech (health) Levels as location checks.
+    off: no Nanotech Level checks.
+    all: every single level is its own check, up to Nanotech Level Max.
+    every_5/every_10/every_25: one check every N levels (e.g. every_5 checks levels
+    10, 15, 20, ...), up to Nanotech Level Max. Levels above 20 require access to a
+    good EXP planet."""
     display_name = "Nanotech Level Interval"
     option_off     = 0
+    option_all      = 1
     option_every_5  = 5
     option_every_10 = 10
     option_every_25 = 25
@@ -396,6 +443,7 @@ class RACSizeMatterOptions(PerGameCommonOptions):
     progressive_weapons: ProgressiveWeapons
     progressive_mods: ProgressiveMods
     progressive_armour: ProgressiveArmour
+    enabled_weapons: EnabledWeapons
     death_link: DeathLink
     death_amnesty: DeathAmnesty
     ammo_link: AmmoLink
@@ -414,6 +462,7 @@ class RACSizeMatterOptions(PerGameCommonOptions):
     armour_set_checks: ArmourSetChecks
     ng_plus_items: NgPlusItems
     challenge_mode: ChallengeMode
+    progressive_challenge_mode: ProgressiveChallengeMode
     skill_points: SkillPoints
     starting_weapons: StartingWeapons
     starting_gadgets: StartingGadgets
@@ -451,6 +500,7 @@ racsm_option_groups = [
         ProgressiveWeapons,
         ProgressiveMods,
         ProgressiveArmour,
+        EnabledWeapons,
         TrapChance,
         TrapWeight,
         TrapDuration,
@@ -477,6 +527,7 @@ racsm_option_groups = [
         NanotechLevelMax,
         NgPlusItems,
         ChallengeMode,
+        ProgressiveChallengeMode,
     ]),
     OptionGroup("RACSM Cosmetic Options", [
         StartingSkin,

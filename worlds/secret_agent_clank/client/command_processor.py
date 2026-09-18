@@ -62,6 +62,22 @@ class SACCommandProcessor(ClientCommandProcessor):
             w.quick_select, w.case_struct,
         )
         logger.info("[SAC] States: " + " ".join(repr(state) for state in states))
+
+        owned_ratchet = {name: v for name, v in w._ap_owned.get("ratchet", {}).items() if v}
+        owned_equipment = {name: v for name, v in w._owned_equipment().items() if v}
+        hooks = w.native_runtime.hooks
+        logger.info(
+            f"[SAC] inventory_initialized={w._inventory_initialized} "
+            f"bound_weapons={len(w.case.ratchet_items.weapons)} "
+            f"ap_owned_ratchet_true={sorted(owned_ratchet)} "
+            f"owned_equipment_true={sorted(owned_equipment)}"
+        )
+        logger.info(
+            f"[SAC] native: awaiting_start={w.native_runtime.awaiting_start} "
+            f"generation={w.native_runtime.generation} "
+            f"hooks.installed={hooks.installed} hooks.is_current={hooks.is_current()} "
+            f"entitlement_table={hooks.entitlement_table!r}"
+        )
         return True
 
     def _cmd_mission_table(self) -> bool:

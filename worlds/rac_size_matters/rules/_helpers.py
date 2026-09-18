@@ -1,10 +1,17 @@
 from typing import TYPE_CHECKING
 
-from rule_builder.rules import And, Has, HasAll, HasAny, HasAnyCount, Or
+from rule_builder.rules import And, Has, HasAll, HasAny, HasAnyCount, Or, True_
 
 from ..constants import Rac5Gadgets, Rac5Infobots
 from ..core.weapons import WEAPON_DATA
-from ..items import PROGRESSIVE_ARMOUR_NAME, PROGRESSIVE_WEAPON_NAME, WEAPON_DISPLAY_TO_INTERNAL
+from ..items import (
+    ARMOUR_SETS,
+    PROGRESSIVE_ARMOUR_NAME,
+    PROGRESSIVE_ARMOUR_UNIFIED_NAME,
+    PROGRESSIVE_CHALLENGE_MODE_NAME,
+    PROGRESSIVE_WEAPON_NAME,
+    WEAPON_DISPLAY_TO_INTERNAL,
+)
 
 if TYPE_CHECKING:
     from ..world import RACSizeMatterWorld
@@ -17,8 +24,17 @@ _PROJECTILE_WEAPONS_ALL_NAMES = [
     *_PROJECTILE_WEAPONS, *(PROGRESSIVE_WEAPON_NAME[name] for name in _PROJECTILE_WEAPONS),
 ]
 
-# Piece index is positional (1-indexed), matching ARMOUR_PIECE_BITMASKS order in items.py.
 _ARMOUR_PIECE_INDEX: dict[str, int] = {"Chestplate": 1, "Helmet": 2, "Gloves": 3, "Boots": 4}
+
+_ARMOUR_SET_ORDER_INDEX: dict[str, int] = {display: i for i, (display, _internal) in enumerate(ARMOUR_SETS)}
+
+
+def _unified_armour_count(set_display: str, piece_name: str) -> int:
+    """Copies of PROGRESSIVE_ARMOUR_UNIFIED_NAME needed to have granted `piece_name` of
+    `set_display`: every piece of every earlier set in ARMOUR_SETS order, plus this
+    piece's own 1-indexed position within its set."""
+    return _ARMOUR_SET_ORDER_INDEX[set_display] * 4 + _ARMOUR_PIECE_INDEX[piece_name]
+
 
 def HasProjectileWeapon() -> HasAny:
     return HasAny(*_PROJECTILE_WEAPONS_ALL_NAMES)
@@ -27,6 +43,7 @@ def HasArmourPiece(set_display: str, piece_name: str) -> HasAnyCount:
     return HasAnyCount({
         f"{set_display} {piece_name}": 1,
         PROGRESSIVE_ARMOUR_NAME[set_display]: _ARMOUR_PIECE_INDEX[piece_name],
+        PROGRESSIVE_ARMOUR_UNIFIED_NAME: _unified_armour_count(set_display, piece_name),
     })
 def HasWeapon(weapon: str) -> HasAny:
     return HasAny(weapon, PROGRESSIVE_WEAPON_NAME[weapon])
@@ -51,6 +68,29 @@ def HasGadget(gadget: str) -> HasAny:
 def HasInfobot(infobot: str) -> HasAny:
     return Has(infobot)
 
+def weapon_enabled(world: "RACSizeMatterWorld", weapon: str) -> bool:
+    """EnabledWeapons option (options.py): whether `weapon` (display name) is still
+    in the pool at all. Every per-planet rules/<planet>.py file must guard its
+    weapon/mod/Titan vendor-location set_rule() calls with this — regions.py skips
+    creating those Locations entirely for a disabled weapon (see
+    locations.disabled_weapon_location_names()), so an unguarded set_rule() would
+    target a Location that doesn't exist."""
+    return weapon in world.options.enabled_weapons.value
+
+
+def HasChallengeMode(world: "RACSizeMatterWorld", tier: int) -> Has | True_:
+    """Challenge Mode tier gate for content options.py's ChallengeMode option makes
+    exist at all (RYNO, Titan variants, Challenge-Mode-only mods, Hyperborean/Chameleon
+    pickups). With ProgressiveChallengeMode off (default), that content is reachable as
+    soon as its own region/other requirements are, exactly like today — the tier is a
+    fixed connect-time value, not something logic can gate on. With it on, reaching
+    tier `tier` additionally requires having received that many Progressive Challenge
+    Mode items, since the in-game tier now only rises as those items come in."""
+    if not world.options.progressive_challenge_mode:
+        return True_()
+    return Has(PROGRESSIVE_CHALLENGE_MODE_NAME, tier)
+
+
 def HasGoodExpPlanet() -> Or:
     return Or(
         HasAll(Rac5Infobots.QUODRONA, Rac5Gadgets.SHRINK_RAY),
@@ -58,3 +98,10 @@ def HasGoodExpPlanet() -> Or:
         HasAll(Rac5Infobots.CHALLAX, Rac5Gadgets.POLARIZER, Rac5Gadgets.SHRINK_RAY),
         HasAll(Rac5Infobots.OUTPOST_OMEGA, Rac5Gadgets.HYPERSHOT, Rac5Gadgets.SPROUT_O_MATIC),
     )
+
+
+def HasShrinkRayDoorAccess(world):
+    """Skip mode opens door interlocks without the gadget."""
+    from ..options import ShrinkRayOptions
+    return (True_() if world.options.shrink_ray_options.value == ShrinkRayOptions.option_skip
+            else Has(Rac5Gadgets.SHRINK_RAY))

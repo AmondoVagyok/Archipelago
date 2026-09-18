@@ -5,12 +5,8 @@ import time
 
 from CommonClient import logger
 
-# A peer's position is treated as gone once this long has passed since we last heard from
-# them — generous enough to tolerate a couple of missed heartbeats without flickering.
 _GHOST_LINK_STALE_AFTER: float = 20.0
 
-# Floor applied to a configured push interval below 1s, so a low (but
-# nonzero) slider value can't spam data storage every poll tick.
 _GHOST_LINK_MIN_PUSH_INTERVAL: float = 1.0
 
 
@@ -45,7 +41,6 @@ class GhostLinkMixin:
             slot for slot, info in self.slot_info.items()
             if slot != self.slot and info.game == self.game
         ]
-        # Unconditional (not gated behind /debug) since an empty list here explains downstream silence.
         logger.info(f"[RAC] GhostLink watching slots: {self._ghost_link_slots} "
                     f"(update interval: {self._ghost_link_interval}s)")
 
@@ -64,7 +59,6 @@ class GhostLinkMixin:
             logger.warning(f"[RAC] GhostLink tick failed: {exc}")
 
     def _maybe_push_ghost_link_position(self) -> None:
-        # 0 means "as fast as possible" (no throttle), not "off" — there's no separate off state here.
         push_interval = self._ghost_link_interval
         if push_interval > 0:
             now = time.monotonic()

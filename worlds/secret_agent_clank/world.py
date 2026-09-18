@@ -98,6 +98,14 @@ class SecretAgentClankWorld(World):
     def create_regions(self) -> None:
         create_regions(self)
 
+    @property
+    def progressive_planets(self) -> list[str]:
+        if self.using_ut:
+            return list(self.passthrough.get("progressive_planets", PLANET_NAMES[1:]))
+        regions = {region.name for region in self.multiworld.get_regions(self.player)}
+        active = {case.planet for case in ALL_CASES if case.name in regions}
+        return [planet for planet in PLANET_NAMES if planet in active]
+
     def set_rules(self) -> None:
         set_rules(self)
 
@@ -175,13 +183,11 @@ class SecretAgentClankWorld(World):
         # Planet access -- mutually exclusive tiers, see rules.py's
         # HasPlanet/HasCase docstring.
         if self.options.infobots == Infobots.option_progressive_planet:
-            # Keep the native global ordering: skipping intermediate copies
-            # would change which planets the client unlocks.
-            last_index = max(PLANET_NAMES.index(case.planet) for case in active_cases)
-            starting_index = PLANET_NAMES.index(starting_case.planet)
-            for _ in range(starting_index):
+            planets = self.progressive_planets
+            starting_count = planets.index(starting_case.planet) + 1 if starting_case.planet in planets else 0
+            for _ in range(starting_count):
                 self.multiworld.push_precollected(self.create_item(PROGRESSIVE_PLANET_ITEM_NAME))
-            pool += [PROGRESSIVE_PLANET_ITEM_NAME] * (last_index - starting_index)
+            pool += [PROGRESSIVE_PLANET_ITEM_NAME] * (len(planets) - starting_count)
         elif self.options.infobots == Infobots.option_cases:
             pool += [
                 CASE_NAME_TO_INFOBOT[case.name] for case in active_cases
@@ -247,6 +253,7 @@ class SecretAgentClankWorld(World):
 
     def fill_slot_data(self) -> dict[str, Any]:
         return {
+            "progressive_planets": self.progressive_planets,
             "starting_case": self.starting_case,
             "second_starting_case": self.second_starting_case,
             "infobots": self.options.infobots.value,

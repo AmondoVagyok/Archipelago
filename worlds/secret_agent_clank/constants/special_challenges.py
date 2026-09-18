@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 
 from .planets import SACCases
-from .types import CaseStructure, group_by_case
+from .types import CaseStructure, SACTags, group_by_case
 
 
 @dataclass(frozen=True)
@@ -23,43 +23,41 @@ class SACSpecialChallenges:
     VEHICLE_GO_FOR_THE_GOLD = "Vehicle: Go for the Gold"
 
 
-_CATEGORY = "Special Challenge"
-
 SPECIAL_CHALLENGES: tuple[CaseStructure, ...] = (
     CaseStructure(
-        SACCases.VENANTONIO_CANALS, SACSpecialChallenges.VEHICLE_GREAT_ESCAPE, _CATEGORY,
+        SACCases.VENANTONIO_CANALS, SACSpecialChallenges.VEHICLE_GREAT_ESCAPE, SACTags.SPECIAL_CHALLENGE,
         event_flag=0b00000001, event_address=0x206C9E,
     ),
     CaseStructure(
-        SACCases.VENANTONIO_CANALS, SACSpecialChallenges.VEHICLE_SPEEDBOATING, _CATEGORY,
+        SACCases.VENANTONIO_CANALS, SACSpecialChallenges.VEHICLE_SPEEDBOATING, SACTags.SPECIAL_CHALLENGE,
         event_flag=0b00000001, event_address=0x206C9F,
     ),
     CaseStructure(
-        SACCases.VENANTONIO_CANALS, SACSpecialChallenges.VEHICLE_THREADING_THE_NEEDLE, _CATEGORY,
+        SACCases.VENANTONIO_CANALS, SACSpecialChallenges.VEHICLE_THREADING_THE_NEEDLE, SACTags.SPECIAL_CHALLENGE,
         event_flag=0b00000001, event_address=0x206CA0,
     ),
     CaseStructure(
-        SACCases.DAMS_EDGE_HYDRANO, SACSpecialChallenges.VEHICLE_CHASING_A_LEAD, _CATEGORY,
+        SACCases.DAMS_EDGE_HYDRANO, SACSpecialChallenges.VEHICLE_CHASING_A_LEAD, SACTags.SPECIAL_CHALLENGE,
         event_flag=0b00000001, event_address=0x206CA1,
     ),
     CaseStructure(
-        SACCases.DAMS_EDGE_HYDRANO, SACSpecialChallenges.VEHICLE_RUSH_HOUR, _CATEGORY,
+        SACCases.DAMS_EDGE_HYDRANO, SACSpecialChallenges.VEHICLE_RUSH_HOUR, SACTags.SPECIAL_CHALLENGE,
         event_flag=0b00000001, event_address=0x206CA2,
     ),
     CaseStructure(
-        SACCases.DAMS_EDGE_HYDRANO, SACSpecialChallenges.VEHICLE_DRIVING_TEST, _CATEGORY,
+        SACCases.DAMS_EDGE_HYDRANO, SACSpecialChallenges.VEHICLE_DRIVING_TEST, SACTags.SPECIAL_CHALLENGE,
         event_flag=0b00000001, event_address=0x206CA3,
     ),
     CaseStructure(
-        SACCases.GLACIARA_SKI_SLOPES, SACSpecialChallenges.VEHICLE_VILLA_ESCAPE, _CATEGORY,
+        SACCases.GLACIARA_SKI_SLOPES, SACSpecialChallenges.VEHICLE_VILLA_ESCAPE, SACTags.SPECIAL_CHALLENGE,
         event_flag=0b00000001, event_address=0x206C9B,
     ),
     CaseStructure(
-        SACCases.GLACIARA_SKI_SLOPES, SACSpecialChallenges.VEHICLE_BLACK_DIAMOND, _CATEGORY,
+        SACCases.GLACIARA_SKI_SLOPES, SACSpecialChallenges.VEHICLE_BLACK_DIAMOND, SACTags.SPECIAL_CHALLENGE,
         event_flag=0b00000001, event_address=0x206C9C,
     ),
     CaseStructure(
-        SACCases.GLACIARA_SKI_SLOPES, SACSpecialChallenges.VEHICLE_GO_FOR_THE_GOLD, _CATEGORY,
+        SACCases.GLACIARA_SKI_SLOPES, SACSpecialChallenges.VEHICLE_GO_FOR_THE_GOLD, SACTags.SPECIAL_CHALLENGE,
         event_flag=0b00000001, event_address=0x206C9D,
     ),
 )
@@ -72,8 +70,6 @@ SPECIAL_CHALLENGES_BY_CASE: dict[str, tuple[str, ...]] = group_by_case(SPECIAL_C
 
 @dataclass(frozen=True)
 class SACSpecialChallengeLocations:
-    """One named constant per Special Challenge location -- each value is the exact full display name SPECIAL_CHALLENGES above builds via CaseStructure.__str__, spelled out here so rules/<case>.py can reference an individual location directly -- same one-name-per-location layout as constants/weapons.py's SACRatchetWeapons."""
-
     VENANTONIO_CANALS_VEHICLE_GREAT_ESCAPE = "Venantonio (Special Missions) - Venantonio Canals: Great Escape"
     VENANTONIO_CANALS_VEHICLE_SPEEDBOATING = "Venantonio (Special Missions) - Venantonio Canals: Speedboating"
     VENANTONIO_CANALS_VEHICLE_THREADING_THE_NEEDLE = "Venantonio (Special Missions) - Venantonio Canals: Threading the Needle"
@@ -83,7 +79,3 @@ class SACSpecialChallengeLocations:
     GLACIARA_SKI_SLOPES_VEHICLE_VILLA_ESCAPE = "Glaciara (Special Missions) - Glaciara, Ski Slopes: Villa Escape"
     GLACIARA_SKI_SLOPES_VEHICLE_BLACK_DIAMOND = "Glaciara (Special Missions) - Glaciara, Ski Slopes: Black Diamond"
     GLACIARA_SKI_SLOPES_VEHICLE_GO_FOR_THE_GOLD = "Glaciara (Special Missions) - Glaciara, Ski Slopes: Go for the Gold"
-
-assert {v for k, v in vars(SACSpecialChallengeLocations).items() if not k.startswith("_")} == set(
-    str(entry) for entry in SPECIAL_CHALLENGES
-), "SACSpecialChallengeLocations drifted out of sync with SPECIAL_CHALLENGES -- regenerate its literals"

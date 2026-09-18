@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 
 from .operatives import SACOperatives
+from .types import Case
 
 
 @dataclass(frozen=True)
@@ -56,48 +57,16 @@ class SACCases:
     HIGH_TREEHOUSE = "High Impact Treehouse"
 
 
-@dataclass(frozen=True)
-class Case:
-    name: str
-    case_id: int
-    planet: str       # SACPlanets constant
-    operative: str    # SACOperatives constant
-    # Separate numbering scheme from case_id -- case_id is
-    # CURRENT_CASE_ADDRESS/FORCE_CASE_ADDRESS's id (what /force_case
-    # verifies); menu_id is this case's position in the case-select
-    # menu's own list (what /force_menu, /unlock_case, /case_states
-    # anchor off, via CASE_UNLOCK_BASE_ADDRESSES). CONFIRMED live these
-    # are NOT always the same value for the same case (e.g. Larger Than
-    # Life is case_id 5 but menu_id 8) -- don't assume one from the
-    # other. None until individually verified.
-    menu_id: "int | None" = None
-
-
-# Order matches the original Case Files list (case_id 1-30). planet is
-# best-guess (see module docstring); operative is CONFIRMED for the first
-# 22 (from the user's Operatives-menu screenshots) and LOW CONFIDENCE for
-# the remaining 8, inferred from skill point flavor text -- see the
-# per-case comments.
 ALL_CASES: tuple[Case, ...] = (
-    # case_id CONFIRMED live via /force_case 1
     Case(SACCases.BOLTAIRE_MUSEUM, 1, SACPlanets.BOLTAIRE_MUSEUM, SACOperatives.CLANK),
-    # case_id CONFIRMED live via /force_case 2
     Case(SACCases.BOLTAIRE_GEM_WING, 2, SACPlanets.BOLTAIRE_MUSEUM, SACOperatives.SPECIAL_MISSIONS),
-    # case_id CONFIRMED live via /force_case 3
     Case(SACCases.MAX_SECURITY_CELLS, 3, SACPlanets.PRISON_PLANET, SACOperatives.RATCHET),
-    # case_id CONFIRMED live via /force_case 4; planet still LOW CONFIDENCE — escape sequence, guessed prison rather than Asyanica
+    # planet still LOW CONFIDENCE — escape sequence, guessed prison rather than Asyanica
     Case(SACCases.ROOFTOP_DEATHTRAP, 4, SACPlanets.ASYANICA, SACOperatives.GADGETBOTS),
-    # case_id CONFIRMED live via /force_case 5 -- was previously (wrongly) 6, swapped with Asyanica Rooftops below
-    # menu_id CONFIRMED live -- 8, from the case-select menu list (a
-    # separate numbering scheme from case_id, see Case dataclass)
     Case(SACCases.LARGER_THAN_LIFE, 5, SACPlanets.ASYANICA, SACOperatives.QWARK, menu_id=8),
-    # case_id not yet re-verified -- was previously (wrongly) 5, then (wrongly) 6
     Case(SACCases.COUNTESS_VILLA, 6, SACPlanets.GLACIARA, SACOperatives.SPECIAL_MISSIONS),
-    # case_id CONFIRMED live via /force_case 7 -- was previously (wrongly) 6, swapped with Countess's Villa above
     Case(SACCases.ASYANICA_ROOFTOPS, 7, SACPlanets.ASYANICA, SACOperatives.CLANK),
-    # menu_id CONFIRMED live -- 10, from the case-select menu list (see Case dataclass)
     Case(SACCases.GLACIARA_SKI_SLOPES, 8, SACPlanets.GLACIARA, SACOperatives.SPECIAL_MISSIONS, menu_id=10),
-    # menu_id CONFIRMED live -- 12, from the case-select menu list (see Case dataclass)
     Case(SACCases.THE_MESS_HALL, 9, SACPlanets.PRISON_PLANET, SACOperatives.RATCHET, menu_id=12),
     # planet LOW CONFIDENCE
     Case(SACCases.AZCOTAL_ALLEY, 10, SACPlanets.GLACIARA, SACOperatives.CLANK),
@@ -141,9 +110,6 @@ PLANET_NAMES: tuple[str, ...] = tuple(dict.fromkeys(case.planet for case in ALL_
 OPERATIVE_NAMES: tuple[str, ...] = tuple(dict.fromkeys(case.operative for case in ALL_CASES))
 
 CASE_ID_TO_CASE: dict[int, Case] = {case.case_id: case for case in ALL_CASES}
-# Separate from CASE_ID_TO_CASE -- see Case dataclass. Only covers cases
-# with a confirmed menu_id so far (most are still None).
-MENU_ID_TO_CASE: dict[int, Case] = {case.menu_id: case for case in ALL_CASES if case.menu_id is not None}
 CASE_NAME_TO_CASE: dict[str, Case] = {case.name: case for case in ALL_CASES}
 CASE_NAME_TO_PLANET: dict[str, str] = {case.name: case.planet for case in ALL_CASES}
 CASE_NAME_TO_OPERATIVE: dict[str, str] = {case.name: case.operative for case in ALL_CASES}
@@ -154,11 +120,6 @@ CASES_BY_PLANET: dict[str, tuple[Case, ...]] = {
 CASES_BY_OPERATIVE: dict[str, tuple[Case, ...]] = {
     operative: tuple(case for case in ALL_CASES if case.operative == operative) for operative in OPERATIVE_NAMES
 }
-
-# TODO: treated as the final case for the victory condition (see
-# regions.py) -- confirm Klunk's Lair is really the last case before
-# relying on this.
-GOAL_CASE: Case = CASE_NAME_TO_CASE[SACCases.KLUNKS_LAIR]
 
 # Display name -> the AP item that grants access to that planet's cases.
 # One access item per planet, mirroring the infobot-per-planet pattern the

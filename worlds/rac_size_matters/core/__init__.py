@@ -17,7 +17,6 @@ from .traps import ALL_TRAPS, activate_trap, reconcile_traps, set_trap_durations
 from .weapons import WEAPON_MAX_LEVELS, WEAPON_MOD_COUNTS
 
 # NOTE: Core/WeaponVendorMenu/ModVendorMenu are deliberately NOT re-exported here —
-# eagerly loading core.vendor here would create a circular import via items.py.
 
 __all__ = [
     "ARMOUR_FLAG_TO_LOCATION",

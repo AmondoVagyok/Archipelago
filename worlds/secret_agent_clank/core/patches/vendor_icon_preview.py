@@ -18,7 +18,7 @@ class VendorIconPreview(PatchSet):
         self.module = self.texture_slot = self.texture = self.cache = None
         self.installed = False
 
-    def prepare(self, symbols, *, indices, palette):
+    def prepare(self, symbols, *, indices, palette, selected_only=True):
         if self.installed:
             raise RuntimeError("Restore the previous icon test first")
         self.patches = []
@@ -27,7 +27,7 @@ class VendorIconPreview(PatchSet):
         if not self.vendor.bind_runtime(symbols) or not self.vendor.active:
             raise RuntimeError("Open a vendor with the SAC client closed")
         row = self.vendor.selected_item()
-        if row is None or row.icon != self.ICON_ID:
+        if selected_only and (row is None or row.icon != self.ICON_ID):
             raise RuntimeError("Highlight Shock Rocket for the verified icon test")
         self.module = self.pine.read_int32(0x206328)
         lookup, invalidate = require(symbols, "GetIconTextureID__14DrawObjManagerUi",
@@ -66,7 +66,6 @@ class VendorIconPreview(PatchSet):
         if (self.pine.get_game_id() != "SCUS-97623"
                 or self.pine.read_int32(0x206328) != self.module
                 or self.pine.read_int32(0x206324) != 0xFFFFFFFF
-                or not self.vendor.active
                 or self.pine.read_int32(self.texture_slot) != self.texture):
             raise RuntimeError("Icon preview context changed")
 

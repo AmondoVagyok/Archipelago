@@ -36,15 +36,11 @@ class EventsHandlerMixin:
         since writing PLAYER_BOLT_COUNT before a planet has loaded doesn't reliably stick."""
         asyncio.create_task(self._apply_received_items())
         asyncio.create_task(self._grant_starting_items())
-        # Retry here too in case context.py's "Retrieved"/"SetReply" handler
-        # ran before the planet was ready.
         self._try_restore_weapon_state()
 
     async def _grant_starting_items(self) -> None:
         if self._starting_items_sent or not self.pine_connected:
             return
-        # Claim the grant synchronously before any await, since this can be scheduled from two
-        # handlers that could both reach the check above first. Reset on failure to allow a retry.
         self._starting_items_sent = True
         starting_bolts = int(self.slot_data.get("starting_bolts", 0))
         if starting_bolts <= 0:
@@ -55,8 +51,6 @@ class EventsHandlerMixin:
                 current = self.pine.read_int32(PLAYER_BOLT_COUNT)
                 granted = min(current + starting_bolts, MAX_PLAYER_BOLTS)
                 self.pine.write_int32(PLAYER_BOLT_COUNT, granted)
-                # Rebaseline so Core's per-tick apply_boost() doesn't treat
-                # this one-shot grant as organic gameplay gain.
                 self._wiring.player_bolts.rebaseline(granted)
             except Exception as exc:
                 logger.warning(f"[RAC] Could not grant starting bolts: {exc}")
@@ -66,8 +60,7 @@ class EventsHandlerMixin:
         asyncio.create_task(self._persist_starting_items_sent())
 
     def _on_vendor_close(self) -> None:
-        """While a vendor menu is open, memory only reflects its restricted view, so re-apply
-        the full AP inventory on close to restore true ownership."""
+        """Apply deliveries deferred while browsing; weapon views keep real inventory."""
         self._on_menu_close_for_armour_sets()
         asyncio.create_task(self._apply_received_items())
 

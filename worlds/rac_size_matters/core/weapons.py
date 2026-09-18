@@ -12,16 +12,11 @@ from .locations import weapon_locations as _weapon_locations
 if TYPE_CHECKING:
     from ..pypine import Pine
 
-# Vendor/mod location lookups live in core.locations.weapon_locations, not
-# here — that module builds them lazily to avoid a circular import back into
-# this module (items.py imports this module's weapon constants directly).
 
 
 WEAPON_STRUCT_SIZE = 0x58
 WEAPON_MIN_CONSECUTIVE = 4
 
-# ProgressiveWeapons option values (options.py's ProgressiveWeapons Choice)
-# — kept in sync manually.
 PROGRESSIVE_OFF       = 0
 PROGRESSIVE_MANUAL    = 1
 PROGRESSIVE_AUTOMATIC = 2
@@ -31,14 +26,9 @@ class WeaponData(NamedTuple):
     classification: ItemClassification
     max_level: int
     mod_count: int
-    # 1-indexed experience thresholds (exp_thresholds[0] = XP for level 2).
-    # Levels 5-8 have no threshold yet, so PROGRESSIVE_MANUAL imposes no ceiling past level 4.
     exp_thresholds: tuple[int, ...] = ()
 
 
-# Single source of truth per weapon (keyed by internal Rac5WeaponKeys).
-# WEAPON_MAX_LEVELS/WEAPON_MOD_COUNTS/WEAPON_EXP_THRESHOLDS below are derived
-# from this.
 WEAPON_DATA: dict[str, WeaponData] = {
     Rac5WeaponKeys.LACERATOR: WeaponData(
         is_projectile=True, classification=ItemClassification.progression, max_level=8, mod_count=2,
@@ -89,13 +79,11 @@ WEAPON_DATA: dict[str, WeaponData] = {
         exp_thresholds=(12000, 12000, 16000, None, 50_000, 142_000, 225_000, None),
     ),
     Rac5WeaponKeys.RYNO: WeaponData(
-        # RYNO has no Titan variant — stays capped at 4.
         is_projectile=True, classification=ItemClassification.progression, max_level=4, mod_count=0,
         exp_thresholds=(85000, 350000, 999000, None),
     ),
 }
 
-# Every weapon with a Challenge Mode Titan variant (all except RYNO).
 TITAN_ELIGIBLE_WEAPONS: frozenset[str] = frozenset(
     key for key in WEAPON_DATA if key != Rac5WeaponKeys.RYNO
 )
@@ -128,8 +116,6 @@ WEAPON_MOD_COUNTS: dict[str, int] = {key: data.mod_count for key, data in WEAPON
 
 WEAPON_MAX_LEVELS: dict[str, int] = {key: data.max_level for key, data in WEAPON_DATA.items()}
 
-# Per-weapon tuple of fixed experience thresholds, 1-indexed by level reached
-# (see WeaponData.exp_thresholds).
 WEAPON_EXP_THRESHOLDS: dict[str, tuple[int, ...]] = {
     key: data.exp_thresholds for key, data in WEAPON_DATA.items()
 }
@@ -243,8 +229,7 @@ class WeaponAddresses:
 
     _OFFSETS: dict[str, int] = {
         "level":            0x2D,
-        # Confirmed in-game for Lacerator on Pokitaru (0x20F3EA4C, base
-        # 0x20F3EA17) — same relative offset for every weapon.
+        # Confirmed in-game for Lacerator on Pokitaru (0xF3EA4C, base
         "experience":       0x35,
         "mod_slot_one":     0x3D,
         "mod_slot_two":     0x3E,
@@ -253,8 +238,6 @@ class WeaponAddresses:
         "mod_unlock_two":   0x41,
         "mod_unlock_three": 0x42,
         "unlocked":         0x45,
-        # First live accessor for this offset (already sanity-checked in
-        # is_weapon_candidate); used by AmmoLink to mirror ammo across players.
         "ammo":             0x31,
     }
 
@@ -298,9 +281,6 @@ class GadgetData(NamedTuple):
     classification: ItemClassification
 
 
-# Single source of truth per gadget (keyed by internal Rac5GadgetKeys).
-# Gadgets have no level/mod/projectile concept, so classification is the
-# only flag needed.
 GADGET_DATA: dict[str, GadgetData] = {
     Rac5GadgetKeys.HYPERSHOT:      GadgetData(classification=ItemClassification.progression),
     Rac5GadgetKeys.SPROUT_O_MATIC: GadgetData(classification=ItemClassification.progression),
@@ -314,32 +294,32 @@ GADGET_DATA: dict[str, GadgetData] = {
 
 
 WEAPON_ORDER: list[str | None] = [
-    Rac5WeaponKeys.LACERATOR,        # slot  0
-    Rac5WeaponKeys.CONCUSSION_GUN,   # slot  1
-    Rac5WeaponKeys.ACID_BOMB_GLOVE,  # slot  2
-    Rac5WeaponKeys.AGENTS_OF_DOOM,   # slot  3
-    Rac5WeaponKeys.BEE_MINE_GLOVE,   # slot  4
-    Rac5WeaponKeys.STATIC_BARRIER,   # slot  5
-    Rac5WeaponKeys.SHOCK_ROCKET,     # slot  6
-    Rac5WeaponKeys.SNIPER_MINE,      # slot  7
-    Rac5WeaponKeys.SCORCHER,         # slot  8
-    Rac5WeaponKeys.LASER_TRACER,     # slot  9
-    Rac5WeaponKeys.SUCK_CANNON,      # slot 10
-    Rac5WeaponKeys.MOOTATOR,         # slot 11
-    None,                            # slot 12  gap
-    Rac5WeaponKeys.RYNO,             # slot 13
+    Rac5WeaponKeys.LACERATOR,
+    Rac5WeaponKeys.CONCUSSION_GUN,
+    Rac5WeaponKeys.ACID_BOMB_GLOVE,
+    Rac5WeaponKeys.AGENTS_OF_DOOM,
+    Rac5WeaponKeys.BEE_MINE_GLOVE,
+    Rac5WeaponKeys.STATIC_BARRIER,
+    Rac5WeaponKeys.SHOCK_ROCKET,
+    Rac5WeaponKeys.SNIPER_MINE,
+    Rac5WeaponKeys.SCORCHER,
+    Rac5WeaponKeys.LASER_TRACER,
+    Rac5WeaponKeys.SUCK_CANNON,
+    Rac5WeaponKeys.MOOTATOR,
+    None,
+    Rac5WeaponKeys.RYNO,
 ]
 
 GADGET_ORDER: list[str | None] = [
-    Rac5GadgetKeys.HYPERSHOT,        # slot 0
-    Rac5GadgetKeys.SPROUT_O_MATIC,   # slot 1
-    Rac5GadgetKeys.POLARIZER,        # slot 2
-    Rac5GadgetKeys.PDA,              # slot 3
-    Rac5GadgetKeys.SHRINK_RAY,       # slot 4
-    Rac5GadgetKeys.BOLT_GRABBER,     # slot 5
-    None,                            # slot 6  gap
-    Rac5GadgetKeys.MAP_O_MATIC,      # slot 7
-    Rac5GadgetKeys.BOX_BREAKER,      # slot 8
+    Rac5GadgetKeys.HYPERSHOT,
+    Rac5GadgetKeys.SPROUT_O_MATIC,
+    Rac5GadgetKeys.POLARIZER,
+    Rac5GadgetKeys.PDA,
+    Rac5GadgetKeys.SHRINK_RAY,
+    Rac5GadgetKeys.BOLT_GRABBER,
+    None,
+    Rac5GadgetKeys.MAP_O_MATIC,
+    Rac5GadgetKeys.BOX_BREAKER,
 ]
 
 
@@ -361,7 +341,6 @@ def build_weapons(array_base: int | None, pine: Pine) -> tuple[dict[str, WeaponA
     return weapons, gadgets
 
 
-# Weapon state (runtime)
 
 _MOD_SLOTS = ("mod_slot_one", "mod_slot_two", "mod_slot_three")
 
@@ -376,14 +355,9 @@ class WeaponInventory:
         self.weapons: dict[str, bool]         = {}
         self.gadgets: dict[str, bool]         = {}
         self.mods: dict[str, dict[str, bool]] = {}
-        # Raw-memory baselines for check()'s 0->1 flip detection, kept separate from
-        # weapons/gadgets/mods (which never regress True->False) so a display
-        # zero/restore cycle doesn't hide a real repurchase.
         self._raw_weapons: dict[str, bool]         = {}
         self._raw_gadgets: dict[str, bool]         = {}
         self._raw_mods: dict[str, dict[str, bool]] = {}
-        # Last-seen 0-indexed level per weapon, used only for check()'s
-        # "newly reached level" diffing.
         self._raw_level: dict[str, int] = {}
         self.vendor_locations: dict[str, bool] = dict.fromkeys(
             (
@@ -396,27 +370,14 @@ class WeaponInventory:
         self._weapon_addrs: dict[str, WeaponAddresses] = {}
         self._gadget_addrs: dict[str, GadgetAddresses] = {}
 
-        # Weapon-experience-multiplier option: 1 = no boost (default/off).
-        # Set directly by the client from slot_data.
         self.experience_multiplier: int = 1
-        # Last-seen raw experience per weapon, used only to diff this tick's
-        # gain from the last one — see apply_experience_boost().
         self._prev_experience: dict[str, int] = {}
 
-        # ProgressiveWeapons option (options.py): 0=off, 1=manual, 2=automatic.
-        # Set directly by the client from slot_data.
         self.progressive_mode: int = PROGRESSIVE_OFF
-        # Per-weapon max allowed level (0-indexed); kept current by Core.apply_inventory().
-        # Absent = zero copies received (fully locked).
         self.level_caps: dict[str, int] = {}
-        # Manual mode, cap < 0: pins experience so a fully-locked weapon's XP
-        # never moves; captured on first observation, cleared once a copy arrives.
         self._pinned_experience: dict[str, int] = {}
 
-        # Gates the Titan purchase mechanism below; 0 = off.
         self.challenge_mode: int = 0
-        # Floors level at 5 (0-indexed 4) once a Titan variant is bought, caps
-        # at 4 while not; rebuilt from AP's checked_locations on reconnect.
         self.titan_purchased: dict[str, bool] = dict.fromkeys(TITAN_ELIGIBLE_WEAPONS, False)
 
     def set_base(self, array_base: int | None) -> None:
@@ -598,12 +559,10 @@ class WeaponInventory:
                 prev_level = self._raw_level.get(name, -1)
                 current_level = levels_by_name[name]
                 if current_level > prev_level:
-                    # Level 1 is deliberately excluded — synonymous with owning the weapon.
                     for idx in range(prev_level + 1, current_level + 1):
                         level = idx + 1
                         if level >= 2:
                             newly_levels.append((name, level))
-                        # Reaching level 5 is what buying a Titan variant looks like in-game.
                         if level == 5 and name in TITAN_ELIGIBLE_WEAPONS:
                             newly_titans.append(name)
                 self._raw_level[name] = current_level
@@ -676,23 +635,21 @@ class WeaponInventory:
                 continue
 
             cap = self.level_caps.get(name, -1)
-            if titan_floor is not None:
-                cap = max(cap, titan_floor)
-            elif titan_ceiling is not None and cap > titan_ceiling:
-                # Enough copies to earn past level 4, but only once level 4 is actually reached.
-                if addr.level < titan_ceiling:
-                    cap = titan_ceiling
-            elif titan_ceiling is not None:
-                cap = min(cap, titan_ceiling)
 
             if mode == PROGRESSIVE_AUTOMATIC:
                 addr.level = max(cap, 0)
                 addr.experience = 0
                 continue
 
-            # manual
+            if titan_floor is not None:
+                cap = max(cap, titan_floor)
+            elif titan_ceiling is not None and cap > titan_ceiling:
+                if addr.level < titan_ceiling:
+                    cap = titan_ceiling
+            elif titan_ceiling is not None:
+                cap = min(cap, titan_ceiling)
+
             if cap < 0:
-                # No Progressive copies received yet — fully locked.
                 pinned = self._pinned_experience.get(name)
                 if pinned is None:
                     self._pinned_experience[name] = addr.experience
@@ -702,32 +659,22 @@ class WeaponInventory:
             self._pinned_experience.pop(name, None)
 
             if addr.level > cap:
-                # Shouldn't normally happen (caps only rise), but pull back
-                # down defensively rather than leave it over-leveled.
                 addr.level = cap
 
             max_level_idx = WEAPON_MAX_LEVELS.get(name, cap + 1) - 1
             if cap >= max_level_idx:
-                # Every copy received — fully unlocked, no ceiling at all.
                 continue
 
             if addr.level == cap:
-                # Already at the max permitted level; keep experience at 0
-                # rather than let it climb with no level to show for it.
                 if addr.experience != 0:
                     addr.experience = 0
                 continue
 
-            # Check the threshold for the level after the CURRENT one, not
-            # cap's own level, since cap can sit several levels ahead.
             next_threshold = exp_threshold_for_level(name, addr.level + 2)
             if next_threshold is None:
-                # No fixed threshold for this gap (e.g. level 5, the Titan tier),
-                # so bump the level across manually since the game can't do it on its own.
                 addr.level += 1
                 addr.experience = 0
             else:
-                # Never let a single boosted tick's gain carry past the ceiling in one jump.
                 ceiling = exp_threshold_for_level(name, cap + 1)
                 if ceiling is not None and addr.experience > ceiling:
                     addr.experience = ceiling
@@ -753,9 +700,6 @@ class WeaponInventory:
         self._raw_mods = {name: dict(mods) for name, mods in self.mods.items()}
         self._raw_level = dict.fromkeys(self._weapon_addrs, 0)
         self._prev_experience = dict.fromkeys(self._weapon_addrs, 0)
-        # Deliberately NOT resetting titan_purchased — wipe() can run after
-        # sync_from_ap() has already restored it, and resetting would re-open
-        # every already-bought Titan variant for purchase.
 
     def sync(self) -> None:
         """Write the current ownership dicts into game memory for the current planet's array."""
@@ -780,11 +724,7 @@ class WeaponInventory:
                 slot_unlocked  = bool(getattr(addr, slot))
                 mods[slot]     = slot_unlocked
                 raw_mods[slot] = slot_unlocked
-            # Rebaseline so apply_experience_boost() doesn't mistake a fresh
-            # planet's array value for a same-tick gain.
             self._prev_experience[name] = addr.experience
-            # _raw_level deliberately NOT rebaselined, so a precollected weapon
-            # still fires every level up to its current one on first observation.
         for name, addr in self._gadget_addrs.items():
             unlocked = bool(addr.unlocked)
             self.gadgets[name]      = unlocked
@@ -804,7 +744,6 @@ class WeaponInventory:
                 continue
             if loc_name in _weapon_locations.VENDOR_WEAPON_LOC:
                 name = _weapon_locations.VENDOR_WEAPON_LOC[loc_name]
-                # Guard: only restore if player actually owns it (edge-case safety).
                 if self.weapons.get(name, False) and name in weapon_unlocked:
                     weapon_unlocked[name] = True
             elif loc_name in _weapon_locations.VENDOR_GADGET_LOC:
@@ -816,7 +755,6 @@ class WeaponInventory:
                 if weapon in weapon_mods:
                     weapon_mods[weapon][slot] = True
 
-        # Weapons/gadgets owned via AP items whose vendor planet is unlocked.
         for name in allowed_extra:
             if name in weapon_unlocked:
                 weapon_unlocked[name] = True
@@ -844,7 +782,6 @@ class WeaponInventory:
             for slot in _MOD_SLOTS:
                 if (name, slot) in purchased_slots:
                     continue
-                # Read first to skip the write unless it flipped back since our last pass.
                 if getattr(addr, slot):
                     setattr(addr, slot, False)
 

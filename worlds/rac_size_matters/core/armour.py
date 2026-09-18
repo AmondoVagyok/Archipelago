@@ -14,8 +14,7 @@ from ..pypine import Pine
 from .address_maps import ARMOUR_BASE
 from .states.base_state import BaseState
 
-# Armour address resolvers
-_BOOTS_MASK = 0xF0  # module-level, not inside the enum body
+_BOOTS_MASK = 0xF0
 
 
 class ArmourSet(IntEnum):
@@ -38,8 +37,6 @@ class ArmourPiece(IntFlag):
     CHESTPLATE = 0x01
     HELMET = 0x02
     GLOVES = 0x04
-    # Boots changes: it's any value with bit 4 set, because the game treats left and
-    # right boots as one piece, so any value with bit 4 set is considered equipped.
     BOOTS = 0x10
     ALL = 0x17
 
@@ -173,8 +170,6 @@ ARMOUR_PICKUPS: list[ArmourPickup] = [
     ArmourPickup("electroshock", ArmourPiece.GLOVES, Rac5Locations.METALIS_GLOVES, Rac5Planets.METALIS),
     ArmourPickup("electroshock", ArmourPiece.CHESTPLATE, Rac5Locations.CHALLAX_CHESTPLATE, Rac5Planets.CHALLAX),
 
-    # Challenge Mode pickups — Hyperborean (tier 1+), Chameleon (tier 2 only).
-    # See rules/challenge_mode.py + regions.py for the tier/NG+ Items gating.
     ArmourPickup("hyperborean", ArmourPiece.GLOVES, Rac5Locations.POKITARU_HYPERBOREAN_GLOVES, Rac5Planets.POKITARU),
     ArmourPickup("hyperborean", ArmourPiece.BOOTS, Rac5Locations.RYLLUS_HYPERBOREAN_BOOTS, Rac5Planets.RYLLUS),
     ArmourPickup(
@@ -206,13 +201,20 @@ CHALLENGE_LOCATION_TO_ARMOUR_FLAG: dict[str, tuple[str, ArmourPiece]] = {
 }
 
 
-# Armour set checks
 
 
 class ArmourInventory(BaseState):
     """Owns a single ArmourStruct plus two logical states: ap_armour (what AP has
-    granted) and game_armour (what's been physically picked up), kept separate so a
-    death/reload can restore their union instead of re-hiding an in-flight AP grant."""
+    granted -- the only thing that actually counts as "owned") and game_armour
+    (what's been physically picked up in this playthrough, regardless of AP
+    ownership). Kept separate on purpose: with ArmourSpawnGate bypassing vanilla's
+    story/challenge-mode gate, every pickup manifests whether or not it's actually
+    yours, so a piece being in game_armour must NEVER by itself grant it in-game --
+    only ap_armour does that (see apply_full()). game_armour exists so
+    check()/restore_armour_from_locations() don't keep re-reporting the same
+    physically-found-but-not-(yet)-AP-owned pickup every tick, and it's also what
+    the transient death-sequence display (apply_collected_only()) shows on its own,
+    independent of AP ownership -- see that method for why."""
 
     def __init__(self, pine: Pine) -> None:
         super().__init__()
@@ -242,26 +244,56 @@ class ArmourInventory(BaseState):
         self.ap_armour = ArmourSnapshot(**fields)
 
     def record_pickup(self, pieces: dict[str, ArmourPiece]) -> None:
-        """OR-merge newly detected in-game pickups into game_armour, so a later
-        death/planet-load never re-hides them. Pure bookkeeping, no memory write."""
+        """OR-merge newly detected in-game pickups into game_armour -- purely so
+        check() doesn't re-report the same not-(yet)-AP-owned pickup forever. Does NOT
+        by itself grant anything in-game; see the class docstring. Pure bookkeeping,
+        no memory write."""
         merged = {
             name: (getattr(self.game_armour, name) or ArmourPiece.NONE) | piece
             for name, piece in pieces.items()
         }
         self.game_armour = replace(self.game_armour, **merged)
 
+    def check(self) -> dict[str, ArmourPiece]:
+        """Every-tick diff, titanium-bolt style: read raw memory and return whatever
+        bits aren't already accounted for by ap_armour or game_armour, per set --
+        i.e. "has this pickup been reported before", not "is it owned". A piece
+        found here that isn't in ap_armour is reported via record_pickup() so it
+        isn't reported again, but is NOT thereby granted in-game: apply_full() only
+        ever applies ap_armour, so the very next call re-locks it back to unowned
+        unless/until the matching AP item actually comes back. ArmourSpawnGate lets
+        an unowned piece keep re-manifesting and being "found" again for as long as
+        its location stays unresolved in the player's favor, same as a
+        not-yet-owned weapon vendor slot."""
+        current = self.read()
+        new_pieces: dict[str, ArmourPiece] = {}
+        for name in ArmourStruct.SET_FIELDS:
+            raw = int(getattr(current, name) or 0)
+            known = int(getattr(self.ap_armour, name) or 0) | int(getattr(self.game_armour, name) or 0)
+            new_bits = raw & ~known
+            if new_bits:
+                new_pieces[name] = ArmourPiece(new_bits)
+        if new_pieces:
+            self.record_pickup(new_pieces)
+        return new_pieces
+
     def apply_full(self) -> None:
-        """Write OR(ap_armour, game_armour) to memory — every AP-granted piece
-        plus everything physically found."""
-        merged = {
-            name: (getattr(self.ap_armour, name) or ArmourPiece.NONE) | (getattr(self.game_armour, name) or ArmourPiece.NONE)
-            for name in ArmourStruct.SET_FIELDS
-        }
-        self.struct.write(ArmourSnapshot(**merged))
+        """Write ap_armour to memory — only what AP has actually granted. Deliberately
+        NOT OR'd with game_armour: a piece the player physically found but doesn't
+        (yet) own via AP must not stick around just because it was found, exactly like
+        an unowned weapon/gadget vendor "purchase" gets re-locked — see the class
+        docstring for why this matters now that ArmourSpawnGate lets any pickup
+        manifest regardless of ownership."""
+        fields = {name: (getattr(self.ap_armour, name) or ArmourPiece.NONE) for name in ArmourStruct.SET_FIELDS}
+        self.struct.write(ArmourSnapshot(**fields))
 
     def apply_collected_only(self) -> None:
-        """Write only game_armour (death-sequence state), hiding any AP-granted piece
-        not yet physically found. Every field is written explicitly to avoid stale values."""
+        """Write only game_armour — death-sequence state: shows exactly what's been
+        physically found in this playthrough, regardless of AP ownership (deliberately
+        NOT filtered by ap_armour, unlike apply_full() — this is a transient display
+        during the death sequence, not persistent ownership; _handle_respawn()'s
+        apply_full() call corrects everything back to AP truth immediately after).
+        Every field is written explicitly to avoid stale values."""
         fields = {name: (getattr(self.game_armour, name) or ArmourPiece.NONE) for name in ArmourStruct.SET_FIELDS}
         self.struct.write(ArmourSnapshot(**fields))
 

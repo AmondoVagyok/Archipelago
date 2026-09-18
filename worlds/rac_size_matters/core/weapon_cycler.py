@@ -14,8 +14,6 @@ class WeaponCycleState(IntEnum):
     IDLE   = 0x00
     PICKUP = 0x0C
 
-# Value current_weapon/stored_weapon hold when nothing is equipped/queued —
-# not 0.
 EMPTY_WEAPON_ID = 1
 
 
@@ -56,8 +54,6 @@ class WeaponCyclerInventory:
         self.state_addr:   int | None = None
         self.current_addr: int | None = None
         self.stored_addr:  int | None = None
-        # Tracks vendor_active across calls so check() can detect the exact
-        # close-edge tick and skip correcting on it too (see check()).
         self._prev_vendor_active: bool = False
 
     def set_base(self, planet_id: int) -> None:
@@ -75,7 +71,7 @@ class WeaponCyclerInventory:
             return
         self.cycle_state = 1
         weapon_id = fallback_weapon_id() or EMPTY_WEAPON_ID
-        self.applied_weapon = weapon_id  # actually changes current_weapon; a direct write doesn't take
+        self.applied_weapon = weapon_id
         self.stored_weapon  = weapon_id
 
     @property
@@ -116,8 +112,6 @@ class WeaponCyclerInventory:
         if not self.is_ready or self.is_picking_up or vendor_active or just_closed_vendor:
             return
 
-        # current_weapon is set through applied_weapon, not written directly — a direct
-        # write doesn't change what the player's holding; apply_weapon is the trigger.
         current = self.current_weapon
         if current is not None and current not in (0, EMPTY_WEAPON_ID) and not is_ap_owned(current):
             fallback = fallback_weapon_id()

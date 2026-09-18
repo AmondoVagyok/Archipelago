@@ -26,17 +26,9 @@ def set_metalis_rules(world: RACSizeMatterWorld) -> None:
         world.set_rule(mw.get_location(Rac5SkillPoints.METALIS_SHUTOUT, player), True_())
         world.set_rule(mw.get_location(Rac5SkillPoints.METALIS_GLADIATOR, player), True_())
 
-    # METALIS_WAR's own trigger is completing the Buzzsaw Blitz clank
-    # challenge, so with clank challenges off it's never created at all
-    # (see regions.py) — nothing to set a rule on in that case.
     if world.options.all_missions and world.options.clank_challenges.value >= 1:
         world.set_rule(mw.get_location(Rac5CutsceneLocations.METALIS_WAR, player), True_())
 
-    # Giant Clank Metalis: locked out entirely by the Giant Clank option
-    # (see regions.py/GIANT_CLANK_LOCATIONS and
-    # PlanetInventory.giant_clank_allowed) — when on, reachable as soon as
-    # Metalis itself is (the "To Metalis" entrance rule already requires the
-    # Metalis infobot), no additional item needed to trigger/complete it.
     if world.options.giant_clank:
         if world.options.all_missions:
             world.set_rule(mw.get_location(Rac5CutsceneLocations.METALIS_ESCAPE, player), True_())
@@ -49,10 +41,6 @@ def set_metalis_rules(world: RACSizeMatterWorld) -> None:
         HasAll(Rac5Gadgets.POLARIZER, Rac5Gadgets.HYPERSHOT),
     )
 
-    # Clank Challenges — item rewards (clank_challenges >= 1) and individual
-    # completions (clank_challenges >= 2), both further filtered by
-    # ClankChallengeGroups — must match regions.py's own filtering, or
-    # set_rule() below would target a Location that was never created.
     enabled_names = enabled_clank_challenge_names(dict(world.options.clank_challenge_groups.value))
     if world.options.clank_challenges.value >= 1:
         for name in (

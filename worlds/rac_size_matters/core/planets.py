@@ -16,7 +16,7 @@ from .address_maps import (
     PLANET_UNLOCK_ADDRESSES,
     WEAPON_ARRAY_BASE_BY_PLANET,
 )
-from .armour import EQUIPPED_SLOT_TO_PIECE, ArmourPiece, ArmourStruct
+from .armour import ArmourPiece, ArmourStruct
 from .controller import GlobalButtonState
 from .display_text import multi_line_text_box_inventory, small_text_box_inventory
 from .menu import MenuInventory, MenuStateValue
@@ -52,16 +52,12 @@ class Planets:
     KALIDON         = Planet("Kalidon",               0x03, menu_addr=MENU_ADDR_BY_PLANET_ID[0x03])
     METALIS         = Planet("Metalis",               0x04, menu_addr=MENU_ADDR_BY_PLANET_ID[0x04])
     DREAMTIME       = Planet("Dreamtime",             0x05, menu_addr=MENU_ADDR_BY_PLANET_ID[0x05])
-    # OUTPOST_OMEGA_1 = Planet("Outpost Omega 1",       0x06)
     CHALLAX         = Planet("Challax",               0x07, menu_addr=MENU_ADDR_BY_PLANET_ID[0x07])
     DAYNI_MOON      = Planet("Dayni Moon",            0x08, menu_addr=MENU_ADDR_BY_PLANET_ID[0x08])
     INSIDE_CLANK    = Planet("Inside Clank",          0x09)
     QUODRONA        = Planet("Quodrona",              0x0A, menu_addr=MENU_ADDR_BY_PLANET_ID[0x0A])
-    # Special vanilla sub-modes entered from Metalis/Challax, not normal AP regions.
     GIANT_CLANK_METALIS = Planet("Giant Clank (Metalis)", 0x0F)
     GIANT_CLANK_CHALLAX = Planet("Giant Clank (Challax)", 0x15)
-    # Kalidon's skyboard race sub-level has no addresses of its own; only the
-    # fixed/global skyboard completion bits are safe to read while it's loaded.
     KALIDON_RACE    = Planet("Kalidon Race Track",    0x16)
     OUTPOST_OMEGA_2 = Planet("Outpost Omega 2",       0x17, menu_addr=MENU_ADDR_BY_PLANET_ID[0x17])
 
@@ -76,7 +72,7 @@ BY_ID: dict[int, Planet] = {
 class PlanetUnlock:
     unlock_addr:   int
     state_addr:    int
-    default_state: int = 0  # minimum value always written to state_addr
+    default_state: int = 0
 
 
 _DEFAULT_STATES: dict[str, int] = {
@@ -94,22 +90,18 @@ PLANET_UNLOCKS: dict[str, PlanetUnlock] = {
 }
 
 
-# Infobots / planet state
-# Infobots are AP items; receiving one sets the planet's unlock-status address
-# to INFOBOT_UNLOCK_VALUE (3). Dreamtime/Inside Clank are auto-unlocked instead.
 
-INFOBOT_UNLOCK_VALUE = 3  # value written to the planet status address
+INFOBOT_UNLOCK_VALUE = 3
 
-# Display name -> planet key(s). Pokitaru's infobot also unlocks Ryllus since
-# the two share one merged item.
 INFOBOT_ITEM_TO_PLANET: dict[str, tuple[str, ...]] = {
-    Rac5Infobots.POKITARU:     ("pokitaru", "ryllus"),
+    Rac5Infobots.POKITARU:     ("pokitaru",),
     Rac5Infobots.KALIDON:      ("kalidon",),
     Rac5Infobots.METALIS:      ("metalis",),
     Rac5Infobots.OUTPOST_OMEGA: ("outpost_omega",),
     Rac5Infobots.CHALLAX:      ("challax",),
     Rac5Infobots.DAYNI_MOON:   ("dayni_moon",),
     Rac5Infobots.QUODRONA:     ("quodrona",),
+    Rac5Infobots.RYLLUS:       ("ryllus",),
 }
 
 PLANET_STATE_ADDRESSES: dict[str, int] = {
@@ -118,40 +110,33 @@ PLANET_STATE_ADDRESSES: dict[str, int] = {
     "kalidon":           PLANET_UNLOCK_ADDRESSES["KALIDON"],
     "metalis":           PLANET_UNLOCK_ADDRESSES["METALIS"],
     "outpost_omega":     PLANET_UNLOCK_ADDRESSES["OUTPOST_OMEGA"],
-    "outpost_omega_oo2": 0x21F4C677,  # secondary state set alongside Outpost Omega
+    "outpost_omega_oo2": 0x1F4C677,
     "challax":           PLANET_UNLOCK_ADDRESSES["CHALLAX"],
     "dayni_moon":        PLANET_UNLOCK_ADDRESSES["DAYNI_MOON"],
-    "inside_clank":      PLANET_UNLOCK_ADDRESSES["INSIDE_CLANK"],  # unlocked via Dayni Moon infobot
+    "inside_clank":      PLANET_UNLOCK_ADDRESSES["INSIDE_CLANK"],
     "quodrona":          PLANET_UNLOCK_ADDRESSES["QUODRONA"],
 }
 
-# Planet unlock addresses always forced to INFOBOT_UNLOCK_VALUE because
-# these planets have no collectible infobot in the AP item pool.
 AUTO_UNLOCK_ADDRESSES: list[int] = [
-    0x21F4C665,  # Dreamtime -- auto-unlocked via Outpost Omega
+    0x1F4C665,
 ]
 
 
-# Planet state (runtime)
 
 logger = logging.getLogger("CommonClient")
 
 _METALIS_ID: int = 0x04
 _CHALLAX_ID: int = 0x07
 
-# Giant Clank Metalis/Challax are self-contained vanilla sequences, not normal AP
-# regions — detected purely by planet id, completed via an armour-piece pickup.
 _GIANT_CLANK_METALIS_ID:  int = 0x0F
 _GIANT_CLANK_CHALLAX_ID:  int = 0x15
 
 
 class GiantClankConfig(NamedTuple):
-    origin_id:        int            # planet the sequence is entered from
-    armour_set:       str            # ArmourStruct.SET_FIELDS name (e.g. "electroshock")
-    piece:            ArmourPiece    # piece bit that signals completion when it appears
-    pickup_locations: tuple[str, ...]  # AP location(s) fired the moment that bit appears
-    # redirect_to forces NEW_PLANET_START_LOAD_ADDR back to origin_id when the game
-    # scripts an exit to a different planet (Metalis); None/None if it returns on its own.
+    origin_id:        int
+    armour_set:       str
+    piece:            ArmourPiece
+    pickup_locations: tuple[str, ...]
     redirect_to:      int | None = None
     escape_location:  str | None = None
 
@@ -185,7 +170,6 @@ class PlanetInventory:
         self.armour       = armour
         self.quick_select = quick_select
 
-        # Planet-specific — owned and rebound here, not passed in.
         self.player           = PlayerInventory(pine)
         self.menu             = MenuInventory(pine)
         self.weapons          = WeaponInventory(pine)
@@ -194,47 +178,31 @@ class PlanetInventory:
         self.multi_line_text  = multi_line_text_box_inventory(pine)
 
         self.planet_id: int | None = None
-        # True once every planet-dependent Inventory has its address rebound;
-        # False mid-transition, gating every read/write below.
         self.is_ready: bool = False
         self._pending_planet_id: int | None = None
         self._prev_gate: int = TRANSITION_GATE_IDLE
 
-        # Random Starting Planet: the game always boots a fresh save into Pokitaru,
-        # so the first arrival must be redirected once. None (option off) is vanilla.
         self.starting_planet_id: int | None = None
         self._start_redirect_pending: bool = False
-        # Quick select starts frozen; zeroed on the first ready planet, restored after.
         self._quick_select_primed: bool = False
 
-        # Giant Clank Metalis/Challax: self-contained vanilla sequences with no AP
-        # items/notifications. Defaults True so standalone/test usage isn't locked out.
         self.giant_clank_allowed: bool = True
         self.giant_clank_active: bool = False
         self._giant_clank_config: GiantClankConfig | None = None
         self._giant_clank_had_piece: bool = False
         self._giant_clank_escape_sent: bool = False
 
-        # equipped_armour only ever updates on pause-menu-close (check_equipped_armour()).
         self.equipped_armour:  dict[str, int] = dict.fromkeys(ArmourStruct.SLOT_FIELDS, 0)
-        # Gated to the pickup-animation window so an AP inventory resync (which writes
-        # the same bytes outside any animation) is never misread as a genuine pickup.
         self._was_picking_up:    bool = False
-        # Snapshot equipped slots at pickup-start and restore at pickup-end, since a
-        # pickup can auto-equip a piece and must not silently change the loadout.
         self._equipped_pickup_baseline: dict[str, int] | None = None
 
         self.on_death:                 Callable[[], None]              = lambda: None
         self.on_respawn:               Callable[[], None]              = lambda: None
         self.on_equipped_armour_saved: Callable[[dict[str, int]], None] = lambda _: None
-        # Fires on pause-menu-close alongside the equipped-armour save, so other
-        # pause-close-only state (e.g. quick select) can hook the same edge.
         self.on_pause_close:           Callable[[], None]              = lambda: None
 
         self._prev_dead: bool = False
         self._prev_menu: MenuStateValue | None = None
-        # Set by check_death() and reused by check_collected_armour() the same tick,
-        # so the two don't each take their own movement read.
         self._cached_movement: PlayerMovementState | None = None
 
     def set_starting_planet(self, planet_id: int | None) -> None:
@@ -281,7 +249,6 @@ class PlanetInventory:
 
             return False
 
-        # Fallback: an out-of-band planet change that never touched the gate.
         current_id = self.pine.read_int8(CURRENT_PLANET_ADDRESS)
         if current_id != 0 and current_id != self.planet_id and self._pending_planet_id is None:
             self._ready_on_planet(current_id)
@@ -291,16 +258,12 @@ class PlanetInventory:
 
     def _ready_on_planet(self, planet_id: int) -> None:
         if self._start_redirect_pending and planet_id == Planets.POKITARU.planet_id:
-            # Redirect the hardcoded first Pokitaru boot-in; one-shot so a later
-            # legitimate visit is never redirected again.
             self._start_redirect_pending = False
             self.pine.write_int32(NEW_PLANET_START_LOAD_ADDR, self.starting_planet_id)
             return
 
         config = GIANT_CLANK_CONFIGS.get(planet_id)
         if config is not None and not self.giant_clank_allowed:
-            # Option off: force an immediate load back to origin_id. is_ready is
-            # left False so nothing runs against this half-loaded state.
             self.pine.write_int32(NEW_PLANET_START_LOAD_ADDR, config.origin_id)
             return
 
@@ -311,8 +274,6 @@ class PlanetInventory:
             self.quick_select.zero()
         else:
             self.quick_select.unfreeze()
-        # Called unconditionally so both branches converge: applies the loaded
-        # loadout (or zero()'s default) on first ready, the normal restore after.
         self.quick_select.restore()
 
         if config is not None:
@@ -364,15 +325,12 @@ class PlanetInventory:
 
         return to_send
 
-    # Text chat — the entry point external code calls to show a message.
-    # Deciding *when* to call it is entirely external.
     def show_text(self, text: bytes | str, *, multi_line: bool = False) -> None:
         if not self.is_ready:
             return
         box = self.multi_line_text if multi_line else self.small_text
         box.set(text)
 
-    # Death — pull-based, call whenever you want to check for a transition.
     def check_death(self) -> bool:
         """Also refreshes self._cached_movement, the single PlayerInventory read this
         and check_collected_armour() both need this tick, avoiding a second read."""
@@ -390,7 +348,6 @@ class PlanetInventory:
             self.on_respawn()
         return newly_dead
 
-    # Controller — force the planet menu open while the hotkey combo is held.
     def check_controller(self) -> None:
         if not self.is_ready or self.planet_id is None:
             return
@@ -398,18 +355,19 @@ class PlanetInventory:
         if buttons is not None and buttons.opens_planet_menu:
             self.menu.set(MenuStateValue.PLANET_MENU)
 
-    # Quick select / traps
     def activate_trap(self, trap_name: str) -> None:
         if not self.is_ready:
             return
         _activate_trap(self.pine, trap_name)
 
-    # Armour
     def check_collected_armour(self) -> None:
-        """Detect a genuine pickup via the pickup-animation window, not by polling
-        continuously (apply_inventory()'s AP resync writes the same bytes and would
-        look like a pickup). Zeroes every set on entry so whatever's back to 1 on exit
-        is fresh, masking out bits for pieces already equipped going in."""
+        """Snapshot equipped slots at pickup-animation start and restore them at
+        pickup-animation end, since the game can auto-equip whatever was just
+        picked up and this must not silently change the player's loadout.
+        Detecting *which* piece was collected no longer happens here -- that's
+        ArmourInventory.check(), called every tick like TitaniumBoltInventory.check()
+        (see its docstring for why the old pickup-animation-window + clear_unlocked()
+        dance is no longer needed)."""
         if not self.is_ready:
             return
         is_picking_up = self._cached_movement == PlayerMovementState.Pickup
@@ -419,29 +377,7 @@ class PlanetInventory:
                 name: int(getattr(equipped, name) or 0)
                 for name in ArmourStruct.SLOT_FIELDS
             }
-            self.armour.clear_unlocked()
         elif not is_picking_up and self._was_picking_up:
-            equipped_mask_by_set: dict[str, int] = {}
-            if self._equipped_pickup_baseline:
-                for slot_name, piece in EQUIPPED_SLOT_TO_PIECE.items():
-                    raw_set = self._equipped_pickup_baseline.get(slot_name, 0)
-                    if raw_set:
-                        set_key = ArmourStruct.SET_FIELDS[raw_set - 1]
-                        equipped_mask_by_set[set_key] = equipped_mask_by_set.get(set_key, 0) | int(piece)
-
-            unlocked = self.armour.read()
-            new_pieces: dict[str, ArmourPiece] = {}
-            for name in ArmourStruct.SET_FIELDS:
-                raw = int(getattr(unlocked, name))
-                raw &= ~equipped_mask_by_set.get(name, 0)
-                already = int(getattr(self.armour.game_armour, name) or 0)
-                new_bits = raw & ~already
-                if new_bits:
-                    new_pieces[name] = ArmourPiece(new_bits)
-            if new_pieces:
-                self.armour.record_pickup(new_pieces)
-            self.armour.apply_full()
-
             if self._equipped_pickup_baseline is not None:
                 self.armour.sync_equipped(self._equipped_pickup_baseline)
                 self._equipped_pickup_baseline = None
@@ -463,7 +399,6 @@ class PlanetInventory:
             self.on_pause_close()
         return left_pause_menu
 
-    # Weapons
     def check_weapons(self) -> dict[str, list]:
         if not self.is_ready:
             return {"weapons": [], "gadgets": [], "mods": [], "levels": []}
@@ -483,7 +418,6 @@ class PlanetInventory:
         return f"PlanetInventory(planet_id={self.planet_id})"
 
 
-# Planet unlock state (runtime)
 
 PLANET_UNLOCK_BASE: int = PlanetProgressStruct.BASE_ADDRESS
 
@@ -497,14 +431,11 @@ _AUTO_UNLOCK_NAMES: frozenset[str] = frozenset({
     "DREAMTIME",
 })
 
-# Planets whose unlock byte the game manages entirely on its own — never read,
-# written, or forced by AP (Inside Clank opens naturally via Dayni Moon progress).
 _NATURAL_UNLOCK_NAMES: frozenset[str] = frozenset({"INSIDE_CLANK"})
 
-# Maps an auto-unlocked planet -> the planet whose AP status gates its vendor access.
 _VENDOR_PLANET_GATE: dict[str, str] = {
-    "DREAMTIME":    "OUTPOST_OMEGA",  # reachable only once Outpost Omega infobot received
-    "INSIDE_CLANK": "DAYNI_MOON",    # reachable only once Dayni Moon infobot received
+    "DREAMTIME":    "OUTPOST_OMEGA",
+    "INSIDE_CLANK": "DAYNI_MOON",
 }
 
 _COUNT = len(PLANET_UNLOCK_ORDER)
@@ -520,9 +451,8 @@ class PlanetUnlockState(BaseState):
         self._enforce_active: bool     = True
         self._ryllus_released: bool    = False
         self._infobot_planets: set[str] = set()
-        # False (option off) keeps Ryllus force-opened until its intro cutscene ends,
-        # matching vanilla. True gates it purely by infobot ownership from tick one.
         self._random_start: bool = False
+        self.split_infobots: bool = False
 
     def _read_struct(self) -> PlanetProgressStruct:
         raw = self.pine.read_bytes(PlanetProgressStruct.BASE_ADDRESS, PlanetProgressStruct.size())
@@ -561,8 +491,6 @@ class PlanetUnlockState(BaseState):
             self.unlocked[name] = self._desired[name]
 
     def _write_desired(self, names: list[str]) -> None:
-        # Per-field writes, not one packed write, so _NATURAL_UNLOCK_NAMES planets are
-        # never touched — a bulk write would clobber their live game-managed byte.
         for field, name in zip(PlanetProgressStruct.PLANET_ORDER, PLANET_UNLOCK_ORDER, strict=False):
             if name not in names:
                 continue
@@ -580,18 +508,18 @@ class PlanetUnlockState(BaseState):
         self._infobot_planets = set(planets)
         for name in PLANET_UNLOCK_ORDER:
             self._desired[name] = name in planets or name in _AUTO_UNLOCK_NAMES
-        if not self._random_start and not self._ryllus_released:
+        if not self.split_infobots and not self._random_start and not self._ryllus_released:
             self._desired["RYLLUS"] = True
 
     def on_ryllus_cutscene_ended(self) -> None:
-        if self._random_start or self._ryllus_released:
+        if self.split_infobots or self._random_start or self._ryllus_released:
             return
         self._ryllus_released = True
         self._desired["RYLLUS"] = "RYLLUS" in self._infobot_planets
 
     def reset_session(self) -> None:
         self._ryllus_released = False
-        if not self._random_start:
+        if not self.split_infobots and not self._random_start:
             self._desired["RYLLUS"] = True
 
     def unlock(self, planet: str) -> None:

@@ -3,7 +3,7 @@ from dataclasses import dataclass
 
 from ..constants.weapon_mods import WEAPON_MODS
 from ..constants.weapon_progression import TITAN_LOCATIONS
-from ..constants.weapons import GADGET_DISPLAY_TO_INTERNAL, RATCHET_WEAPON_DISPLAY_TO_INTERNAL
+from ..constants.weapons import EQUIPMENT_INTERNAL_TO_DISPLAY
 from ..core.inventories.weapons import WEAPON_ORDER
 from ..core.patches.locations import VENDOR_LOCATIONS
 
@@ -32,8 +32,7 @@ class VendorReward:
 
 class VendorScouts:
     def __init__(self, location_ids):
-        display_names = {internal: display for display, internal in {
-            **RATCHET_WEAPON_DISPLAY_TO_INTERNAL, **GADGET_DISPLAY_TO_INTERNAL}.items()}
+        display_names = EQUIPMENT_INTERNAL_TO_DISPLAY
         self.locations = {
             (0, int(slot)): location_ids[display_names.get(internal, internal)]
             for slot, internal in VENDOR_LOCATIONS.items()

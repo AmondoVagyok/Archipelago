@@ -6,6 +6,7 @@ from ..core.patches import PICKUP_LOCATIONS, VENDOR_LOCATIONS, LocationHooks
 from ..core.patches.gain_storage import GainStorage
 from ..core.patches.mission_travel import MissionTravel
 from ..core.patches.progression import Progression
+from ..core.patches.vendor_presentation import VendorPresentation
 from ..core.patches.titan_vendor import TitanOffers, TitanVendor
 from ..core.patches.weapon_mods import WeaponMods
 from ..core.patches.wrench import WrenchProgression
@@ -77,6 +78,8 @@ class NativeCapturePlansTests(unittest.TestCase):
                             hooks.patches.extend(TitanOffers(p).prepare(symbols))
                         hooks.patches.extend(progression.prepare(symbols, hooks, module,
                                                                  vendor_enabled=vendor))
+                        if vendor:
+                            hooks.patches.extend(VendorPresentation(p).prepare(symbols, hooks))
                         spans = sorted((x.address, x.address + len(x.replacement)) for x in hooks.patches)
                         self.assertTrue(all(b <= c for (a, b), (c, d) in zip(spans, spans[1:])))
                         hooks._install_plan()

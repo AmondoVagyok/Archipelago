@@ -8,8 +8,6 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ..pypine import Pine
 
-# Colour encoding
-# 0x09 = colour-change marker; the following byte selects the colour.
 
 class TextColour:
     YELLOW  = bytes([0x90, 0x10])
@@ -34,8 +32,6 @@ from .address_maps import (
     STATIC_TEXT_BUFFER as _STATIC_TEXT_BUFFER,
 )
 
-# Both box types share the same in-memory layout relative to their base address
-# (countdown_timer at +0x00, is_visible at +0x20, message_str_pointer at +0x28).
 
 @dataclass(frozen=True)
 class SmallTextBox:

@@ -23,8 +23,8 @@ if TYPE_CHECKING:
 
 def HasPlanet(world: "SecretAgentClankWorld", planet: str) -> Has | True_:
     if (world.options.infobots == Infobots.option_progressive_planet):
-        index = PLANET_NAMES.index(planet)
-        return Has(PROGRESSIVE_PLANET_ITEM_NAME, index) if index else True_()
+        planets = world.progressive_planets
+        return Has(PROGRESSIVE_PLANET_ITEM_NAME, planets.index(planet) + 1) if planet in planets else True_()
     if world.options.infobots in (Infobots.option_cases, Infobots.option_character_unlocks):
         return True_()
     item = PLANET_ACCESS_ITEM_NAME.get(planet)

@@ -6,7 +6,7 @@ from ..constants.clank_gadgets import BLACK_OUT_PEN, THERM_OPTIC_SHADES
 from ..constants.missions import CHAPTER_ENTRIES
 from ..constants.operatives import SACOperatives
 from ..constants.planets import CASE_ID_TO_CASE, CASES_BY_OPERATIVE, SACCases
-from ..constants.weapons import GADGET_INTERNAL_TO_DISPLAY, RATCHET_WEAPON_INTERNAL_TO_DISPLAY
+from ..constants.weapons import CLANK_PICKUP_TO_INTERNAL, EQUIPMENT_INTERNAL_TO_DISPLAY
 from .address_maps import BOLTS_ADDRESS, CHALLENGE_MODE_ADDRESS
 from .bolt_rewards import BoltRewards
 from .inventories.alien_codes import AlienCodeInventory
@@ -30,19 +30,11 @@ from .patches.wrench import PROGRESSIVE_WRENCH, WrenchProgression
 from .quick_select import QuickSelectState
 from .skill_points import SkillPointState
 from .titanium_bolts import TitaniumBoltState
-from .traps import activate_trap as _activate_trap
+from .traps import Traps
+from .vendor_rewards import VendorRewards
 
 logger = logging.getLogger("CommonClient")
 
-# Raw WEAPON_ORDER internal name (what self.case.ratchet_items.check() actually
-# returns -- it's the SAME struct/array for both, see constants/clank_gadgets.py's
-# SACClankGadgets docstring) -> AP-facing "Unlock: {Character} {internal name}" display
-# name. "fountainpen" is deliberately absent -- it's special-cased separately
-# (translates to "Black Out Pen (Pickup)", constants/clank_gadgets.py's item).
-_RATCHET_STRUCT_INTERNAL_TO_DISPLAY: dict[str, str] = {
-    **RATCHET_WEAPON_INTERNAL_TO_DISPLAY,
-    **GADGET_INTERNAL_TO_DISPLAY,
-}
 
 
 class Core:
@@ -53,6 +45,7 @@ class Core:
         self.main_menu = MainMenuNotice(pine, self._log)
         self.bolt_rewards = BoltRewards(pine, self._log)
         self.notifications = ItemNotifications(pine)
+        self.traps = Traps(pine)
 
         self.case = CaseInventory(pine)
         self.case.on_transition_start = self._invalidate_level
@@ -70,6 +63,8 @@ class Core:
         self.vendor        = self.case.vendor
         self.location_hooks = LocationHooks(pine)
         self.native_runtime = NativeRuntime(pine, self.location_hooks, self._log)
+        self.vendor_rewards = VendorRewards(pine, self.vendor, self._log)
+        self.native_runtime.presentation = self.vendor_rewards.text
         self.wrench = WrenchProgression(pine)
         self.native_runtime.wrench = self.wrench
         self.progression = Progression(pine)
@@ -89,6 +84,7 @@ class Core:
         self.keycards = KeycardInventory(pine)
         self.goal = 0
         self.character_unlocks = False
+        self.progressive_planets: list[str] | None = None
         self._goal_sent = False
         self.quick_select   = QuickSelectState(pine)
 
@@ -168,9 +164,12 @@ class Core:
         # dependency, so compute (and cache for tick()'s
         # enforce_owned_first_missions() call) regardless of is_ready,
         # same as _ap_owned above.
-        self._owned_cases = resolve_owned_cases(list(received_names), character_unlocks=self.character_unlocks)
+        self._owned_cases = resolve_owned_cases(list(received_names), character_unlocks=self.character_unlocks,
+                                                progressive_planets=self.progressive_planets)
 
     def _invalidate_level(self) -> None:
+        self.traps.last_tick = None
+        self.vendor_rewards.invalidate()
         # The old module may already have been freed when its case id changes.
         # Invalidate cached addresses without writing through the old bindings.
         self.missions.invalidate_resolved_addresses()
@@ -189,17 +188,31 @@ class Core:
             raise RuntimeError("Native pickup/vendor interception is mandatory; it cannot be disabled")
         self._native_locations_enabled = True
 
-    def _entitlements(self):
+    def _owned_equipment(self) -> dict[str, bool]:
+        """Resolve AP ownership once for both native hooks and inventory writes."""
         owned = dict(self._ap_owned["ratchet"])
         owned.update(self.wrench.entitlements())
         owned.update(self.progression.ownership())
-        owned["fountainpen"] = self._ap_owned["clank"].get(BLACK_OUT_PEN, False)
-        owned["sunglasses"] = self._ap_owned["clank"].get(THERM_OPTIC_SHADES, False)
+        for display, internal in CLANK_PICKUP_TO_INTERNAL.items():
+            owned[internal] = bool(owned.get(internal) or self._ap_owned["clank"].get(display))
+        return owned
+
+    def _entitlements(self):
+        owned = self._owned_equipment()
         return {slot: bool(owned[name]) for slot, name in enumerate(WEAPON_ORDER) if name in owned}
 
     def close(self):
         """Release resident loader code before dropping the PINE connection."""
-        self.native_runtime.close()
+        try:
+            if (self.traps.managed and self.case.is_ready
+                    and self.pine.get_game_id() == "SCUS-97623"):
+                self.traps.restore(self.case.symbols)
+        finally:
+            try:
+                if self.vendor_rewards.icon.installed and self.case.is_ready and self.pine.get_game_id() == "SCUS-97623":
+                    self.vendor_rewards.close()
+            finally:
+                self.native_runtime.close()
         self.main_menu.shown = False
 
     def _bind_native_locations(self) -> bool:
@@ -230,15 +243,8 @@ class Core:
 
     def _read_native_locations(self) -> None:
         for name in self.location_hooks.poll():
-            # PICKUP_LOCATIONS/VENDOR_LOCATIONS (core/patches/locations.py) are
-            # keyed by raw WEAPON_ORDER internal name (e.g. "throwTie") for
-            # most entries -- same translation case.ratchet_items.check()
-            # applies below, needed before send_location() since
-            # self._location_name_to_id is keyed by the AP display name
-            # ("Unlock: Clank Bowtie"), not the raw one. Names already in
-            # display form (e.g. "Black Out Pen (Pickup)") aren't in the
-            # dict and pass through unchanged.
-            name = _RATCHET_STRUCT_INTERNAL_TO_DISPLAY.get(name, name)
+            # Native slot names become AP location names; named pickups pass through.
+            name = EQUIPMENT_INTERNAL_TO_DISPLAY.get(name, name)
             if name not in self._checked_items and self.send_location(name):
                 self._checked_items.add(name)
 
@@ -247,14 +253,7 @@ class Core:
         self.case.clank_items.strip_all()
 
     def _reapply_all_inventories(self) -> None:
-        owned = dict(self._ap_owned["ratchet"])
-        owned.update(self.wrench.entitlements())
-        owned.update(self.progression.ownership())
-        # The pen is slot 17 of the SAME GadgetData array, not a separate
-        # Clank-only byte table. Keep the legacy internal-name item compatible.
-        owned["fountainpen"] = owned.get("fountainpen", False) or self._ap_owned["clank"].get(BLACK_OUT_PEN, False)
-        owned["sunglasses"] = owned.get("sunglasses", False) or self._ap_owned["clank"].get(THERM_OPTIC_SHADES, False)
-        self.case.ratchet_items.apply_all(owned)
+        self.case.ratchet_items.apply_all(self._owned_equipment())
         self.case.clank_items.apply_all(self._ap_owned["clank"])
 
     def sync_from_ap(self, checked_locations: set[str]) -> None:
@@ -270,8 +269,10 @@ class Core:
 
     # -- Traps ---------------------------------------------------------------
 
-    def activate_trap(self, trap_name: str) -> None:
-        _activate_trap(self.pine, trap_name)
+    def activate_trap(self, trap_name: str) -> bool:
+        if not self.case.is_ready or not self._inventory_initialized:
+            return False
+        return self.traps.activate(trap_name, self.case.symbols)
 
     # -- Bolts / NG+ (plain global values, CONFIRMED live addresses) -------
 
@@ -330,6 +331,10 @@ class Core:
 
         if not self.case.is_ready or not self._inventory_initialized:
             return
+
+        screen = self.case.case_menu.screen_address
+        playing = screen is not None and self.pine.read_int32(screen) == 0
+        self.traps.tick(self.case.symbols, playing)
 
         current_case = CASE_ID_TO_CASE.get(self.case.case_id)
         table_base = self.case.symbols.get("g_MISSION_LEVEL_LIST")
@@ -401,7 +406,7 @@ class Core:
                 self.titanium_bolts.confirm(name)
 
         for name in self.vendor.poll_purchases():
-            name = _RATCHET_STRUCT_INTERNAL_TO_DISPLAY.get(name, name)
+            name = EQUIPMENT_INTERNAL_TO_DISPLAY.get(name, name)
             if name not in self._checked_items and self.send_location(name):
                 self._checked_items.add(name)
 
@@ -417,7 +422,7 @@ class Core:
             elif name not in self._ap_owned["ratchet"]:
                 continue
             else:
-                name = _RATCHET_STRUCT_INTERNAL_TO_DISPLAY.get(name, name)
+                name = EQUIPMENT_INTERNAL_TO_DISPLAY.get(name, name)
             if name not in self._checked_items and self.send_location(name):
                 self._checked_items.add(name)
         for name in self.case.clank_items.check():
@@ -430,6 +435,7 @@ class Core:
         self.weapon_mods.sync()
         self.wrench.sync()
         self.bolt_rewards.deliver()
+        self.vendor_rewards.tick(self.case.symbols)
         self.notifications.tick()
 
     def _check_goal(self):

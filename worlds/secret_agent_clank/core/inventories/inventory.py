@@ -1,4 +1,4 @@
-"""Generic unlocked-item tracker, reused for Ratchet's weapons, Clank's spy gadgets, and Qwark's items alike -- each is just a name -> "unlocked flag address" table (see core/address_maps/ps2.py's CaseAddresses), so one implementation covers all three characters' inventories instead of three near-duplicate classes."""
+"""Byte-addressed item flags. Shared GadgetData equipment uses WeaponInventory."""
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:

@@ -12,11 +12,9 @@ from .planets import Planets
 if TYPE_CHECKING:
     from ..world import RACSizeMatterWorld
 
-# Planets a random start can land on: each is reachable with nothing but its own
-# infobot. Dreamtime/Inside Clank need extra gadgets, Quodrona is the goal, and
-# Ryllus shares Pokitaru's merged infobot -- none of them are candidates.
 STARTING_PLANET_CANDIDATES: tuple[str, ...] = (
     Rac5Planets.POKITARU,
+    Rac5Planets.RYLLUS,
     Rac5Planets.KALIDON,
     Rac5Planets.METALIS,
     Rac5Planets.OUTPOST_OMEGA,
@@ -26,6 +24,7 @@ STARTING_PLANET_CANDIDATES: tuple[str, ...] = (
 
 PLANET_TO_INFOBOT: dict[str, str] = {
     Rac5Planets.POKITARU:      Rac5Infobots.POKITARU,
+    Rac5Planets.RYLLUS:        Rac5Infobots.RYLLUS,
     Rac5Planets.KALIDON:       Rac5Infobots.KALIDON,
     Rac5Planets.METALIS:       Rac5Infobots.METALIS,
     Rac5Planets.OUTPOST_OMEGA: Rac5Infobots.OUTPOST_OMEGA,
@@ -33,8 +32,6 @@ PLANET_TO_INFOBOT: dict[str, str] = {
     Rac5Planets.DAYNI_MOON:    Rac5Infobots.DAYNI_MOON,
 }
 
-# The runtime planet id to force-load into on the very first boot-in, when that planet
-# was chosen as a random start. Outpost Omega 1 isn't ship-selectable -- Outpost Omega 2 is.
 PLANET_TO_ID: dict[str, int] = {
     Rac5Planets.POKITARU:      Planets.POKITARU.planet_id,
     Rac5Planets.RYLLUS:        Planets.RYLLUS.planet_id,

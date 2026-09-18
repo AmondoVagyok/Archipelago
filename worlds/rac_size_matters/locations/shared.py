@@ -45,17 +45,6 @@ class RACLocationData(NamedTuple):
     region: str
 
 
-# --- ID assignment -----------------------------------------------------
-#
-# Every location gets a numeric AP id, laid out in fixed-size blocks: one
-# block per planet (in PLANET_ORDER), plus one trailing "shared" block for
-# locations that aren't really tied to a single planet (weapon levels,
-# nanotech levels, armour-set-combo checks — all anchored to Pokitaru only
-# because the AP region graph needs *some* region, not because they belong
-# there). IDs are free to be renumbered (no live seeds depend on the old
-# numbering), so blocks are sized generously (300 slots) — comfortably more
-# than any planet's real location count, leaving well over the requested
-# 20-id buffer before the next block starts.
 PLANET_ORDER: tuple[str, ...] = (
     Rac5Planets.POKITARU,
     Rac5Planets.RYLLUS,
@@ -120,7 +109,6 @@ WEAPON_VENDOR_LOCATIONS: dict[str, RACLocationData] = {
     Rac5VendorLocations.DAYNI_MOON_SHOCK:    RACLocationData(_planet_id(Rac5Planets.DAYNI_MOON), Rac5Planets.DAYNI_MOON),
     Rac5VendorLocations.INSIDE_CLANK_STATIC: RACLocationData(_planet_id(Rac5Planets.INSIDE_CLANK), Rac5Planets.INSIDE_CLANK),
     Rac5VendorLocations.QUODRONA_LASER:      RACLocationData(_planet_id(Rac5Planets.QUODRONA), Rac5Planets.QUODRONA),
-    # Challenge Mode 1+ only — RYNO has no vendor listing in vanilla.
     Rac5VendorLocations.POKITARU_RYNO:       RACLocationData(_planet_id(Rac5Planets.POKITARU), Rac5Planets.POKITARU),
 }
 
@@ -146,7 +134,6 @@ WEAPON_MOD_VENDOR_LOCATIONS: dict[str, RACLocationData] = {
     Rac5ModVendorLocations.QUODRONA_SNIPER_SPLIT:     RACLocationData(_planet_id(Rac5Planets.QUODRONA), Rac5Planets.QUODRONA),
     Rac5ModVendorLocations.QUODRONA_SHOCK_LOCK:       RACLocationData(_planet_id(Rac5Planets.QUODRONA), Rac5Planets.QUODRONA),
     Rac5ModVendorLocations.QUODRONA_SHOCK_AFTER:      RACLocationData(_planet_id(Rac5Planets.QUODRONA), Rac5Planets.QUODRONA),
-    # Challenge Mode 1+ only.
     Rac5ModVendorLocations.KALIDON_AGENTS_EXPLOSIVE:      RACLocationData(_planet_id(Rac5Planets.KALIDON), Rac5Planets.KALIDON),
     Rac5ModVendorLocations.KALIDON_SCORCHER_SUNFLARE:     RACLocationData(_planet_id(Rac5Planets.KALIDON), Rac5Planets.KALIDON),
     Rac5ModVendorLocations.KALIDON_SUCK_CANNON_BOUNCE:    RACLocationData(_planet_id(Rac5Planets.KALIDON), Rac5Planets.KALIDON),
@@ -159,9 +146,6 @@ WEAPON_MOD_VENDOR_LOCATIONS: dict[str, RACLocationData] = {
     Rac5ModVendorLocations.QUODRONA_LASER_RICOCHET:       RACLocationData(_planet_id(Rac5Planets.QUODRONA), Rac5Planets.QUODRONA),
 }
 
-# Challenge Mode 1+ only — Titan variant purchases, one per weapon except
-# RYNO (no Titan variant). Buying one floors that weapon's level at 5 and
-# opens leveling up to 8 (see core/weapons.py's apply_progressive_leveling).
 WEAPON_TITAN_VENDOR_LOCATIONS: dict[str, RACLocationData] = {
     Rac5TitanVendorLocations.POKITARU_LACERATOR_TITAN:   RACLocationData(_planet_id(Rac5Planets.POKITARU), Rac5Planets.POKITARU),
     Rac5TitanVendorLocations.POKITARU_ACID_TITAN:         RACLocationData(_planet_id(Rac5Planets.POKITARU), Rac5Planets.POKITARU),
@@ -177,56 +161,29 @@ WEAPON_TITAN_VENDOR_LOCATIONS: dict[str, RACLocationData] = {
     Rac5TitanVendorLocations.QUODRONA_LASER_TITAN:        RACLocationData(_planet_id(Rac5Planets.QUODRONA), Rac5Planets.QUODRONA),
 }
 
-# Weapon level locations — one per weapon per level (1-4, every weapon's max).
-# Region is Pokitaru for all of them (same as ARMOUR_SET_CHECK_LOCATIONS
-# below): leveling isn't tied to any one planet, just to owning the weapon
-# and playing, so there's no more specific region to anchor it to. IDs come
-# from the shared block, not Pokitaru's, since these aren't really Pokitaru
-# locations.
-# (internal weapon key, 1-indexed level) -> AP location name. Level 1 is
-# excluded since it's synonymous with owning the weapon, not a distinct
-# milestone. Sourced from WEAPON_LEVEL_NAMES so a typo/rename there is a
-# KeyError at import time rather than a silent lookup failure.
 WEAPON_LEVEL_LOOKUP: dict[tuple[str, int], str] = {
     (internal, level): WEAPON_LEVEL_NAMES[internal][level]
     for internal, data in _WEAPON_DATA.items()
     for level in range(2, data.max_level + 1)
 }
 
-# Full universe of weapon level locations (levels 1 through each weapon's max),
-# always present in ALL_LOCATIONS regardless of weapon_level_checks — same
-# pattern as SKILL_POINT_LOCATIONS vs EASY_/HARD_SKILL_POINT_LOCATIONS.
 WEAPON_LEVEL_LOCATIONS: dict[str, RACLocationData] = {
     loc_name: RACLocationData(_shared_id(), Rac5Planets.POKITARU)
     for loc_name in WEAPON_LEVEL_LOOKUP.values()
 }
 
-# weapon_level_checks == max_level: only the "reached max level" check per
-# weapon. Fixed at level 4 (the true vanilla max for every weapon, RYNO
-# included) rather than _WEAPON_DATA[internal].max_level — that field is 8
-# for Challenge Mode's Titan-extended weapons, but "max_level" here still
-# means the pre-Challenge-Mode vanilla cap; levels 5-8 are their own
-# separate Challenge-Mode-gated tier (see CHALLENGE_MODE_WEAPON_LEVEL_LOCATIONS
-# below), not folded into this option.
 WEAPON_MAX_LEVEL_LOCATIONS: dict[str, RACLocationData] = {
     loc_name: WEAPON_LEVEL_LOCATIONS[loc_name]
     for (_internal, level), loc_name in WEAPON_LEVEL_LOOKUP.items()
     if level == 4
 }
 
-# weapon_level_checks == all: every other non-max, non-Challenge-Mode level
-# check (2-3), added on top of WEAPON_MAX_LEVEL_LOCATIONS so the two tables
-# never overlap.
 WEAPON_SUB_MAX_LEVEL_LOCATIONS: dict[str, RACLocationData] = {
     loc_name: WEAPON_LEVEL_LOCATIONS[loc_name]
     for (_internal, level), loc_name in WEAPON_LEVEL_LOOKUP.items()
     if level in (2, 3)
 }
 
-# Nanotech Level locations — one per level, 6 through 75 (levels 1-5 aren't
-# locations; the player starts at level 5, see constants/nanotech_levels.py).
-# Region is Pokitaru, same reasoning as weapon levels above: leveling isn't
-# tied to any one planet.
 NANOTECH_LEVEL_LOOKUP: dict[int, str] = {
     level: getattr(Rac5NanotechLevels, f"LEVEL_{level}")
     for level in range(6, 76)
@@ -257,23 +214,11 @@ ARMOUR_SET_CHECK_LOCATIONS: dict[str, RACLocationData] = {
     for name in ARMOUR_SET_CHECKS
 }
 
-# NG+ Items option: with it off, RYNO and Chameleon/Hyperborean items are
-# never placed, so locations depending on them must be excluded too. Shared
-# by regions.py (creation) and rules/weapon_levels.py + rules/armour_sets.py
-# (rule assignment) — both must agree on the same exclusion. Stalker/Ice II
-# are included since each needs one piece from the excluded sets.
 NG_PLUS_WEAPON_LEVEL_LOCATIONS: frozenset[str] = frozenset(
     loc_name for (internal, _level), loc_name in WEAPON_LEVEL_LOOKUP.items()
     if internal == Rac5WeaponKeys.RYNO
 )
 
-# Levels 5-8 (Challenge Mode Titan variant) — gated on both NG+ Items and
-# Challenge Mode 1+, same as CHALLENGE_MODE_1_ARMOUR_LOCATIONS etc. above.
-# Split the same way as WEAPON_MAX_LEVEL_LOCATIONS/WEAPON_SUB_MAX_LEVEL_LOCATIONS:
-# level 8 gates on weapon_level_checks >= 1 (mirrors "reached max level"),
-# levels 5-7 gate on weapon_level_checks >= 2 (mirrors "every other level").
-# Shared by regions.py (creation) and rules/weapon_levels.py (rule
-# assignment) — both must agree on the same sets.
 CHALLENGE_MODE_MAX_LEVEL_LOCATIONS: dict[str, RACLocationData] = {
     loc_name: WEAPON_LEVEL_LOCATIONS[loc_name]
     for (_internal, level), loc_name in WEAPON_LEVEL_LOOKUP.items()
@@ -297,12 +242,21 @@ NG_PLUS_ARMOUR_SET_LOCATIONS: frozenset[str] = frozenset({
     Rac5ArmourSet.STALKER,
 })
 
-# Challenge Mode option: locations that only exist at tier 1+ / tier 2. All of
-# these are also still gated on NG+ Items being on (same as RYNO/Hyperborean/
-# Chameleon/these same mods being in the item pool at all — see items.py's
-# NG_PLUS_WEAPONS/NG_PLUS_ARMOUR_SETS/NG_PLUS_WEAPON_MODS). Shared by
-# regions.py (creation) and rules/challenge_mode.py (rule assignment) — both
-# must agree on the same sets.
+# Same Challenge Mode tiers as CHALLENGE_MODE_1_ARMOUR_LOCATIONS/
+# CHALLENGE_MODE_2_ARMOUR_LOCATIONS below, but for the "Equip X Armor Set"
+# combo checks (core/locations/armour_set_locations.py's ARMOUR_SET_CHECKS)
+# that require Hyperborean/Chameleon pieces -- ICE_II needs 3 Hyperborean
+# pieces, STALKER needs 2 Chameleon pieces, same as the pure sets.
+CHALLENGE_MODE_1_ARMOUR_SET_LOCATIONS: frozenset[str] = frozenset({
+    Rac5ArmourSet.HYPERBOREAN,
+    Rac5ArmourSet.ICE_II,
+})
+
+CHALLENGE_MODE_2_ARMOUR_SET_LOCATIONS: frozenset[str] = frozenset({
+    Rac5ArmourSet.CHAMELEON,
+    Rac5ArmourSet.STALKER,
+})
+
 CHALLENGE_MODE_1_ARMOUR_LOCATIONS: frozenset[str] = frozenset({
     Rac5Locations.POKITARU_HYPERBOREAN_GLOVES,
     Rac5Locations.RYLLUS_HYPERBOREAN_BOOTS,
@@ -332,10 +286,6 @@ CHALLENGE_MODE_MOD_LOCATIONS: frozenset[str] = frozenset({
     Rac5ModVendorLocations.QUODRONA_LASER_RICOCHET,
 })
 
-# Giant Clank option: with it off, both sequences are locked out entirely
-# (see PlanetInventory.giant_clank_allowed) so these must never be created
-# as locations. Shared by regions.py (creation) and rules/metalis.py +
-# rules/challax.py (rule assignment) — both must agree on the same exclusion.
 GIANT_CLANK_LOCATIONS: frozenset[str] = frozenset({
     Rac5CutsceneLocations.METALIS_ESCAPE,
     Rac5Locations.METALIS_GLOVES,
@@ -375,10 +325,6 @@ SKYBOARD_CHALLENGE_SKILL_POINT_LOCATIONS: dict[str, RACLocationData] = {
 GADGET_PICKUP_LOCATIONS: dict[str, RACLocationData] = {
     Rac5Locations.RYLLUS_SPROUT:  RACLocationData(_planet_id(Rac5Planets.RYLLUS), Rac5Planets.RYLLUS),
     Rac5Locations.KALIDON_SHRINK: RACLocationData(_planet_id(Rac5Planets.KALIDON), Rac5Planets.KALIDON),
-    # Rac5Locations.METALIS_GLOVES is NOT here — it's an ArmourPickup
-    # (ARMOUR_PICKUP_LOCATIONS, see core/armour.py) since it's armour, not a
-    # gadget. Defining it in both would create two Location objects with the
-    # same name and different ids.
 }
 
 SKYBOARD_ITEM_LOCATIONS: dict[str, RACLocationData] = {
@@ -395,10 +341,6 @@ EXTRA_SKYBOARD_LOCATIONS: dict[str, RACLocationData] = {
     Rac5SkyboardChallenges.OUTPOST_OMEGA_VORTEX:     RACLocationData(_planet_id(Rac5Planets.OUTPOST_OMEGA), Rac5Planets.OUTPOST_OMEGA),
 }
 
-# One location per tracked Shrink Ray puzzle-gate bit (see
-# core/address_maps's SHRINK_RAY_PUZZLE_BITS) — anchored to Kalidon since
-# that's where Shrink Ray first becomes usable; access is gated on owning it
-# regardless of which planet the puzzle is actually on (rules/shrink_ray.py).
 SHRINK_RAY_SKIP_LOCATIONS: dict[str, RACLocationData] = {
     name: RACLocationData(_planet_id(Rac5Planets.KALIDON), Rac5Planets.KALIDON)
     for name in SHRINK_RAY_SKIP_LOCATION_NAMES
@@ -413,11 +355,9 @@ _ALL_CLANK_PICKUPS = DERBY_CLANK_PICKUPS + GADGETBOT_TOSS_CLANK_PICKUPS + GADGET
 ALL_CLANK_LOCATIONS: dict[str, RACLocationData] = {
     cp.name: RACLocationData(_planet_id(cp.planet), cp.planet)
     for cp in _ALL_CLANK_PICKUPS
-    if cp.name not in CHALLENGE_LOCATIONS  # combined reward-challenge names live in CHALLENGE_LOCATIONS
+    if cp.name not in CHALLENGE_LOCATIONS
 }
 
-# ClankChallengeGroups default: every group included (matches
-# options.py's ClankChallengeGroups.default).
 DEFAULT_CLANK_CHALLENGE_GROUPS: dict[str, int] = dict.fromkeys(
     (CHALLENGE_GROUP_DERBY, CHALLENGE_GROUP_GADGETBOT_TOSS, CHALLENGE_GROUP_GADGETBOT), 1
 )
@@ -440,9 +380,6 @@ def enabled_clank_challenge_names(group_weights: dict[str, int]) -> frozenset[st
         if group in group_weights
     )
 
-# Each entry: (name, region, is_cutscene).
-# Enter Planet entries are appended at the end for readability, but IDs are
-# freely assigned now (no stability constraint across a renumbering pass).
 _MISSION_ENTRIES: list[tuple[str, str, bool]] = [
     (Rac5CutsceneLocations.POKITARU_FIGHT,           Rac5Planets.POKITARU,      False),
     (Rac5CutsceneLocations.RYLLUS_BUZZING,           Rac5Planets.RYLLUS,        True),
@@ -455,9 +392,7 @@ _MISSION_ENTRIES: list[tuple[str, str, bool]] = [
     (Rac5CutsceneLocations.OUTPOST_OMEGA,            Rac5Planets.OUTPOST_OMEGA, True),
     (Rac5CutsceneLocations.OUTPOST_OMEGA_ESCAPE,     Rac5Planets.OUTPOST_OMEGA, False),
     (Rac5CutsceneLocations.OUTPOST_OMEGA_REMATCH,    Rac5Planets.OUTPOST_OMEGA, False),
-    # METALIS_CLANK is the shared Giant-Clank-trigger mission bit (see
     # planets.py's GIANT_CLANK_CONFIGS note) — still not tracked/used.
-    # (Rac5CutsceneLocations.METALIS_CLANK,          Rac5Planets.CHALLAX,       True),
     (Rac5CutsceneLocations.DAYNI_MOON,               Rac5Planets.DAYNI_MOON,    False),
     (Rac5CutsceneLocations.DAYNI_MOON_FIGHT1,        Rac5Planets.DAYNI_MOON,    True),
     (Rac5CutsceneLocations.DAYNI_MOON_FIGHT2,        Rac5Planets.DAYNI_MOON,    True),
@@ -468,7 +403,6 @@ _MISSION_ENTRIES: list[tuple[str, str, bool]] = [
     (Rac5CutsceneLocations.QUODRONA_CHASE,           Rac5Planets.QUODRONA,      True),
     (Rac5CutsceneLocations.QUODRONA_MECHA,           Rac5Planets.QUODRONA,      True),
     (Rac5CutsceneLocations.QUODRONA_FIND,            Rac5Planets.QUODRONA,      False),
-    # Enter Planet
     (Rac5CutsceneLocations.POKITARU_ENTER,           Rac5Planets.POKITARU,      True),
     (Rac5CutsceneLocations.RYLLUS_ENTER,             Rac5Planets.RYLLUS,        True),
     (Rac5CutsceneLocations.KALIDON_ENTER,            Rac5Planets.KALIDON,       True),
@@ -481,12 +415,8 @@ _MISSION_ENTRIES: list[tuple[str, str, bool]] = [
     (Rac5CutsceneLocations.QUODRONA_ENTER,           Rac5Planets.QUODRONA,      True),
 
     (Rac5CutsceneLocations.DREAMTIME_SLEEPING_RATCHET, Rac5Planets.DREAMTIME,   True),
-    # Both fired by PlanetInventory.check_giant_clank() (see core/planets.py's
-    # GIANT_CLANK_CONFIGS), not the mission-bit table in mission_locations.py.
     (Rac5CutsceneLocations.METALIS_ESCAPE,           Rac5Planets.METALIS,       False),
     (Rac5CutsceneLocations.CHALLAX_CLANK,            Rac5Planets.CHALLAX,       False),
-    # Former PRESET_MISSION_BITS — see mission_locations.py's STORY_MISSION_MAP
-    # comment and core/core.py's _MISSION_FORCE_RELOAD.
     (Rac5CutsceneLocations.POKITARU_RESCUE,          Rac5Planets.POKITARU,      False),
     (Rac5CutsceneLocations.KALIDON_SEARCH,           Rac5Planets.KALIDON,       False),
     (Rac5CutsceneLocations.CHALLAX_EXPLORE,          Rac5Planets.CHALLAX,       False),
@@ -505,7 +435,6 @@ CUTSCENE_LOCATIONS: dict[str, RACLocationData] = {
     name: data for name, (data, is_cutscene) in _mission_data.items() if is_cutscene
 }
 
-# Union kept for ALL_LOCATIONS (full location pool) and any code still referencing this name.
 MISSION_LOCATIONS: dict[str, RACLocationData] = {**STORY_MISSION_LOCATIONS, **CUTSCENE_LOCATIONS}
 
 ALL_LOCATIONS: dict[str, RACLocationData] = {
@@ -543,10 +472,7 @@ def for_planet(planet: str, *sources: dict[str, RACLocationData]) -> dict[str, R
         if data.region == planet
     }
 
-# Vendor location ↔ internal-name lookup tables
-# Derived here so both the game-state layer and the client can share one source.
 
-# Map from vendor location name → internal weapon/gadget name
 VENDOR_WEAPON_LOC: dict[str, str] = {
     Rac5VendorLocations.POKITARU_LACERATOR:  WEAPON_DISPLAY_TO_INTERNAL["Lacerator"],
     Rac5VendorLocations.POKITARU_ACID:       WEAPON_DISPLAY_TO_INTERNAL["Acid Bomb Glove"],
@@ -562,8 +488,6 @@ VENDOR_WEAPON_LOC: dict[str, str] = {
     Rac5VendorLocations.POKITARU_RYNO:       WEAPON_DISPLAY_TO_INTERNAL["RYNO"],
 }
 
-# Titan variant purchase location -> internal weapon name (Challenge Mode 1+,
-# every weapon except RYNO — see WEAPON_TITAN_VENDOR_LOCATIONS above).
 VENDOR_TITAN_LOC: dict[str, str] = {
     Rac5TitanVendorLocations.POKITARU_LACERATOR_TITAN:   WEAPON_DISPLAY_TO_INTERNAL["Lacerator"],
     Rac5TitanVendorLocations.POKITARU_ACID_TITAN:         WEAPON_DISPLAY_TO_INTERNAL["Acid Bomb Glove"],
@@ -592,8 +516,6 @@ VENDOR_GADGET_LOC: dict[str, str] = {
 WEAPON_INTERNAL_TO_LOCATION: dict[str, str] = {v: k for k, v in VENDOR_WEAPON_LOC.items()}
 GADGET_INTERNAL_TO_LOCATION: dict[str, str] = {v: k for k, v in VENDOR_GADGET_LOC.items()}
 
-# (internal_weapon, 1-based game slot) → AP location name.
-# Slot 1 = mod_slot_one, 2 = mod_slot_two, 3 = mod_slot_three in the weapon struct.
 # Scorcher Spitfire is confirmed in slot 2; all others use the first available slot.
 _MOD_SLOT_ASSIGNMENT: list[tuple[str, int, str]] = [
     ("lacerator",       2, Rac5ModVendorLocations.KALIDON_LACERATOR_LOCK),
@@ -625,12 +547,39 @@ _MOD_SLOT_ASSIGNMENT: list[tuple[str, int, str]] = [
 
 _ATTR_NAMES = ("mod_slot_one", "mod_slot_two", "mod_slot_three")
 
-# For WeaponInventory.set_mod(): slot key matches struct field name ("mod_slot_one" etc.)
 MOD_INTERNAL_TO_LOCATION: dict[tuple[str, str], str] = {
     (w, _ATTR_NAMES[i - 1]): loc for w, i, loc in _MOD_SLOT_ASSIGNMENT
 }
 
-# For VendorSession / VendorHandlerMixin: slot key matches _SLOT_NAMES ("one"/"two"/"three")
 MOD_INTERNAL_TO_VENDOR_SLOT_LOCATION: dict[tuple[str, str], str] = {
     (w, ("one", "two", "three")[i - 1]): loc for w, i, loc in _MOD_SLOT_ASSIGNMENT
 }
+
+
+def disabled_weapon_location_names(enabled_weapons: frozenset[str]) -> frozenset[str]:
+    """AP location names that belong to a weapon the EnabledWeapons option (see
+    options.py) has excluded: that weapon's own vendor/collectible location, its
+    Titan variant purchase, every one of its mod-slot purchases, and every one of
+    its weapon-level checks. Shared by regions.py (location creation) and every
+    rules/<planet>.py file (rule assignment) — both must agree on the same
+    exclusion, or set_rule() would target a Location that was never created."""
+    disabled_internal = frozenset(
+        WEAPON_DISPLAY_TO_INTERNAL[display] for display in WEAPON_DISPLAY_TO_INTERNAL
+        if display not in enabled_weapons
+    )
+    if not disabled_internal:
+        return frozenset()
+    names: set[str] = set()
+    names.update(
+        loc for internal, loc in WEAPON_INTERNAL_TO_LOCATION.items() if internal in disabled_internal
+    )
+    names.update(
+        loc for internal, loc in TITAN_INTERNAL_TO_LOCATION.items() if internal in disabled_internal
+    )
+    names.update(
+        loc for (weapon, _slot), loc in MOD_INTERNAL_TO_LOCATION.items() if weapon in disabled_internal
+    )
+    names.update(
+        loc for (internal, _level), loc in WEAPON_LEVEL_LOOKUP.items() if internal in disabled_internal
+    )
+    return frozenset(names)

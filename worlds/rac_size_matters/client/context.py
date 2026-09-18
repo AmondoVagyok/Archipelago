@@ -32,6 +32,7 @@ from .ghost_link import GhostLinkMixin
 from .handlers import CutsceneHandlerMixin, EventsHandlerMixin
 from .pine_mixin import PineMixin
 from .vendor import InventoryMixin, VendorHandlerMixin
+from .vendor_scouts import VendorScouts
 
 
 class RACContext(
@@ -53,6 +54,7 @@ class RACContext(
         self.slot_data: dict[str, Any] = {}
 
         self._location_name_to_id = {name: data.code for name, data in ALL_LOCATIONS.items()}
+        self.vendor_scouts = VendorScouts(self._location_name_to_id)
         self._locally_checked_locations: set[int] = set()
 
         self._pending_armour_pickup_locs: list[str] = []
@@ -91,11 +93,11 @@ class RACContext(
         self._ghost_link_interval: float = 5.0
         self._last_ghost_link_push: float = 0.0
         self._ghost_link_slots: list[int] = []
-        # slot -> (planet_id, x, y, z, received_at [time.monotonic()])
         self._ghost_link_peers: dict[int, tuple[int, float, float, float, float]] = {}
         self._ghost_link_following: int | None = None
 
         self._wiring = Core(self.pine, log=self._log)
+        self._wiring.native.vendor_scouts = self.vendor_scouts
 
     async def _guarded_wiring_call(self, fn: Callable[[], None]) -> None:
         async with self._pine_lock:
@@ -233,9 +235,24 @@ class RACContext(
     def on_package(self, cmd: str, args: dict[str, Any]) -> None:
         super().on_package(cmd, args)
 
+        if cmd in ("LocationInfo", "DataPackage", "RoomUpdate"):
+            self.vendor_scouts.update(
+                self.locations_info.values(), self.item_names.lookup_in_slot,
+                lambda slot: self.player_names.get(slot, f"Player {slot}"))
+
         if cmd == "Connected":
             self.slot_data = args.get("slot_data", {})
+            self._wiring.native.enabled = True
+            native_ids = set(args.get("missing_locations", ())) | set(args.get("checked_locations", ()))
+            self._wiring.native.allowed_locations = {
+                name for name, location_id in self._location_name_to_id.items() if location_id in native_ids
+            }
+            self._wiring.planet_unlock.split_infobots = bool(self.slot_data.get("split_infobots", False))
             self._already_hinted.clear()
+            self.vendor_scouts.rewards.clear()
+            scout_request = self.vendor_scouts.request(native_ids)
+            if scout_request["locations"]:
+                asyncio.create_task(self.send_msgs([scout_request]))
             self._ap_loadout_restored = False
             self._weapon_state_restored = False
             self._death_link_enabled = bool(self.slot_data.get("death_link", False))
@@ -277,9 +294,15 @@ class RACContext(
             self._wiring.planet.weapons.progressive_mode = (
                 int(self.slot_data.get("progressive_weapons", 0))
             )
-            challenge_mode_option = int(self.slot_data.get("challenge_mode", 0))
-            self._wiring.planet.weapons.challenge_mode = challenge_mode_option
-            self._wiring.vendor.challenge_mode = challenge_mode_option
+            self._wiring.progressive_challenge_mode_enabled = bool(
+                self.slot_data.get("progressive_challenge_mode", False)
+            )
+            if self._wiring.progressive_challenge_mode_enabled:
+                challenge_mode_option = 0
+            else:
+                challenge_mode_option = int(self.slot_data.get("challenge_mode", 0))
+                self._wiring.planet.weapons.challenge_mode = challenge_mode_option
+                self._wiring.vendor.challenge_mode = challenge_mode_option
             self._wiring.player_bolts.multiplier = (
                 int(self.slot_data.get("bolt_multiplier", 0)) or 1
             )
@@ -323,7 +346,7 @@ class RACContext(
                 )
             ))
             self._pending_item_apply = True
-            asyncio.create_task(self._apply_received_items())
+            asyncio.create_task(self.force_sync())
             self._write_notification_text(colored_text(
                 "Connected to ", TextColour.YELLOW, "Archipelago", TextColour.WHITE,
             ))
@@ -428,6 +451,5 @@ class RACContext(
         if dynamicpine_loaded:
             ui.base_title += f" | Dynamic Pine v{DYNAMIC_PINE_VERSION}"
 
-        # AP version is added behind this automatically
         ui.base_title += " | Archipelago"
         return ui

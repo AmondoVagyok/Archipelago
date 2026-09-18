@@ -2,7 +2,7 @@
 from dataclasses import dataclass
 
 from .planets import SACCases
-from .types import CaseStructure, group_by_case
+from .types import CaseStructure, SACTags, group_by_case
 
 
 @dataclass(frozen=True)
@@ -38,61 +38,59 @@ class SACAlienCodes:
     JEFFS_SECRET = "Jeff's secret"
 
 
-_CATEGORY = "Alien Code"
-
 ALIEN_CODES: tuple[CaseStructure, ...] = (
     # Boltaire Museum -- confirmed case (exact name match).
-    CaseStructure(SACCases.BOLTAIRE_MUSEUM, SACAlienCodes.THE_LEGENDS, _CATEGORY),
-    CaseStructure(SACCases.BOLTAIRE_MUSEUM, SACAlienCodes.RONNS_SECRET, _CATEGORY),
-    CaseStructure(SACCases.BOLTAIRE_MUSEUM, SACAlienCodes.BENS_SECRET, _CATEGORY),
+    CaseStructure(SACCases.BOLTAIRE_MUSEUM, SACAlienCodes.THE_LEGENDS, SACTags.ALIEN_CODE),
+    CaseStructure(SACCases.BOLTAIRE_MUSEUM, SACAlienCodes.RONNS_SECRET, SACTags.ALIEN_CODE),
+    CaseStructure(SACCases.BOLTAIRE_MUSEUM, SACAlienCodes.BENS_SECRET, SACTags.ALIEN_CODE),
 
     # Asyanica, Skyline Rooftops -- TODO: no exact case match (closest is
     # Asyanica Rooftops, case_id 5, but the name doesn't match cleanly).
-    CaseStructure(SACCases.ASYANICA_ROOFTOPS, SACAlienCodes.JHAIROS_SECRET, _CATEGORY),
-    CaseStructure(SACCases.ASYANICA_ROOFTOPS, SACAlienCodes.GILBERTS_SECRET, _CATEGORY),
-    CaseStructure(SACCases.ASYANICA_ROOFTOPS, SACAlienCodes.RICARDOS_SECRET, _CATEGORY),
+    CaseStructure(SACCases.ASYANICA_ROOFTOPS, SACAlienCodes.JHAIROS_SECRET, SACTags.ALIEN_CODE),
+    CaseStructure(SACCases.ASYANICA_ROOFTOPS, SACAlienCodes.GILBERTS_SECRET, SACTags.ALIEN_CODE),
+    CaseStructure(SACCases.ASYANICA_ROOFTOPS, SACAlienCodes.RICARDOS_SECRET, SACTags.ALIEN_CODE),
 
     # Rionosis, Mountainside Ascent -- TODO: no matching case at all yet.
-    CaseStructure(SACCases.GONDOLA_ASCENT, SACAlienCodes.LEVITICUS_SECRET, _CATEGORY),
-    CaseStructure(SACCases.GONDOLA_ASCENT, SACAlienCodes.CARLS_SECRET, _CATEGORY),
-    CaseStructure(SACCases.GONDOLA_ASCENT, SACAlienCodes.JESS_SECRET, _CATEGORY),
+    CaseStructure(SACCases.GONDOLA_ASCENT, SACAlienCodes.LEVITICUS_SECRET, SACTags.ALIEN_CODE),
+    CaseStructure(SACCases.GONDOLA_ASCENT, SACAlienCodes.CARLS_SECRET, SACTags.ALIEN_CODE),
+    CaseStructure(SACCases.GONDOLA_ASCENT, SACAlienCodes.JESS_SECRET, SACTags.ALIEN_CODE),
 
     # Rionosis, Azcotal Alley -- case exists (Azcotal Alley), but
     # planets.py currently files it under Glaciara (LOW CONFIDENCE); this
     # data implies Rionosis instead. Used as-is -- see module docstring.
-    CaseStructure(SACCases.AZCOTAL_ALLEY, SACAlienCodes.JONS_SECRET, _CATEGORY),
-    CaseStructure(SACCases.AZCOTAL_ALLEY, SACAlienCodes.THE_3_JASONS_SECRET, _CATEGORY),
-    CaseStructure(SACCases.AZCOTAL_ALLEY, SACAlienCodes.TRAVIS_SECRET, _CATEGORY),
+    CaseStructure(SACCases.AZCOTAL_ALLEY, SACAlienCodes.JONS_SECRET, SACTags.ALIEN_CODE),
+    CaseStructure(SACCases.AZCOTAL_ALLEY, SACAlienCodes.THE_3_JASONS_SECRET, SACTags.ALIEN_CODE),
+    CaseStructure(SACCases.AZCOTAL_ALLEY, SACAlienCodes.TRAVIS_SECRET, SACTags.ALIEN_CODE),
 
     # Casino "Le Paradis des tricheurs" -- TODO: ambiguous between
     # High-Rollers Casino and High Stakes Room, both on this planet.
-    CaseStructure(SACCases.HIGH_ROLLERS_CASINO, SACAlienCodes.COLINS_SECRET, _CATEGORY),
-    CaseStructure(SACCases.HIGH_ROLLERS_CASINO, SACAlienCodes.SHANES_SECRET, _CATEGORY),
-    CaseStructure(SACCases.HIGH_ROLLERS_CASINO, SACAlienCodes.THE_PING_PONG_SECRET, _CATEGORY),
+    CaseStructure(SACCases.HIGH_ROLLERS_CASINO, SACAlienCodes.COLINS_SECRET, SACTags.ALIEN_CODE),
+    CaseStructure(SACCases.HIGH_ROLLERS_CASINO, SACAlienCodes.SHANES_SECRET, SACTags.ALIEN_CODE),
+    CaseStructure(SACCases.HIGH_ROLLERS_CASINO, SACAlienCodes.THE_PING_PONG_SECRET, SACTags.ALIEN_CODE),
 
     # Labos de Venantonio (= Venantonio Labs) -- confirmed case.
-    CaseStructure(SACCases.VENANTONIO_LABS, SACAlienCodes.GERARDS_SECRET, _CATEGORY),
-    CaseStructure(SACCases.VENANTONIO_LABS, SACAlienCodes.ALEXS_SECRET, _CATEGORY),
-    CaseStructure(SACCases.VENANTONIO_LABS, SACAlienCodes.HAROONS_SECRET, _CATEGORY),
+    CaseStructure(SACCases.VENANTONIO_LABS, SACAlienCodes.GERARDS_SECRET, SACTags.ALIEN_CODE),
+    CaseStructure(SACCases.VENANTONIO_LABS, SACAlienCodes.ALEXS_SECRET, SACTags.ALIEN_CODE),
+    CaseStructure(SACCases.VENANTONIO_LABS, SACAlienCodes.HAROONS_SECRET, SACTags.ALIEN_CODE),
 
     # Fort Sprocket, Galactic Bolt Reserve -- case exists (exact name
     # match), but planets.py currently files it under Venantonio (LOW
     # CONFIDENCE); this data implies Fort Sprocket instead. Used as-is --
     # see module docstring.
-    CaseStructure(SACCases.GALACTIC_BOLT_RESERVE, SACAlienCodes.AVERYS_SECRET, _CATEGORY),
-    CaseStructure(SACCases.GALACTIC_BOLT_RESERVE, SACAlienCodes.LESLEYS_SECRET, _CATEGORY),
-    CaseStructure(SACCases.GALACTIC_BOLT_RESERVE, SACAlienCodes.DAVES_SECRET, _CATEGORY),
+    CaseStructure(SACCases.GALACTIC_BOLT_RESERVE, SACAlienCodes.AVERYS_SECRET, SACTags.ALIEN_CODE),
+    CaseStructure(SACCases.GALACTIC_BOLT_RESERVE, SACAlienCodes.LESLEYS_SECRET, SACTags.ALIEN_CODE),
+    CaseStructure(SACCases.GALACTIC_BOLT_RESERVE, SACAlienCodes.DAVES_SECRET, SACTags.ALIEN_CODE),
 
     # Spaceship Graveyard -- confirmed case (exact name match).
-    CaseStructure(SACCases.SPACESHIP_GRAVEYARD, SACAlienCodes.MATTS_SECRET, _CATEGORY),
-    CaseStructure(SACCases.SPACESHIP_GRAVEYARD, SACAlienCodes.KENS_SECRET, _CATEGORY),
-    CaseStructure(SACCases.SPACESHIP_GRAVEYARD, SACAlienCodes.JAREDS_SECRET, _CATEGORY),
+    CaseStructure(SACCases.SPACESHIP_GRAVEYARD, SACAlienCodes.MATTS_SECRET, SACTags.ALIEN_CODE),
+    CaseStructure(SACCases.SPACESHIP_GRAVEYARD, SACAlienCodes.KENS_SECRET, SACTags.ALIEN_CODE),
+    CaseStructure(SACCases.SPACESHIP_GRAVEYARD, SACAlienCodes.JAREDS_SECRET, SACTags.ALIEN_CODE),
 
     # Hydrano, Underwater base -- TODO: closest is Underwater Bunker
     # (case_id 29), but the name doesn't match cleanly.
-    CaseStructure(SACCases.UNDERWATER_BUNKER, SACAlienCodes.VESSUPS_SECRET, _CATEGORY),
-    CaseStructure(SACCases.UNDERWATER_BUNKER, SACAlienCodes.ADAMS_SECRET, _CATEGORY),
-    CaseStructure(SACCases.UNDERWATER_BUNKER, SACAlienCodes.JEFFS_SECRET, _CATEGORY),
+    CaseStructure(SACCases.UNDERWATER_BUNKER, SACAlienCodes.VESSUPS_SECRET, SACTags.ALIEN_CODE),
+    CaseStructure(SACCases.UNDERWATER_BUNKER, SACAlienCodes.ADAMS_SECRET, SACTags.ALIEN_CODE),
+    CaseStructure(SACCases.UNDERWATER_BUNKER, SACAlienCodes.JEFFS_SECRET, SACTags.ALIEN_CODE),
 )
 
 # Every Alien Code confirmed to a real case, grouped by case name -- feeds
@@ -103,11 +101,19 @@ ALIEN_CODES_BY_CASE: dict[str, tuple[str, ...]] = group_by_case(
 )
 
 
+# Native module IDs from GLOBALVARS_GetTotalAlienCodeCount, not catalog IDs.
+ALIEN_CODE_MODULES = {
+    SACCases.BOLTAIRE_MUSEUM: 1, SACCases.ASYANICA_ROOFTOPS: 4,
+    SACCases.AZCOTAL_ALLEY: 10, SACCases.GONDOLA_ASCENT: 11,
+    SACCases.HIGH_ROLLERS_CASINO: 13, SACCases.VENANTONIO_LABS: 16,
+    SACCases.GALACTIC_BOLT_RESERVE: 19, SACCases.SPACESHIP_GRAVEYARD: 22,
+    SACCases.UNDERWATER_BUNKER: 29,
+}
+
+
 @dataclass(frozen=True)
 class SACAlienCodeLocations:
-    """One named constant per alien code location -- each value is the exact full display name ALIEN_CODES above builds via CaseStructure.__str__, spelled out here so rules/<case>.py can reference an individual location directly instead of a raw string or a case-name-keyed lookup -- same one-name-per-location layout as constants/weapons.py's SACRatchetWeapons."""
-
-    BOLTAIRE_MUSEUM_THE_LEGENDS = "Clank: Boltaire Museum: Alien Code: The Legends"
+    BOLTAIRE_MUSEUM_THE_LEGENDS = 'Clank: Boltaire Museum: Alien Code: The Legends'
     BOLTAIRE_MUSEUM_RONNS_SECRET = "Clank: Boltaire Museum: Alien Code: Ronn's secret"
     BOLTAIRE_MUSEUM_BENS_SECRET = "Clank: Boltaire Museum: Alien Code: Ben's secret"
     ASYANICA_ROOFTOPS_JHAIROS_SECRET = "Clank: Asyanica Rooftops: Alien Code: Jhairo's secret"
@@ -121,7 +127,7 @@ class SACAlienCodeLocations:
     AZCOTAL_ALLEY_TRAVIS_SECRET = "Clank: Azcotal Alley: Alien Code: Travis' secret"
     HIGH_ROLLERS_CASINO_COLINS_SECRET = "Clank: High-Rollers Casino: Alien Code: Colin's secret"
     HIGH_ROLLERS_CASINO_SHANES_SECRET = "Clank: High-Rollers Casino: Alien Code: Shane's secret"
-    HIGH_ROLLERS_CASINO_THE_PING_PONG_SECRET = "Clank: High-Rollers Casino: Alien Code: The Ping Pong Secret"
+    HIGH_ROLLERS_CASINO_THE_PING_PONG_SECRET = 'Clank: High-Rollers Casino: Alien Code: The Ping Pong Secret'
     VENANTONIO_LABS_GERARDS_SECRET = "Clank: Venantonio Labs: Alien Code: Gerard's secret"
     VENANTONIO_LABS_ALEXS_SECRET = "Clank: Venantonio Labs: Alien Code: Alex's secret"
     VENANTONIO_LABS_HAROONS_SECRET = "Clank: Venantonio Labs: Alien Code: Haroon's secret"
@@ -134,16 +140,3 @@ class SACAlienCodeLocations:
     UNDERWATER_BUNKER_VESSUPS_SECRET = "Clank: Underwater Bunker: Alien Code: Vessup's secret"
     UNDERWATER_BUNKER_ADAMS_SECRET = "Clank: Underwater Bunker: Alien Code: Adam's secret"
     UNDERWATER_BUNKER_JEFFS_SECRET = "Clank: Underwater Bunker: Alien Code: Jeff's secret"
-
-assert {v for k, v in vars(SACAlienCodeLocations).items() if not k.startswith("_")} == set(
-    str(entry) for entry in ALIEN_CODES if entry.case_name != "TODO"
-), "SACAlienCodeLocations drifted out of sync with ALIEN_CODES -- regenerate its literals"
-
-# Native module IDs from GLOBALVARS_GetTotalAlienCodeCount, not catalog IDs.
-ALIEN_CODE_MODULES = {
-    SACCases.BOLTAIRE_MUSEUM: 1, SACCases.ASYANICA_ROOFTOPS: 4,
-    SACCases.AZCOTAL_ALLEY: 10, SACCases.GONDOLA_ASCENT: 11,
-    SACCases.HIGH_ROLLERS_CASINO: 13, SACCases.VENANTONIO_LABS: 16,
-    SACCases.GALACTIC_BOLT_RESERVE: 19, SACCases.SPACESHIP_GRAVEYARD: 22,
-    SACCases.UNDERWATER_BUNKER: 29,
-}

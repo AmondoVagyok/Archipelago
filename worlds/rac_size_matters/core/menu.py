@@ -8,8 +8,6 @@ from .address_maps import MENU_ADDR_BY_PLANET_ID
 if TYPE_CHECKING:
     from ..pypine import Pine
 
-# +0x00 state (set by the game), +0x04 update (write a MenuStateValue to request
-# a change) — same offsets on every planet's menu address.
 _STATE_OFFSET  = 0x00
 _UPDATE_OFFSET = 0x04
 

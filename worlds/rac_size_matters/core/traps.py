@@ -15,14 +15,11 @@ from .address_maps import (
 if TYPE_CHECKING:
     from ..pypine import Pine
 
-# Direct memory-flag traps: write 1 to activate, write 0 to revert.
 _DIRECT_ADDRESSES: dict[str, int] = {
     Rac5Traps.TRAP_FEVERDREAMTIME: DREAMTIME_EFFECT,
     Rac5Traps.TRAP_BRIGHTNESS:     BRIGHTNESS_ADDRESS,
 }
 
-# Cheat-flag traps: bits OR'd into CHEATS (0x21F4C440) so multiple cheat traps
-# can be active at once; reverted by clearing only this trap's bit.
 MIRROR_LEVEL_CHEAT_BIT:     int = 0x10
 REVERSE_CONTROLS_CHEAT_BIT: int = 0x40
 WEAPON_SWITCHING_CHEAT_BIT: int = 0x80
@@ -33,23 +30,17 @@ _CHEAT_BITS: dict[str, int] = {
     Rac5Traps.TRAP_WEAPON_SWITCHING: WEAPON_SWITCHING_CHEAT_BIT,
 }
 
-# Default seconds each trap stays active before auto-reverting. Never mutated —
-# _trap_durations below is the live copy activate_trap() reads from.
 TRAP_DURATIONS: dict[str, float] = {
     Rac5Traps.TRAP_FEVERDREAMTIME:   20,
     Rac5Traps.TRAP_BRIGHTNESS:       20,
     Rac5Traps.TRAP_MIRROR_LEVEL:     20,
     Rac5Traps.TRAP_REVERSE_CONTROLS: 20,
     Rac5Traps.TRAP_WEAPON_SWITCHING: 20,
-    # Reset Level is instantaneous (see activate_trap()) — this entry exists only so
-    # it gets an item id and shows up in the options. Appended last so ids don't shift.
     Rac5Traps.TRAP_RESET_LEVEL:      1,
 }
 
 ALL_TRAPS: frozenset[str] = frozenset(TRAP_DURATIONS)
 
-# Live durations activate_trap() uses — copy of the defaults above,
-# overwritten once from slot_data on connect (see set_trap_durations()).
 _trap_durations: dict[str, float] = dict(TRAP_DURATIONS)
 
 
@@ -60,8 +51,6 @@ def set_trap_durations(overrides: dict[str, float]) -> None:
         if trap_name in _trap_durations:
             _trap_durations[trap_name] = seconds
 
-# Per-trap-name bookkeeping so repeated activations of the same trap extend
-# the revert deadline instead of racing independent timers.
 _active_deadlines: dict[str, float] = {}
 _revert_handles: dict[str, asyncio.TimerHandle] = {}
 
@@ -70,8 +59,6 @@ def activate_trap(pine: Pine, trap_name: str) -> None:
     """Activate a trap by name and schedule it to automatically revert. Re-activating
     a still-active trap extends (stacks) its deadline rather than reverting at the first."""
     if trap_name == Rac5Traps.TRAP_RESET_LEVEL:
-        # One-shot, no revert: force-reload the current planet by writing its own id
-        # back into the same forced-load address Giant Clank redirect/menu travel use.
         planet_id = pine.read_int8(CURRENT_PLANET_ADDRESS)
         pine.write_int32(NEW_PLANET_START_LOAD_ADDR, planet_id)
         return

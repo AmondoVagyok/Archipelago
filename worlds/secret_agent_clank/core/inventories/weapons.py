@@ -1,8 +1,9 @@
-"""Ratchet's WeaponData table -- the single 40-slot struct array that backs every weapon/tool/wrench-ability Ratchet can carry during SAC's Ratchet action sections (see constants/weapons.py's RATCHET_WEAPONS docstring for the separate, still-placeholder vendor-order list this does NOT replace)."""
+"""Shared native GadgetData array for Ratchet and Clank weapons, tools and abilities."""
 from __future__ import annotations
 
-from enum import IntEnum
 from typing import TYPE_CHECKING
+
+from ...constants.weapon_order import WEAPON_ORDER, WeaponSlot
 
 if TYPE_CHECKING:
     from ...pypine import Pine
@@ -32,65 +33,6 @@ _OFFSET_OWNED_FLAG   = 0x70  # int32 -- 0 = not picked up yet, nonzero = owned
 # byte-for-byte identical before and after.
 _OFFSET_MOD_SLOTS = 0x68  # 3 consecutive bytes: mod slot 0/1/2 installed-flags
 MOD_SLOT_COUNT    = 3
-
-# Positional slot order (index == raw weapon-table slot id). None = blank
-# slot (0) or a slot with no name ever observed in-game (1) -- neither gets
-# a WeaponAddresses entry from build_weapons() below, matching
-# rac_size_matters/core/weapons.py's `if name is not None` filtering.
-WEAPON_ORDER: list[str | None] = [
-    None,                          # slot 0   blank
-    None,                          # slot 1   unknown/unnamed (category 2, no name)
-    "blaster",                     # slot 2
-    "shardgun",                    # slot 3
-    "beemineglove",                # slot 4
-    "shockrocket",                 # slot 5
-    "walloper",                    # slot 6
-    "plasmawhip",                  # slot 7
-    "porkbomb",                    # slot 8
-    "minelauncher",                # slot 9
-    "ryno",                        # slot 10
-    "throwTie",                    # slot 11
-    "CuffLink",                    # slot 12
-    "TangleVine",                  # slot 13
-    "HoloKnuckles",                # slot 14
-    "FlamethrowerPen",             # slot 15
-    "LightningUmbrella",           # slot 16
-    "fountainpen",                 # slot 17
-    "hypnowatch",                  # slot 18
-    "QwarkBlaster",                # slot 19
-    "Vacuum",                      # slot 20
-    "GiantQwarkBlaster",           # slot 21
-    "hypershot",                   # slot 22   category 1 (tool/item, not a weapon)
-    "ratchetpda",                  # slot 23   category 1
-    "holomonocle",                 # slot 24   category 1
-    "sunglasses",                  # slot 25   category 1
-    "clankpda",                    # slot 26   category 1
-    "bolttransfer",                # slot 27   category 3 (wrench ability)
-    "wrenchpower_firebomb",        # slot 28   category 3
-    "wrenchpower_triplewave",      # slot 29   category 3
-    "wrenchpower_crystallix",      # slot 30   category 3
-    "wrenchpower_wildburst",       # slot 31   category 3
-    "jetboots",                    # slot 32   category 3
-    "omnikey",                     # slot 33   category 3
-    "mapomatic",                   # slot 34   category 3
-    "boltgrabber",                 # slot 35   category 3
-    "boxbreaker",                  # slot 36   category 3
-    "superkick",                   # slot 37   category 3
-    "kickblast",                   # slot 38   category 3
-    "kicksplosion",                # slot 39   category 3
-]
-
-# One member per named WEAPON_ORDER slot (the two None/blank slots have no
-# member) -- built directly from WEAPON_ORDER itself so a member can never
-# drift out of sync with the string it names. Lets callers write
-# WeaponSlot.SHOCKROCKET instead of retyping "shockrocket" by hand (see
-# patches/locations.py's VENDOR_LOCATIONS/PICKUP_LOCATIONS, previously the
-# same internal names typed out a second time with nothing tying the two
-# copies together).
-WeaponSlot = IntEnum(
-    "WeaponSlot", {name.upper(): index for index, name in enumerate(WEAPON_ORDER) if name is not None},
-)
-
 
 class WeaponInt32Field:
     """Descriptor for a 4-byte int field at a fixed offset within a WeaponAddresses instance's struct entry."""

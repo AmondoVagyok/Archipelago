@@ -84,7 +84,6 @@ class GhostRatchetAddresses:
 
 
 # Fixed values for the non-position fields — confirmed in-game, always the
-# same regardless of where/when the ghost spawns.
 _ROTATION_SCALE_1 = 0x3F76EAAC
 _ROTATION_1       = 0x3E872D1A
 _BASE_FIELD       = 0x3F7FFFFE
@@ -110,8 +109,6 @@ class GhostRatchetInventory:
         self._addr: GhostRatchetAddresses | None = None
         self._trigger_address: int | None = None
 
-        # Separate state for GhostLink's "follow another player" mode, kept apart from
-        # spawn()/keep_alive() so the two features never fight over the same despawn timer.
         self._follow_active = False
         self._follow_planet_id: int | None = None
         self._follow_addr: GhostRatchetAddresses | None = None
@@ -190,8 +187,6 @@ class GhostRatchetInventory:
             self._follow_planet_id = planet_id
         self._follow_active = True
 
-        # Fixed fields re-armed before position, same order as spawn()/keep_alive() —
-        # writing position first reproducibly froze the game (see class docstring).
         self.pine.write_int32(self._follow_trigger, 1)
         addr = self._follow_addr
         addr.rotation_scale_1 = _ROTATION_SCALE_1

@@ -7,7 +7,7 @@ from ...constants import Rac5Planets, Rac5SkillPoints
 
 @dataclass(frozen=True)
 class SkillPoint:
-    planet_id: int  # used with mask for detection context
+    planet_id: int
     bit:       int
     region:    str
 
@@ -16,8 +16,6 @@ class SkillPoint:
         return 1 << self.bit
 
 
-# Bit layout: skill points are grouped in 2-3 per planet, spaced 4 bits apart
-# (see each SkillPoint's bit value below for the exact per-planet assignment).
 
 SKILL_POINTS: dict[str, SkillPoint] = {
     Rac5SkillPoints.POKITARU_TRAIN:          SkillPoint(0x01,  0, Rac5Planets.POKITARU),
@@ -34,8 +32,6 @@ SKILL_POINTS: dict[str, SkillPoint] = {
     Rac5SkillPoints.DREAMTIME_FRIENDS:       SkillPoint(0x05, 16, Rac5Planets.DREAMTIME),
     Rac5SkillPoints.DREAMTIME_NIGHT_TERRORS: SkillPoint(0x05, 17, Rac5Planets.DREAMTIME),
     Rac5SkillPoints.OUTPOST_OMEGA_AWESOME:   SkillPoint(0x17, 20, Rac5Planets.OUTPOST_OMEGA),
-    # Rac5SkillPoints.CHALLAX_SHOCK: SkillPoint(0x07, 24, Rac5Planets.CHALLAX)
-    # Excluded: only one opportunity to complete this in the whole game (bit 24).
     Rac5SkillPoints.CHALLAX_MASTER:          SkillPoint(0x07, 25, Rac5Planets.CHALLAX),
     Rac5SkillPoints.DAYNI_MOON_GLADIATOR:    SkillPoint(0x08, 28, Rac5Planets.DAYNI_MOON),
     Rac5SkillPoints.DAYNI_MOON_WOOL_PROTEST: SkillPoint(0x08, 29, Rac5Planets.DAYNI_MOON),
@@ -44,14 +40,10 @@ SKILL_POINTS: dict[str, SkillPoint] = {
     Rac5SkillPoints.INSIDE_CLANK_RATCHET:    SkillPoint(0x09, 33, Rac5Planets.INSIDE_CLANK),
     Rac5SkillPoints.QUODRONA_ELITE:          SkillPoint(0x0A, 36, Rac5Planets.QUODRONA),
     Rac5SkillPoints.QUODRONA_STORM:          SkillPoint(0x0A, 37, Rac5Planets.QUODRONA),
-    # Appended last (not restored to original spots) so other skill points' positional
-    # ids stay stable. Earned during Giant Clank sequences (see planets.py).
     Rac5SkillPoints.METALIS_TERROR:          SkillPoint(0x04, 13, Rac5Planets.METALIS),
     Rac5SkillPoints.CHALLAX_VARMINTS:        SkillPoint(0x07, 26, Rac5Planets.CHALLAX),
 }
 
-# Curated "hard" tier for the Skill Points option. Everything else in SKILL_POINTS
-# that isn't also a Clank/Skyboard challenge skill point counts as "easy".
 HARD_SKILL_POINTS: frozenset[str] = frozenset({
     Rac5SkillPoints.RYLLUS_BURY,
     Rac5SkillPoints.KALIDON_SUPER_LOMBAX,
@@ -66,28 +58,22 @@ HARD_SKILL_POINTS: frozenset[str] = frozenset({
     Rac5SkillPoints.QUODRONA_STORM,
 })
 
-# Earned from Clank Challenge arenas — gated by enable_clank_challenge_skill_points,
-# independent of the Skill Points easy/hard tier.
 CLANK_CHALLENGE_SKILL_POINTS: frozenset[str] = frozenset({
     Rac5SkillPoints.METALIS_SHUTOUT,
     Rac5SkillPoints.METALIS_GLADIATOR,
     Rac5SkillPoints.DAYNI_MOON_GLADIATOR,
 })
 
-# Earned from Skyboard Challenges — gated by enable_skyboard_challenge_skill_points,
-# independent of the Skill Points easy/hard tier.
 SKYBOARD_CHALLENGE_SKILL_POINTS: frozenset[str] = frozenset({
     Rac5SkillPoints.KALIDON_SKYBOARDER,
     Rac5SkillPoints.OUTPOST_OMEGA_AWESOME,
 })
 
-# (planet_id, mask) → location name — mirrors BOLT_BY_PLANET_AND_DELTA
 SKILL_POINT_BY_PLANET_AND_MASK: dict[tuple[int, int], str] = {
     (sp.planet_id, sp.mask): name
     for name, sp in SKILL_POINTS.items()
 }
 
-# Flat mask lookup used by the client (bits are globally unique so planet not needed for detection)
 LOCATION_SKILL_POINTS: dict[str, int] = {
     name: sp.mask for name, sp in SKILL_POINTS.items()
 }
