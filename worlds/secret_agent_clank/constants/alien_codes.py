@@ -128,7 +128,7 @@ class SACAlienCodeLocations:
     HIGH_ROLLERS_CASINO_COLINS_SECRET = "The Paradis Des Tricheurs Casino (Clank) - High-Rollers Casino: Alien Code: Colin's secret"
     HIGH_ROLLERS_CASINO_SHANES_SECRET = "The Paradis Des Tricheurs Casino (Clank) - High-Rollers Casino: Alien Code: Shane's secret"
     HIGH_ROLLERS_CASINO_THE_PING_PONG_SECRET = "The Paradis Des Tricheurs Casino (Clank) - High-Rollers Casino: Alien Code: The Ping Pong Secret"
-    VENANTONIO_LABS_GERARDS_SECRET = "Prison Planet (Ratchet) - The Exercise Yard: Alien Code: Gerard's secret"
+    VENANTONIO_LABS_GERARDS_SECRET = "Venantonio (Clank) - Venantonio Labs: Alien Code: Gerard's secret"
     VENANTONIO_LABS_ALEXS_SECRET = "Venantonio (Clank) - Venantonio Labs: Alien Code: Alex's secret"
     VENANTONIO_LABS_HAROONS_SECRET = "Venantonio (Clank) - Venantonio Labs: Alien Code: Haroon's secret"
     GALACTIC_BOLT_RESERVE_AVERYS_SECRET = "Fort Sprocket (Clank) - Galactic Bolt Reserve: Alien Code: Avery's secret"
