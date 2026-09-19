@@ -23,6 +23,7 @@ class NativeRuntime:
         self.enabled = False
         self.checked = set()
         self.allowed_locations = None
+        self.progressive_challenge_mode_enabled = False
         self.notifications = deque()
         self.plans = []
         self.module = None
@@ -89,7 +90,8 @@ class NativeRuntime:
             if self.allowed_locations is None or pickup.name in self.allowed_locations
         }
         self.armour = armour_pickup.prepare(p, code_start=base, code=code,
-                                           locations=armour_locations, checked=self.checked)
+                                           locations=armour_locations, checked=self.checked,
+                                           bypass_tier_gate=not self.progressive_challenge_mode_enabled)
         if self.armour is not None:
             self.plans.append(self.armour)
         if target == 1:

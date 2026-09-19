@@ -26,16 +26,16 @@ def set_pokitaru_rules(world: "RACSizeMatterWorld") -> None:
 
     if world.options.skill_points.value >= 1:
         world.set_rule(mw.get_location(Rac5SkillPoints.POKITARU_TRAIN, player), HasProjectileWeapon() | _GLITCH)
-        world.set_rule(mw.get_location(Rac5SkillPoints.POKITARU_BOAT, player), True_())
+        world.set_rule(mw.get_location(Rac5SkillPoints.POKITARU_BOAT, player), HasProjectileWeapon() | _GLITCH)
     if world.options.skill_points.value >= 2:
-        world.set_rule(mw.get_location(Rac5SkillPoints.POKITARU_COWS, player), HasWeapon(Rac5Weapons.MOOTATOR))
+        world.set_rule(mw.get_location(Rac5SkillPoints.POKITARU_COWS, player), Has(Rac5Weapons.MOOTATOR))
 
     if world.options.all_missions:
-        world.set_rule(mw.get_location(Rac5CutsceneLocations.POKITARU_RESCUE, player), True_())
-        world.set_rule(mw.get_location(Rac5CutsceneLocations.POKITARU_FIGHT, player), True_())
+        world.set_rule(mw.get_location(Rac5CutsceneLocations.POKITARU_RESCUE, player), HasProjectileWeapon() | _GLITCH)
+        world.set_rule(mw.get_location(Rac5CutsceneLocations.POKITARU_FIGHT, player), HasProjectileWeapon() | _GLITCH)
 
-    world.set_rule(mw.get_location(Rac5TBolts.POKITARU_ZIPLINE, player), True_())
-    world.set_rule(mw.get_location(Rac5TBolts.POKITARU_HUT, player), True_())
+    world.set_rule(mw.get_location(Rac5TBolts.POKITARU_ZIPLINE, player), HasProjectileWeapon() | _GLITCH)
+    world.set_rule(mw.get_location(Rac5TBolts.POKITARU_HUT, player), HasProjectileWeapon() | _GLITCH)
 
     world.set_rule(mw.get_location(Rac5Locations.POKITARU_CHESTPLATE, player), HasProjectileWeapon() | _GLITCH)
     world.set_rule(mw.get_location(Rac5Locations.POKITARU_GLOVES, player), HasProjectileWeapon() | _GLITCH)

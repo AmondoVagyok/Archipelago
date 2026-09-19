@@ -8,7 +8,7 @@ from ..locations import (
     CHALLENGE_MODE_2_ARMOUR_SET_LOCATIONS,
     NG_PLUS_ARMOUR_SET_LOCATIONS,
 )
-from ._helpers import HasArmourPiece
+from ._helpers import HasArmourPiece, HasChallengeMode
 from rule_builder.rules import And
 
 if TYPE_CHECKING:
@@ -72,4 +72,8 @@ def set_armour_set_rules(world: RACSizeMatterWorld) -> None:
         if challenge_mode < 2 and loc_name in CHALLENGE_MODE_2_ARMOUR_SET_LOCATIONS:
             continue
         rule = And(*(HasArmourPiece(sd, pn) for sd, pn in reqs))
+        if loc_name in CHALLENGE_MODE_1_ARMOUR_SET_LOCATIONS:
+            rule = rule & HasChallengeMode(world, 1)
+        if loc_name in CHALLENGE_MODE_2_ARMOUR_SET_LOCATIONS:
+            rule = rule & HasChallengeMode(world, 2)
         world.set_rule(mw.get_location(loc_name, player), rule)
