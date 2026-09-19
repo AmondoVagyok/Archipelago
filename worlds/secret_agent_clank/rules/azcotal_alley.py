@@ -4,14 +4,14 @@ from typing import TYPE_CHECKING
 from rule_builder.rules import True_
 
 from ..constants.alien_codes import SACAlienCodeLocations
-from ..constants.clank_gadgets import THERM_OPTIC_SHADES, SACClankGadgets, SACClankWeapons
+from ..constants.clank_gadgets import SACClankGadgets, SACClankWeapons
 from ..constants.cutscenes import SACCutsceneLocations
 from ..constants.missions import SACMissionLocations
 from ..constants.skillpoints import SACSkillPointLocations
 from ..constants.titanium_bolts import SACTitaniumBoltLocations
 from ..constants.weapons import SACRatchetWeapons
 from ..options import Missions
-from .rule_helpers import HasGadget
+from .rule_helpers import Has
 
 if TYPE_CHECKING:
     from ..world import SecretAgentClankWorld
@@ -50,12 +50,12 @@ def set_azcotal_alley_rules(world: "SecretAgentClankWorld") -> None:
     # Alien code (AllAlienCodes) -- also needs Therm-Optic Shades
     if world.options.all_alien_codes:
         world.set_rule(
-            mw.get_location(SACAlienCodeLocations.AZCOTAL_ALLEY_JONS_SECRET, player), HasGadget(THERM_OPTIC_SHADES),
+            mw.get_location(SACAlienCodeLocations.AZCOTAL_ALLEY_JONS_SECRET, player), Has(SACClankGadgets.THERM_OPTIC_SHADES),
         )
         world.set_rule(
             mw.get_location(SACAlienCodeLocations.AZCOTAL_ALLEY_THE_3_JASONS_SECRET, player),
-            HasGadget(THERM_OPTIC_SHADES),
+            Has(SACClankGadgets.THERM_OPTIC_SHADES),
         )
         world.set_rule(
-            mw.get_location(SACAlienCodeLocations.AZCOTAL_ALLEY_TRAVIS_SECRET, player), HasGadget(THERM_OPTIC_SHADES),
+            mw.get_location(SACAlienCodeLocations.AZCOTAL_ALLEY_TRAVIS_SECRET, player), Has(SACClankGadgets.THERM_OPTIC_SHADES),
         )

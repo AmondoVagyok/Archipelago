@@ -26,7 +26,8 @@ def set_boltaire_museum_rules(world: "SecretAgentClankWorld") -> None:
     world.set_rule(mw.get_location(SACClankWeapons.HOLOKNUCKLES, player), True_())
     world.set_rule(mw.get_location(SACClankGadgets.JETBOOTS, player), _finish_mission)
     world.set_rule(mw.get_location(SACClankWeapons.SUPERKICK, player), True_())
-    world.set_rule(mw.get_location(SACGadgetPickupLocations.BOLTAIRE_MUSEUM, player), True_())
+    world.set_rule(mw.get_location(SACGadgetPickupLocations.BOLTAIRE_MUSEUM_BLACK_OUT_PEN, player), True_())
+    world.set_rule(mw.get_location(SACGadgetPickupLocations.BOLTAIRE_MUSEUM_THERM_OPTIC_SHADES, player), True_())
     world.set_rule(mw.get_location(SACTitaniumBoltLocations.BOLTAIRE_MUSEUM_1, player), Has(SACClankGadgets.JETBOOTS))
     world.set_rule(
         mw.get_location(SACTitaniumBoltLocations.BOLTAIRE_MUSEUM_2, player),
@@ -54,7 +55,7 @@ def set_boltaire_museum_rules(world: "SecretAgentClankWorld") -> None:
     if world.options.all_alien_codes:
         world.set_rule(
             mw.get_location(SACAlienCodeLocations.BOLTAIRE_MUSEUM_THE_LEGENDS, player),
-            _finish_mission & Has(SACClankGadgets.THERM_OPTIC_SHADES),
+            Has(SACClankGadgets.THERM_OPTIC_SHADES),
         )
         world.set_rule(
             mw.get_location(SACAlienCodeLocations.BOLTAIRE_MUSEUM_RONNS_SECRET, player),

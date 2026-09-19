@@ -27,6 +27,7 @@ TITANIUM_BOLT_DESCRIPTIONS: dict[tuple[int, int], str] = {
     (1, 1): "JetBoot around the pillar",
     (1, 2): "Jump over the railings",
     (3, 1): "Complete Mega Challenge",
+    (4, 1): "1 - Inside The Air Duct",
 }
 
 TITANIUM_BOLT_ENTRIES = {
@@ -38,26 +39,26 @@ TITANIUM_BOLT_ENTRIES = {
 
 @dataclass(frozen=True)
 class SACTitaniumBoltLocations:
-    BOLTAIRE_MUSEUM_1 = 'Clank: Boltaire Museum: T-Bolt: JetBoot around the pillar'
-    BOLTAIRE_MUSEUM_2 = 'Clank: Boltaire Museum: T-Bolt: Jump over the railings'
-    MAX_SECURITY_CELLS_1 = 'Ratchet: Max-Security Cells: T-Bolt: Complete Mega Challenge'
-    ASYANICA_ROOFTOPS_1 = 'Clank: Asyanica Rooftops: T-Bolt: 1'
-    THE_MESS_HALL_1 = 'Ratchet: The Mess Hall: T-Bolt: 1'
-    AZCOTAL_ALLEY_1 = 'Clank: Azcotal Alley: T-Bolt: 1'
-    AZCOTAL_ALLEY_2 = 'Clank: Azcotal Alley: T-Bolt: 2'
-    AZCOTAL_ALLEY_3 = 'Clank: Azcotal Alley: T-Bolt: 3'
-    GONDOLA_ASCENT_1 = 'Clank: Gondola Ascent: T-Bolt: 1'
-    HIGH_ROLLERS_CASINO_1 = 'Clank: High-Rollers Casino: T-Bolt: 1'
-    THE_EXERCISE_YARD_1 = 'Ratchet: The Exercise Yard: T-Bolt: 1'
-    VENANTONIO_LABS_1 = 'Clank: Venantonio Labs: T-Bolt: 1'
-    VENANTONIO_LABS_2 = 'Clank: Venantonio Labs: T-Bolt: 2'
-    GALACTIC_BOLT_RESERVE_1 = 'Clank: Galactic Bolt Reserve: T-Bolt: 1'
-    GALACTIC_BOLT_RESERVE_2 = 'Clank: Galactic Bolt Reserve: T-Bolt: 2'
-    GALACTIC_BOLT_RESERVE_3 = 'Clank: Galactic Bolt Reserve: T-Bolt: 3'
-    THE_SHOWERS_1 = 'Ratchet: The Showers: T-Bolt: 1'
-    SPACESHIP_GRAVEYARD_1 = 'Clank: Spaceship Graveyard: T-Bolt: 1'
-    SPACESHIP_GRAVEYARD_2 = 'Clank: Spaceship Graveyard: T-Bolt: 2'
-    SPACESHIP_GRAVEYARD_3 = 'Clank: Spaceship Graveyard: T-Bolt: 3'
-    SPACESHIP_GRAVEYARD_4 = 'Clank: Spaceship Graveyard: T-Bolt: 4'
-    PRISON_BREAKOUT_1 = 'Ratchet: Prison Breakout!: T-Bolt: 1'
-    UNDERWATER_BUNKER_1 = 'Clank: Underwater Bunker: T-Bolt: 1'
+    BOLTAIRE_MUSEUM_1 = "Clank: Boltaire Museum: T-Bolt: JetBoot around the pillar"
+    BOLTAIRE_MUSEUM_2 = "Clank: Boltaire Museum: T-Bolt: Jump over the railings"
+    MAX_SECURITY_CELLS_1 = "Ratchet: Max-Security Cells: T-Bolt: Complete Mega Challenge"
+    ASYANICA_ROOFTOPS_1 = "Clank: Asyanica Rooftops: T-Bolt: 1 - Inside The Air Duct"
+    THE_MESS_HALL_1 = "Ratchet: The Mess Hall: T-Bolt: 1"
+    AZCOTAL_ALLEY_1 = "Clank: Azcotal Alley: T-Bolt: 1"
+    AZCOTAL_ALLEY_2 = "Clank: Azcotal Alley: T-Bolt: 2"
+    AZCOTAL_ALLEY_3 = "Clank: Azcotal Alley: T-Bolt: 3"
+    GONDOLA_ASCENT_1 = "Clank: Gondola Ascent: T-Bolt: 1"
+    HIGH_ROLLERS_CASINO_1 = "Clank: High-Rollers Casino: T-Bolt: 1"
+    THE_EXERCISE_YARD_1 = "Ratchet: The Exercise Yard: T-Bolt: 1"
+    VENANTONIO_LABS_1 = "Clank: Venantonio Labs: T-Bolt: 1"
+    VENANTONIO_LABS_2 = "Clank: Venantonio Labs: T-Bolt: 2"
+    GALACTIC_BOLT_RESERVE_1 = "Clank: Galactic Bolt Reserve: T-Bolt: 1"
+    GALACTIC_BOLT_RESERVE_2 = "Clank: Galactic Bolt Reserve: T-Bolt: 2"
+    GALACTIC_BOLT_RESERVE_3 = "Clank: Galactic Bolt Reserve: T-Bolt: 3"
+    THE_SHOWERS_1 = "Ratchet: The Showers: T-Bolt: 1"
+    SPACESHIP_GRAVEYARD_1 = "Clank: Spaceship Graveyard: T-Bolt: 1"
+    SPACESHIP_GRAVEYARD_2 = "Clank: Spaceship Graveyard: T-Bolt: 2"
+    SPACESHIP_GRAVEYARD_3 = "Clank: Spaceship Graveyard: T-Bolt: 3"
+    SPACESHIP_GRAVEYARD_4 = "Clank: Spaceship Graveyard: T-Bolt: 4"
+    PRISON_BREAKOUT_1 = "Ratchet: Prison Breakout!: T-Bolt: 1"
+    UNDERWATER_BUNKER_1 = "Clank: Underwater Bunker: T-Bolt: 1"

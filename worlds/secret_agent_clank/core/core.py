@@ -2,7 +2,7 @@
 import logging
 from collections.abc import Callable, Sequence
 
-from ..constants.clank_gadgets import BLACK_OUT_PEN, THERM_OPTIC_SHADES
+from ..constants.clank_gadgets import SACClankGadgets
 from ..constants.missions import CHAPTER_ENTRIES
 from ..constants.operatives import SACOperatives
 from ..constants.planets import CASE_ID_TO_CASE, CASES_BY_OPERATIVE, SACCases
@@ -414,11 +414,11 @@ class Core:
             if name in VENDOR_LOCATIONS.values():
                 continue
             if self.location_hooks.installed and name in {
-                    "fountainpen" if n == f"{BLACK_OUT_PEN} (Pickup)" else n
+                    "fountainpen" if n == f"{SACClankGadgets.BLACK_OUT_PEN} (Pickup)" else n
                     for n in PICKUP_LOCATIONS.values()}:
                 continue
             if name == "fountainpen":
-                name = f"{BLACK_OUT_PEN} (Pickup)"
+                name = f"{SACClankGadgets.BLACK_OUT_PEN} (Pickup)"
             elif name not in self._ap_owned["ratchet"]:
                 continue
             else:

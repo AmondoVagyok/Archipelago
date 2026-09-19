@@ -31,8 +31,8 @@ for _name in WEAPONS_BY_CASE.get(_CASE_NAME, ()):
     BOLTAIRE_MUSEUM_LOCATIONS[_name] = SACLocationData(_take_id(), _CASE_NAME)
 for _name in GADGETS_BY_CASE.get(_CASE_NAME, ()):
     BOLTAIRE_MUSEUM_LOCATIONS[_name] = SACLocationData(_take_id(), _CASE_NAME)
-if _CASE_ID in CLANK_GADGET_BY_CASE_ID:
-    BOLTAIRE_MUSEUM_LOCATIONS[f"{CLANK_GADGET_BY_CASE_ID[_CASE_ID]} (Pickup)"] = SACLocationData(_take_id(), _CASE_NAME)
+for _gadget_name in CLANK_GADGET_BY_CASE_ID.get(_CASE_ID, ()):
+    BOLTAIRE_MUSEUM_LOCATIONS[f"{_gadget_name} (Pickup)"] = SACLocationData(_take_id(), _CASE_NAME)
 for _name in (
     *GADGETBOT_CHALLENGES_BY_CASE.get(_CASE_NAME, ()),
     *SPECIAL_CHALLENGES_BY_CASE.get(_CASE_NAME, ()),

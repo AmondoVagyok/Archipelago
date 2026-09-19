@@ -100,9 +100,9 @@ class Case:
         return GADGETS_BY_CASE.get(self.name, ())
 
     @property
-    def clank_gadget_pickup(self) -> "str | None":
+    def clank_gadget_pickups(self) -> "tuple[str, ...]":
         from .clank_gadgets import CLANK_GADGET_BY_CASE_ID
-        return CLANK_GADGET_BY_CASE_ID.get(self.case_id)
+        return CLANK_GADGET_BY_CASE_ID.get(self.case_id, ())
 
     @property
     def vendor_purchases(self) -> "Has | True_ | False_ | None":

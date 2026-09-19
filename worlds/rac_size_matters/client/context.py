@@ -297,6 +297,9 @@ class RACContext(
             self._wiring.progressive_challenge_mode_enabled = bool(
                 self.slot_data.get("progressive_challenge_mode", False)
             )
+            self._wiring.native.progressive_challenge_mode_enabled = (
+                self._wiring.progressive_challenge_mode_enabled
+            )
             if self._wiring.progressive_challenge_mode_enabled:
                 challenge_mode_option = 0
             else:

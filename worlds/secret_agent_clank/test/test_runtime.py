@@ -50,7 +50,7 @@ class RuntimeTests(unittest.TestCase):
         from ..locations import ALL_LOCATIONS
         self.assertIn(SACClankGadgets.BLACK_OUT_PEN, ALL_ITEMS)
         self.assertNotIn("fountainpen", ALL_ITEMS)
-        self.assertIn(SACGadgetPickupLocations.BOLTAIRE_MUSEUM, ALL_LOCATIONS)
+        self.assertIn(SACGadgetPickupLocations.BOLTAIRE_MUSEUM_BLACK_OUT_PEN, ALL_LOCATIONS)
         self.assertNotIn("fountainpen", ALL_LOCATIONS)
 
     def test_blackout_pen_receipt_writes_shared_slot_without_a_check(self):
@@ -63,9 +63,9 @@ class RuntimeTests(unittest.TestCase):
         self.assertEqual(core.case.ratchet_items.check(), [])
 
     def test_all_equipment_names_write_matching_native_slots(self):
-        from ..constants.weapons import EQUIPMENT_DISPLAY_TO_INTERNAL, CLANK_PICKUP_TO_INTERNAL
+        from ..constants.weapons import CLANK_PICKUP_TO_INTERNAL, EQUIPMENT_DISPLAY_TO_INTERNAL
         from ..core.inventories.weapons import WEAPON_ORDER
-        from ..items import WEAPON_ITEM_TABLE, GADGET_ITEM_TABLE
+        from ..items import GADGET_ITEM_TABLE, WEAPON_ITEM_TABLE
         self.assertEqual(set(EQUIPMENT_DISPLAY_TO_INTERNAL), set(WEAPON_ITEM_TABLE))
         self.assertEqual(set(CLANK_PICKUP_TO_INTERNAL), set(GADGET_ITEM_TABLE))
         for display, internal in {**EQUIPMENT_DISPLAY_TO_INTERNAL, **CLANK_PICKUP_TO_INTERNAL}.items():

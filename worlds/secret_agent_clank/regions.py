@@ -14,7 +14,7 @@ from .constants import (
     SACCases,
     SACOperatives,
 )
-from .constants.clank_gadgets import THERM_OPTIC_SHADES
+from .constants.clank_gadgets import SACClankGadgets
 from .constants.ratchet_challenges import RATCHET_CHALLENGES
 from .constants.weapon_mods import enabled_mods
 from .constants.weapon_progression import TITAN_LOCATIONS
@@ -212,7 +212,7 @@ def _create_victory(
                 # Native collectibles remain available without AP reward checks.
                 rule = rule & CanReachRegion(entry.case_name)
         if goal == Goal.option_alien_codes:
-            rule = rule & Has(THERM_OPTIC_SHADES)
+            rule = rule & Has(SACClankGadgets.THERM_OPTIC_SHADES)
         title = "All Alien Codes" if goal == Goal.option_alien_codes else "Collect the Chalice of Power"
         add_victory(f"Victory: {title}", case_regions[entries[0].case_name], rule)
 

@@ -25,7 +25,7 @@ from .madam_butterqwark import set_madam_butterqwark_rules
 from .max_security_cells import set_max_security_cells_rules
 from .prison_breakout import set_prison_breakout_rules
 from .rooftop_deathtrap import set_rooftop_deathtrap_rules
-from .rule_helpers import HasCase, HasCharacter, HasGadget, HasPlanet, HasWeapon
+from .rule_helpers import HasCase, HasCharacter, HasPlanet
 from .saint_qwark import set_saint_qwark_rules
 from .spaceship_graveyard import set_spaceship_graveyard_rules
 from .suck_and_jive import set_suck_and_jive_rules
@@ -41,7 +41,7 @@ from .vendor_access import set_vendor_rules
 if TYPE_CHECKING:
     from ..world import SecretAgentClankWorld
 
-__all__ = ["HasCase", "HasCharacter", "HasGadget", "HasPlanet", "HasWeapon", "set_rules"]
+__all__ = ["HasCase", "HasCharacter", "HasPlanet", "set_rules"]
 
 
 def set_rules(world: "SecretAgentClankWorld") -> None:

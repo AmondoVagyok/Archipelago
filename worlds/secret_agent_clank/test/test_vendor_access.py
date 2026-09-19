@@ -2,7 +2,7 @@ import unittest
 from unittest.mock import patch
 
 from BaseClasses import CollectionState
-from rule_builder.rules import False_
+from rule_builder.rules import False_, Has
 from test.general import gen_steps, setup_multiworld
 from worlds.AutoWorld import call_all
 
@@ -12,7 +12,6 @@ from ..constants.planets import ALL_CASES, SACCases
 from ..constants.weapon_progression import TITAN_LOCATIONS
 from ..constants.weapons import SACRatchetWeapons
 from ..rules import vendor_access
-from ..rules.rule_helpers import HasGadget
 from ..world import SecretAgentClankWorld
 
 
@@ -30,7 +29,7 @@ def setup_vendor_world(world_type, options=None):
 class VendorAccessTests(unittest.TestCase):
     def test_titan_requires_original_check_and_vendor_case_and_items(self):
         requirements = {name: False_() for name in vendor_access.VENDOR_REQUIREMENTS}
-        requirements[SACCases.ASYANICA_ROOFTOPS] = HasGadget(SACClankGadgets.JETBOOTS)
+        requirements[SACCases.ASYANICA_ROOFTOPS] = Has(SACClankGadgets.JETBOOTS)
         with patch.dict(vendor_access.VENDOR_REQUIREMENTS, requirements, clear=True):
             m = setup_vendor_world(SecretAgentClankWorld, options={"ng_plus": 1})
         world = m.worlds[1]
@@ -49,7 +48,7 @@ class VendorAccessTests(unittest.TestCase):
 
     def test_normal_vendor_check_inherits_shared_item_gate(self):
         requirements = {name: False_() for name in vendor_access.VENDOR_REQUIREMENTS}
-        requirements[SACCases.BOLTAIRE_MUSEUM] = HasGadget(SACClankGadgets.JETBOOTS)
+        requirements[SACCases.BOLTAIRE_MUSEUM] = Has(SACClankGadgets.JETBOOTS)
         with patch.dict(vendor_access.VENDOR_REQUIREMENTS, requirements, clear=True):
             m = setup_vendor_world(SecretAgentClankWorld)
         state = CollectionState(m)
@@ -60,7 +59,7 @@ class VendorAccessTests(unittest.TestCase):
 
     def test_offer_case_and_vendor_route_are_independent(self):
         requirements = {name: False_() for name in vendor_access.VENDOR_REQUIREMENTS}
-        requirements[SACCases.ASYANICA_ROOFTOPS] = HasGadget(SACClankGadgets.JETBOOTS)
+        requirements[SACCases.ASYANICA_ROOFTOPS] = Has(SACClankGadgets.JETBOOTS)
         with patch.dict(vendor_access.VENDOR_REQUIREMENTS, requirements, clear=True):
             m = setup_vendor_world(SecretAgentClankWorld, options={"ng_plus": 1})
         world = m.worlds[1]

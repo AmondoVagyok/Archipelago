@@ -7,12 +7,11 @@ from ..constants import (
     CASE_NAME_TO_INFOBOT,
     CHARACTER_ITEM_NAME,
     PLANET_ACCESS_ITEM_NAME,
-    PLANET_NAMES,
     PROGRESSIVE_CHARACTER_ITEM_NAME,
 )
+from ..constants.clank_gadgets import SACClankWeapons
 from ..constants.operatives import ALL_OPERATIVES, SACOperatives
 from ..constants.planets import CASES_BY_OPERATIVE
-from ..constants.weapon_progression import UNLOCK_TO_PROGRESSIVE
 from ..items import PROGRESSIVE_PLANET_ITEM_NAME
 from ..options import Infobots
 
@@ -38,14 +37,8 @@ def HasCase(world: "SecretAgentClankWorld", case_name: str) -> Has | True_:
     return Has(item) if item else True_()
 
 
-def HasWeapon(weapon: str) -> Has:
-    progressive = UNLOCK_TO_PROGRESSIVE.get(weapon)
-    return Has(weapon) | Has(progressive) if progressive else Has(weapon)
-
-
-def HasGadget(gadget: str) -> Has:
-    progressive = UNLOCK_TO_PROGRESSIVE.get(gadget)
-    return Has(gadget) | Has(progressive) if progressive else Has(gadget)
+def HasProjectileWeapon() -> Has:
+    return Has(SACClankWeapons.THROWTIE) | Has(SACClankWeapons.LIGHTNINGUMBRELLA) | Has(SACClankWeapons.CUFFLINK)
 
 
 def HasCharacter(world: "SecretAgentClankWorld", character: str) -> Has | True_:

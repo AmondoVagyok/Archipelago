@@ -6,7 +6,7 @@ from .asm import Patch, branch, jump, packed
 from .plan import Plan
 
 
-def prepare(pine, *, code_start, code, locations, checked=()):
+def prepare(pine, *, code_start, code, locations, checked=(), bypass_tier_gate=True):
     anchor = packed(0x8C621C78, 0x0045102B, 0x1440002F)
     hits = [i for i in range(0, len(code) - len(anchor), 4)
             if code[i:i + len(anchor)] == anchor]
@@ -67,10 +67,18 @@ def prepare(pine, *, code_start, code, locations, checked=()):
     assert len(arena) <= 0x58
     arena = arena.ljust(0x58, b'\0')
     edits = [(getter_site, packed(jump(get))),
-             (gate + 8, packed(0)),  # bypass required story tier only
              (give + 0x44, packed(jump(record))),
              (give + 0x4C, packed(branch(give + 0x4C, give + 0xAC), 0)),
              (table, arena)]
+    if bypass_tier_gate:
+        # Only with a fixed (non-progressive) Challenge Mode tier: that tier is a
+        # generation-time constant, so the vanilla story-tier check -- gated on a
+        # NG+ progress byte AP never advances in this mode -- must be skipped or
+        # tier-locked pickups (Hyperborean/Chameleon) would never spawn at all.
+        # With Progressive Challenge Mode, ChallengeModeState keeps that same byte
+        # synced to items actually received, so leaving the check in place is what
+        # keeps those pickups from spawning before their tier item arrives.
+        edits.append((gate + 8, packed(0)))
     plan = Plan(pine, [Patch(a, read(a, len(b)), b) for a, b in edits])
     plan.journals = ((table, 32),)
     plan.table, plan.locations = table, dict(locations)
