@@ -9,7 +9,6 @@ from ..constants.weapons import (
     RATCHET_WEAPON_DISPLAY_TO_INTERNAL,
 )
 from ..core.patches import VENDOR_LOCATIONS
-from .rule_helpers import HasWeapon
 
 VENDOR_ONLY_ITEM_NAMES: frozenset[str] = frozenset(
     name for name, internal in {**RATCHET_WEAPON_DISPLAY_TO_INTERNAL, **GADGET_DISPLAY_TO_INTERNAL}.items()
@@ -75,7 +74,7 @@ def set_vendor_rules(world):
         # Native mod offers require their weapon. Receiving the mod itself
         # must never be a requirement for buying its randomized location.
         unlock = next(name for name, internal in display_to_internal.items() if internal == mod.weapon)
-        world.set_rule(locations[mod.location], available_vendor & HasWeapon(unlock))
+        world.set_rule(locations[mod.location], available_vendor & Has(unlock))
     # Apply last, ANDing with the user's per-location rules rather than replacing them.
     for name, location in locations.items():
         if display_to_internal.get(name, name) in native_vendor_items:

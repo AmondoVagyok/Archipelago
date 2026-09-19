@@ -11,7 +11,7 @@ from ..constants.skillpoints import SACSkillPointLocations
 from ..constants.titanium_bolts import SACTitaniumBoltLocations
 from ..constants.weapons import SACRatchetWeapons
 from ..options import Missions
-from .rule_helpers import Has, HasGadget
+from .rule_helpers import Has
 
 if TYPE_CHECKING:
     from ..world import SecretAgentClankWorld

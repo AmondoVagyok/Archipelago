@@ -58,5 +58,5 @@ CLANK_GADGETS: tuple[str, ...] = tuple(
 
 @dataclass(frozen=True)
 class SACGadgetPickupLocations:
-    BOLTAIRE_MUSEUM_BLACK_OUT_PEN = 'Gadget: Clank: Black Out Pen (Pickup)'
-    BOLTAIRE_MUSEUM_THERM_OPTIC_SHADES = 'Gadget: Clank: Therm-Optic Shades (Pickup)'
+    BOLTAIRE_MUSEUM_BLACK_OUT_PEN = "Gadget: Clank: Black Out Pen (Pickup)"
+    BOLTAIRE_MUSEUM_THERM_OPTIC_SHADES = "Gadget: Clank: Therm-Optic Shades (Pickup)"

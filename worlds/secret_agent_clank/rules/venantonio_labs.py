@@ -11,7 +11,7 @@ from ..constants.skillpoints import SACSkillPointLocations
 from ..constants.titanium_bolts import SACTitaniumBoltLocations
 from ..constants.weapons import SACRatchetWeapons
 from ..options import Missions
-from .rule_helpers import Has, HasGadget
+from .rule_helpers import Has
 
 if TYPE_CHECKING:
     from ..world import SecretAgentClankWorld
@@ -56,7 +56,7 @@ def set_venantonio_labs_rules(world: "SecretAgentClankWorld") -> None:
             Has(SACClankGadgets.THERM_OPTIC_SHADES),
         )
         world.set_rule(
-            mw.get_location(SACAlienCodeLocations.VENANTONIO_LABS_ALEXS_SECRET, player), 
+            mw.get_location(SACAlienCodeLocations.VENANTONIO_LABS_ALEXS_SECRET, player),
             _briefcase_path & Has(SACClankGadgets.THERM_OPTIC_SHADES),
         )
         world.set_rule(

@@ -21,3 +21,14 @@ KEYCARDS: tuple[CaseStructure, ...] = (
 KEYCARDS_BY_CASE: dict[str, tuple[str, ...]] = group_by_case(
     tuple(entry for entry in KEYCARDS if entry.case_name != "TODO")
 )
+
+
+@dataclass(frozen=True)
+class SACKeycardLocations:
+    """Full display-name constants for keycard locations, for use in rules files
+    (mirrors SACSkillPointLocations/SACAlienCodeLocations -- get_location() needs
+    the full "{operative}: {case}: Keycard: {name}" string, not the bare event name)."""
+
+    RED_KEYCARD = str(KEYCARDS[0])
+    BLUE_KEYCARD = str(KEYCARDS[1])
+    YELLOW_KEYCARD = str(KEYCARDS[2])

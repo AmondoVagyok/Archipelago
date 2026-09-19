@@ -127,7 +127,6 @@ class SACCutsceneLocations:
     MAX_SECURITY_CELLS_ENTER_CUTSCENE = 'Ratchet: Max-Security Cells: Enter Cutscene'
     ROOFTOP_DEATHTRAP_ENTER_CUTSCENE = 'Gadgetbots: Rooftop Deathtrap: Enter Cutscene'
     ROOFTOP_DEATHTRAP_RESCURE_CLANK_CUTSCENE = 'Gadgetbots: Rooftop Deathtrap: Rescure Clank Cutscene'
-    ASYANICA_ROOFTOPS_ENTER_CUTSCENE = 'Clank: Asyanica Rooftops: Enter Cutscene'
     LARGER_THAN_LIFE_ENTER_CUTSCENE = 'Qwark: Larger Than Life: Enter Cutscene'
     LARGER_THAN_LIFE_GODZILLA_LAZER_BEAM = 'Qwark: Larger Than Life: Godzilla Lazer Beam'
     LARGER_THAN_LIFE_COMPLETE_CUTSCENE = 'Qwark: Larger Than Life: Complete Cutscene'
