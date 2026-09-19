@@ -41,7 +41,7 @@ class SACTitaniumBoltLocations:
     BOLTAIRE_MUSEUM_1 = 'Clank: Boltaire Museum: T-Bolt: JetBoot around the pillar'
     BOLTAIRE_MUSEUM_2 = 'Clank: Boltaire Museum: T-Bolt: Jump over the railings'
     MAX_SECURITY_CELLS_1 = 'Ratchet: Max-Security Cells: T-Bolt: Complete Mega Challenge'
-    ASYANICA_ROOFTOPS_1 = 'Clank: Asyanica Rooftops: T-Bolt: 1'
+    ASYANICA_ROOFTOPS_1 = 'Clank: Asyanica Rooftops: T-Bolt: 1 - Inside The Air Duct'
     THE_MESS_HALL_1 = 'Ratchet: The Mess Hall: T-Bolt: 1'
     AZCOTAL_ALLEY_1 = 'Clank: Azcotal Alley: T-Bolt: 1'
     AZCOTAL_ALLEY_2 = 'Clank: Azcotal Alley: T-Bolt: 2'

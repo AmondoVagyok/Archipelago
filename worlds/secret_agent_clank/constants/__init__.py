@@ -1,10 +1,8 @@
 from .alien_codes import ALIEN_CODES, ALIEN_CODES_BY_CASE, SACAlienCodeLocations, SACAlienCodes
 from .cheats import CHEAT_SKILL_POINT_THRESHOLD, SACCheats, SACTraps
 from .clank_gadgets import (
-    BLACK_OUT_PEN,
     CLANK_GADGET_BY_CASE_ID,
     CLANK_GADGETS,
-    THERM_OPTIC_SHADES,
     SACClankGadgets,
     SACClankWeapons,
     SACGadgetPickupLocations,
@@ -59,7 +57,6 @@ __all__ = [
     "ALIEN_CODES_BY_CASE",
     "ALL_CASES",
     "ALL_OPERATIVES",
-    "BLACK_OUT_PEN",
     "CASE_ID_TO_CASE",
     "CASE_NAME_TO_CASE",
     "CASE_NAME_TO_INFOBOT",

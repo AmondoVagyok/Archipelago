@@ -10,6 +10,7 @@ from ..constants import (
     PLANET_NAMES,
     PROGRESSIVE_CHARACTER_ITEM_NAME,
 )
+from ..constants.clank_gadgets import SACClankWeapons
 from ..constants.operatives import ALL_OPERATIVES, SACOperatives
 from ..constants.planets import CASES_BY_OPERATIVE
 from ..constants.weapon_progression import UNLOCK_TO_PROGRESSIVE
@@ -42,6 +43,8 @@ def HasWeapon(weapon: str) -> Has:
     progressive = UNLOCK_TO_PROGRESSIVE.get(weapon)
     return Has(weapon) | Has(progressive) if progressive else Has(weapon)
 
+def HasProjectileWeapon() -> Has:
+    return HasWeapon(SACClankWeapons.THROWTIE) | HasWeapon(SACClankWeapons.LIGHTNINGUMBRELLA) | HasWeapon(SACClankWeapons.CUFFLINK)
 
 def HasGadget(gadget: str) -> Has:
     progressive = UNLOCK_TO_PROGRESSIVE.get(gadget)

@@ -1,4 +1,4 @@
-from ...constants.clank_gadgets import BLACK_OUT_PEN
+from ...constants.clank_gadgets import SACClankGadgets
 from ..inventories.weapons import WEAPON_ORDER, WeaponSlot
 
 _VENDOR_SLOTS = (
@@ -16,4 +16,4 @@ _PICKUP_SLOTS = (
     WeaponSlot.HOLOMONOCLE, WeaponSlot.JETBOOTS, WeaponSlot.OMNIKEY,
 )
 PICKUP_LOCATIONS = {slot: WEAPON_ORDER[slot] for slot in _PICKUP_SLOTS}
-PICKUP_LOCATIONS[WeaponSlot.FOUNTAINPEN] = f"{BLACK_OUT_PEN} (Pickup)"
+PICKUP_LOCATIONS[WeaponSlot.FOUNTAINPEN] = f"{SACClankGadgets.BLACK_OUT_PEN} (Pickup)"

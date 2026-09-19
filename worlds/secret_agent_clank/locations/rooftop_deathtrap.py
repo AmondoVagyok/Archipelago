@@ -31,9 +31,8 @@ for _name in WEAPONS_BY_CASE.get(_CASE_NAME, ()):
     ROOFTOP_DEATHTRAP_LOCATIONS[_name] = SACLocationData(_take_id(), _CASE_NAME)
 for _name in GADGETS_BY_CASE.get(_CASE_NAME, ()):
     ROOFTOP_DEATHTRAP_LOCATIONS[_name] = SACLocationData(_take_id(), _CASE_NAME)
-if _CASE_ID in CLANK_GADGET_BY_CASE_ID:
-    _pickup_name = f"{CLANK_GADGET_BY_CASE_ID[_CASE_ID]} (Pickup)"
-    ROOFTOP_DEATHTRAP_LOCATIONS[_pickup_name] = SACLocationData(_take_id(), _CASE_NAME)
+for _gadget_name in CLANK_GADGET_BY_CASE_ID.get(_CASE_ID, ()):
+    ROOFTOP_DEATHTRAP_LOCATIONS[f"{_gadget_name} (Pickup)"] = SACLocationData(_take_id(), _CASE_NAME)
 for _name in (
     *GADGETBOT_CHALLENGES_BY_CASE.get(_CASE_NAME, ()),
     *SPECIAL_CHALLENGES_BY_CASE.get(_CASE_NAME, ()),

@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING
 
 from rule_builder.rules import True_
 
-from ..constants.clank_gadgets import SACClankGadgets, SACClankWeapons, SACGadgetPickupLocations
+from ..constants.clank_gadgets import SACClankGadgets, SACClankWeapons
 from ..constants.cutscenes import SACCutsceneLocations
 from ..constants.gadgetbot_challenges import SACGadgetbotChallengeLocations
 from ..constants.missions import SACMissionLocations
@@ -23,7 +23,6 @@ def set_rooftop_deathtrap_rules(world: "SecretAgentClankWorld") -> None:
     world.set_rule(mw.get_location(SACRatchetWeapons.MINELAUNCHER, player), True_())
     world.set_rule(mw.get_location(SACClankWeapons.CUFFLINK, player), True_())
     world.set_rule(mw.get_location(SACClankGadgets.OMNIKEY, player), True_())
-    world.set_rule(mw.get_location(SACGadgetPickupLocations.ROOFTOP_DEATHTRAP, player), True_())
     world.set_rule(mw.get_location(SACGadgetbotChallengeLocations.ROOFTOP_DEATHTRAP_RESCUE_CLANK, player), True_())
     world.set_rule(mw.get_location(SACGadgetbotChallengeLocations.ROOFTOP_DEATHTRAP_WORKING_DOWN, player), True_())
     world.set_rule(mw.get_location(SACGadgetbotChallengeLocations.ROOFTOP_DEATHTRAP_GREAT_DIVIDE, player), True_())

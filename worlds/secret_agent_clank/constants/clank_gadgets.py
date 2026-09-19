@@ -40,26 +40,23 @@ class SACClankGadgets:
     BOLTGRABBER        = "Gadget: Clank: Boltgrabber"
 
 
-# Back-compat aliases -- existing callers (rule_helpers.py, regions.py,
-# items/__init__.py) import these two flat names directly.
-BLACK_OUT_PEN = SACClankGadgets.BLACK_OUT_PEN
-THERM_OPTIC_SHADES = SACClankGadgets.THERM_OPTIC_SHADES
-
-# Case_id -> gadget name for the positional (non-WEAPON_ORDER) Clank gadget
+# Case_id -> gadget names for the positional (non-WEAPON_ORDER) Clank gadget
 # system -- keyed by case_id rather than a plain tuple position so a gap
 # (no confirmed gadget at case_id 2/3) doesn't require every later entry to
-# shift, unlike the old CLANK_GADGETS tuple this replaces.
-CLANK_GADGET_BY_CASE_ID: dict[int, str] = {
-    1: SACClankGadgets.BLACK_OUT_PEN,        # Boltaire Museum -- CONFIRMED, see docstring
-    4: SACClankGadgets.THERM_OPTIC_SHADES,   # Rooftop Deathtrap
+# shift, unlike the old CLANK_GADGETS tuple this replaces. Both Black Out Pen
+# and Therm-Optic Shades are picked up in Boltaire Museum -- CONFIRMED.
+CLANK_GADGET_BY_CASE_ID: dict[int, tuple[str, ...]] = {
+    1: (SACClankGadgets.BLACK_OUT_PEN, SACClankGadgets.THERM_OPTIC_SHADES),  # Boltaire Museum
 }
 
 # Flat tuple for items/__init__.py's _table() -- iteration order matches
 # CLANK_GADGET_BY_CASE_ID's insertion order (Python dicts preserve it).
-CLANK_GADGETS: tuple[str, ...] = tuple(CLANK_GADGET_BY_CASE_ID.values())
+CLANK_GADGETS: tuple[str, ...] = tuple(
+    gadget for gadgets in CLANK_GADGET_BY_CASE_ID.values() for gadget in gadgets
+)
 
 
 @dataclass(frozen=True)
 class SACGadgetPickupLocations:
-    BOLTAIRE_MUSEUM = 'Gadget: Clank: Black Out Pen (Pickup)'
-    ROOFTOP_DEATHTRAP = 'Gadget: Clank: Therm-Optic Shades (Pickup)'
+    BOLTAIRE_MUSEUM_BLACK_OUT_PEN = 'Gadget: Clank: Black Out Pen (Pickup)'
+    BOLTAIRE_MUSEUM_THERM_OPTIC_SHADES = 'Gadget: Clank: Therm-Optic Shades (Pickup)'
