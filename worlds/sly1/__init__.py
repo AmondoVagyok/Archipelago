@@ -9,7 +9,7 @@ from worlds.sly1.Locations import (get_location_names, get_total_locations,
                                    did_avoid_early_bk, generate_bottle_locations,
                                    generate_minigame_locations, generate_key_caches,
                                    loc_to_ep, all_minigames, lvl_lookup)
-from worlds.sly1.Options import Sly1Options
+from worlds.sly1.Options import Sly1Options, sly1_option_groups
 from worlds.sly1.Regions import create_regions
 from worlds.sly1.Types import Sly1Item, EpisodeType, episode_type_to_unlock
 from worlds.sly1.Rules import set_rules
@@ -18,7 +18,6 @@ from worlds.LauncherComponents import (
     Type,
     components,
     launch_subprocess,
-    icon_paths,
 )
 from Options import OptionError
 import settings
@@ -113,6 +112,7 @@ class Sly1Web(WebWorld):
         "setup/en",
         ["Nep"]
     )]
+    option_groups = sly1_option_groups
 
 class Sly1Settings(settings.Group):
     class AutoFillLocations(settings.Bool):
@@ -132,7 +132,7 @@ class Sly1World(World):
     item_name_to_id = {name: data.ap_code for name, data in item_table.items()}
     location_name_to_id = get_location_names()
     options_dataclass = Sly1Options
-    options = Sly1Options
+    options: Sly1Options
     web = Sly1Web()
     settings: ClassVar[Sly1Settings]
 
