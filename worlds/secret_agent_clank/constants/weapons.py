@@ -11,14 +11,14 @@ class SACRatchetWeapons:
     SHOCKROCKET       = "Shock Rocket (Ratchet)"
     PLASMAWHIP        = "Plasma Whip (Ratchet)"
     PORKBOMB          = "Pork Bomb Gun (Ratchet)"
-    KICKBLAST         = "Kick Blast (Ratchet)"
+    KICKBLAST         = "Clank Fu Hot Foot (Clank)"  # Legacy attribute/order preserves item IDs.
     BLASTER           = "Dual Lacerators (Ratchet)"
     SHARDGUN          = "Shard Gun (Ratchet)"
     BEEMINEGLOVE      = "Bee Mine Mk. II (Ratchet)"
     WALLOPER          = "Walloper (Ratchet)"
     MINELAUNCHER      = "Mine Launcher (Ratchet)"
-    RATCHETPDA        = "Agency PDA (Ratchet)"
-    BOLTTRANSFER      = "Bolt Transfer (Ratchet)"
+    RATCHETPDA        = "Gadgetron PDA (Ratchet)"
+    BOLTTRANSFER      = "Bolt Extractor (Ratchet)"
     RYNO              = "RYNO (Ratchet)"
 
 
@@ -130,7 +130,7 @@ WEAPONS_BY_CASE: dict[str, tuple[str, ...]] = {
     SACCases.MAX_SECURITY_CELLS: (
         SACRatchetWeapons.SHARDGUN, SACRatchetWeapons.WALLOPER,
     ),
-    SACCases.ROOFTOP_DEATHTRAP: (
+    SACCases.ASYANICA_ROOFTOPS: (
         SACRatchetWeapons.MINELAUNCHER,
     ),
     SACCases.AZCOTAL_ALLEY: (
@@ -142,7 +142,7 @@ WEAPONS_BY_CASE: dict[str, tuple[str, ...]] = {
     SACCases.VENANTONIO_LABS: (
         SACRatchetWeapons.PLASMAWHIP, SACRatchetWeapons.KICKBLAST,
     ),
-    SACCases.INSIDE_THE_A_EYE: (
+    SACCases.GALACTIC_BOLT_RESERVE: (
         SACRatchetWeapons.SHOCKROCKET,
     ),
     SACCases.KLUNKS_LAIR: (
@@ -160,7 +160,7 @@ GADGETS_BY_CASE: dict[str, tuple[str, ...]] = {
         SACClankWeapons.HOLOKNUCKLES, SACClankWeapons.SUPERKICK,
         SACClankGadgets.BLACK_OUT_PEN, SACClankGadgets.THERM_OPTIC_SHADES,
     ),
-    SACCases.ROOFTOP_DEATHTRAP: (
+    SACCases.ASYANICA_ROOFTOPS: (
         SACClankWeapons.CUFFLINK, SACClankGadgets.OMNIKEY,
     ),
     SACCases.AZCOTAL_ALLEY: (
@@ -172,7 +172,7 @@ GADGETS_BY_CASE: dict[str, tuple[str, ...]] = {
     SACCases.VENANTONIO_LABS: (
         SACClankWeapons.FLAMETHROWERPEN, SACClankWeapons.LIGHTNINGUMBRELLA,
     ),
-    SACCases.INSIDE_THE_A_EYE: (
+    SACCases.GALACTIC_BOLT_RESERVE: (
         SACClankGadgets.BOLTGRABBER,
     ),
     SACCases.KLUNKS_LAIR: (

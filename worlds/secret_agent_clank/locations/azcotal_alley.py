@@ -1,60 +1,150 @@
-"""All locations tied to Azcotal Alley, grouped into a CaseLocations bundle by which options.py toggle (if any) gates each part -- see locations/__init__.py for how these get merged/re-derived for regions.py."""
+"""Every location in Azcotal Alley, each carrying its planet, case and access rule."""
+from rule_builder.rules import Has, True_
+
 from ..constants import (
-    ALIEN_CODES_BY_CASE,
-    CASE_NAME_TO_CASE,
-    CUTSCENE_TO_CASE,
-    GADGETBOT_CHALLENGES_BY_CASE,
-    GADGETS_BY_CASE,
-    KEYCARDS_BY_CASE,
-    MISSION_COMPLETE_NAME,
-    RATCHET_CHALLENGES_BY_CASE,
-    SKILL_POINTS_BY_CASE,
-    SPECIAL_CHALLENGES_BY_CASE,
-    WEAPONS_BY_CASE,
+    SACAlienCodeLocations,
     SACCases,
+    SACClankGadgets,
+    SACClankWeapons,
+    SACCutsceneLocations,
+    SACMissionLocations,
+    SACPlanets,
+    SACRatchetWeapons,
+    SACSkillPointLocations,
+    SACTitaniumBoltLocations,
 )
-from ._shared import BASE_ID, CASE_ID_BLOCK_SIZE, CaseLocations, SACLocationData, all_mission_locations
+from .model import SACLocation, SACLocationType
 
-_CASE_NAME = SACCases.AZCOTAL_ALLEY
-_CASE_ID = CASE_NAME_TO_CASE[_CASE_NAME].case_id
-_next_id = BASE_ID + (_CASE_ID - 1) * CASE_ID_BLOCK_SIZE
+_PLANET = SACPlanets.GLACIARA
+_CASE = SACCases.AZCOTAL_ALLEY
 
-
-def _take_id() -> int:
-    global _next_id
-    taken, _next_id = _next_id, _next_id + 1
-    return taken
-
-
-_always_on: dict[str, SACLocationData] = {}
-for _name in WEAPONS_BY_CASE.get(_CASE_NAME, ()):
-    _always_on[_name] = SACLocationData(_take_id(), _CASE_NAME)
-for _name in GADGETS_BY_CASE.get(_CASE_NAME, ()):
-    _always_on[_name] = SACLocationData(_take_id(), _CASE_NAME)
-for _name in (
-    *GADGETBOT_CHALLENGES_BY_CASE.get(_CASE_NAME, ()),
-    *SPECIAL_CHALLENGES_BY_CASE.get(_CASE_NAME, ()),
-    *RATCHET_CHALLENGES_BY_CASE.get(_CASE_NAME, ()),
-):
-    _always_on[_name] = SACLocationData(_take_id(), _CASE_NAME)
-
-_mission: dict[str, SACLocationData] = {
-    MISSION_COMPLETE_NAME[_CASE_NAME]: SACLocationData(_take_id(), _CASE_NAME),
-}
-
-_all_missions: dict[str, SACLocationData] = all_mission_locations(_CASE_NAME, _take_id)
-
-_cutscene: dict[str, SACLocationData] = {
-    _cutscene_name: SACLocationData(_take_id(), _CASE_NAME)
-    for _cutscene_name, _case_name in CUTSCENE_TO_CASE.items() if _case_name == _CASE_NAME
-}
-
-_other: dict[str, SACLocationData] = {}
-for _name in (
-    *SKILL_POINTS_BY_CASE.get(_CASE_NAME, ()),
-    *KEYCARDS_BY_CASE.get(_CASE_NAME, ()),
-    *ALIEN_CODES_BY_CASE.get(_CASE_NAME, ()),
-):
-    _other[_name] = SACLocationData(_take_id(), _CASE_NAME)
-
-AZCOTAL_ALLEY_LOCATIONS = CaseLocations(_always_on, _mission, _all_missions, _cutscene, _other)
+LOCATIONS: tuple[SACLocation, ...] = (
+    SACLocation(
+        SACRatchetWeapons.BEEMINEGLOVE,
+        _PLANET,
+        _CASE,
+        SACLocationType.RATCHET_WEAPON,
+        77_809_000,
+        lambda world: True_(),
+    ),
+    SACLocation(
+        SACClankWeapons.TANGLEVINE,
+        _PLANET,
+        _CASE,
+        SACLocationType.CLANK_WEAPON,
+        77_809_001,
+        lambda world: True_(),
+    ),
+    SACLocation(
+        SACTitaniumBoltLocations.AZCOTAL_ALLEY_1,
+        _PLANET,
+        _CASE,
+        SACLocationType.TITANIUM_BOLT,
+        77_809_901,
+        lambda world: True_(),
+    ),
+    SACLocation(
+        SACTitaniumBoltLocations.AZCOTAL_ALLEY_2,
+        _PLANET,
+        _CASE,
+        SACLocationType.TITANIUM_BOLT,
+        77_809_902,
+        lambda world: True_(),
+    ),
+    SACLocation(
+        SACTitaniumBoltLocations.AZCOTAL_ALLEY_3,
+        _PLANET,
+        _CASE,
+        SACLocationType.TITANIUM_BOLT,
+        77_809_903,
+        lambda world: True_(),
+    ),
+    SACLocation(
+        SACMissionLocations.AZCOTAL_ALLEY_COMPLETE,
+        _PLANET,
+        _CASE,
+        SACLocationType.CASE_COMPLETE,
+        77_809_003,
+        lambda world: True_(),
+    ),
+    SACLocation(
+        SACMissionLocations.AZCOTAL_ALLEY_THE_KINGPIN,
+        _PLANET,
+        _CASE,
+        SACLocationType.MISSION,
+        77_809_004,
+        lambda world: True_(),
+    ),
+    SACLocation(
+        SACMissionLocations.AZCOTAL_ALLEY_ALL_THE_KINGPIN_S_MEN,
+        _PLANET,
+        _CASE,
+        SACLocationType.MISSION,
+        77_809_005,
+        lambda world: True_(),
+    ),
+    SACLocation(
+        SACSkillPointLocations.AZCOTAL_ALLEY_MASTER_OF_DISGUISE,
+        _PLANET,
+        _CASE,
+        SACLocationType.SKILL_POINT,
+        77_809_008,
+        lambda world: True_(),
+    ),
+    SACLocation(
+        SACSkillPointLocations.AZCOTAL_ALLEY_TRASH_TALK,
+        _PLANET,
+        _CASE,
+        SACLocationType.SKILL_POINT,
+        77_809_009,
+        lambda world: True_(),
+    ),
+    SACLocation(
+        SACSkillPointLocations.AZCOTAL_ALLEY_DEADLY_HANDS,
+        _PLANET,
+        _CASE,
+        SACLocationType.SKILL_POINT,
+        77_809_010,
+        lambda world: True_(),
+    ),
+    SACLocation(
+        SACCutsceneLocations.AZCOTAL_ALLEY_ENTER_CUTSCENE,
+        _PLANET,
+        _CASE,
+        SACLocationType.CUTSCENE,
+        77_809_006,
+        lambda world: True_(),
+    ),
+    SACLocation(
+        SACCutsceneLocations.AZCOTAL_ALLEY_MEET_JACK_CUTSCENE,
+        _PLANET,
+        _CASE,
+        SACLocationType.CUTSCENE,
+        77_809_007,
+        lambda world: True_(),
+    ),
+    SACLocation(
+        SACAlienCodeLocations.AZCOTAL_ALLEY_JONS_SECRET,
+        _PLANET,
+        _CASE,
+        SACLocationType.ALIEN_CODE,
+        77_809_011,
+        lambda world: Has(SACClankGadgets.THERM_OPTIC_SHADES),
+    ),
+    SACLocation(
+        SACAlienCodeLocations.AZCOTAL_ALLEY_THE_3_JASONS_SECRET,
+        _PLANET,
+        _CASE,
+        SACLocationType.ALIEN_CODE,
+        77_809_012,
+        lambda world: Has(SACClankGadgets.THERM_OPTIC_SHADES),
+    ),
+    SACLocation(
+        SACAlienCodeLocations.AZCOTAL_ALLEY_TRAVIS_SECRET,
+        _PLANET,
+        _CASE,
+        SACLocationType.ALIEN_CODE,
+        77_809_013,
+        lambda world: Has(SACClankGadgets.THERM_OPTIC_SHADES),
+    ),
+)

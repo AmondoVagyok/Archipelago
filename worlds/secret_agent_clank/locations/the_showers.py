@@ -1,57 +1,115 @@
-"""All locations tied to The Showers, grouped into a CaseLocations bundle by which options.py toggle (if any) gates each part -- see locations/__init__.py for how these get merged/re-derived for regions.py."""
+"""Every location in The Showers, each carrying its planet, case and access rule."""
+from rule_builder.rules import True_
+
 from ..constants import (
-    ALIEN_CODES_BY_CASE,
-    CASE_NAME_TO_CASE,
-    CUTSCENE_TO_CASE,
-    GADGETBOT_CHALLENGES_BY_CASE,
-    KEYCARDS_BY_CASE,
-    MISSION_COMPLETE_NAME,
-    RATCHET_CHALLENGES_BY_CASE,
-    SKILL_POINTS_BY_CASE,
-    SPECIAL_CHALLENGES_BY_CASE,
-    WEAPONS_BY_CASE,
     SACCases,
+    SACCutsceneLocations,
+    SACMissionLocations,
+    SACPlanets,
+    SACRatchetChallengeLocations,
+    SACSkillPointLocations,
+    SACTitaniumBoltLocations,
 )
-from ._shared import BASE_ID, CASE_ID_BLOCK_SIZE, CaseLocations, SACLocationData, all_mission_locations
+from .model import SACLocation, SACLocationType
 
-_CASE_NAME = SACCases.THE_SHOWERS
-_CASE_ID = CASE_NAME_TO_CASE[_CASE_NAME].case_id
-_next_id = BASE_ID + (_CASE_ID - 1) * CASE_ID_BLOCK_SIZE
+_PLANET = SACPlanets.PRISON_PLANET
+_CASE = SACCases.THE_SHOWERS
 
-
-def _take_id() -> int:
-    global _next_id
-    taken, _next_id = _next_id, _next_id + 1
-    return taken
-
-
-_always_on: dict[str, SACLocationData] = {}
-for _name in WEAPONS_BY_CASE.get(_CASE_NAME, ()):
-    _always_on[_name] = SACLocationData(_take_id(), _CASE_NAME)
-for _name in (
-    *GADGETBOT_CHALLENGES_BY_CASE.get(_CASE_NAME, ()),
-    *SPECIAL_CHALLENGES_BY_CASE.get(_CASE_NAME, ()),
-    *RATCHET_CHALLENGES_BY_CASE.get(_CASE_NAME, ()),
-):
-    _always_on[_name] = SACLocationData(_take_id(), _CASE_NAME)
-
-_mission: dict[str, SACLocationData] = {
-    MISSION_COMPLETE_NAME[_CASE_NAME]: SACLocationData(_take_id(), _CASE_NAME),
-}
-
-_all_missions: dict[str, SACLocationData] = all_mission_locations(_CASE_NAME, _take_id)
-
-_cutscene: dict[str, SACLocationData] = {
-    _cutscene_name: SACLocationData(_take_id(), _CASE_NAME)
-    for _cutscene_name, _case_name in CUTSCENE_TO_CASE.items() if _case_name == _CASE_NAME
-}
-
-_other: dict[str, SACLocationData] = {}
-for _name in (
-    *SKILL_POINTS_BY_CASE.get(_CASE_NAME, ()),
-    *KEYCARDS_BY_CASE.get(_CASE_NAME, ()),
-    *ALIEN_CODES_BY_CASE.get(_CASE_NAME, ()),
-):
-    _other[_name] = SACLocationData(_take_id(), _CASE_NAME)
-
-THE_SHOWERS_LOCATIONS = CaseLocations(_always_on, _mission, _all_missions, _cutscene, _other)
+LOCATIONS: tuple[SACLocation, ...] = (
+    SACLocation(
+        SACRatchetChallengeLocations.THE_SHOWERS_NO_GOOD_DEED_GOES_UNPUNISHED,
+        _PLANET,
+        _CASE,
+        SACLocationType.RATCHET_CHALLENGE,
+        77_820_000,
+        lambda world: True_(),
+    ),
+    SACLocation(
+        SACRatchetChallengeLocations.THE_SHOWERS_COVER_YOUR_SHAME,
+        _PLANET,
+        _CASE,
+        SACLocationType.RATCHET_CHALLENGE,
+        77_820_001,
+        lambda world: True_(),
+    ),
+    SACLocation(
+        SACRatchetChallengeLocations.THE_SHOWERS_DIDNT_NEED_TO_SEE_THAT,
+        _PLANET,
+        _CASE,
+        SACLocationType.RATCHET_CHALLENGE,
+        77_820_002,
+        lambda world: True_(),
+    ),
+    SACLocation(
+        SACRatchetChallengeLocations.THE_SHOWERS_ITS_A_DRY_HEAT,
+        _PLANET,
+        _CASE,
+        SACLocationType.RATCHET_CHALLENGE,
+        77_820_003,
+        lambda world: True_(),
+    ),
+    SACLocation(
+        SACRatchetChallengeLocations.THE_SHOWERS_MEGA_CHALLENGE_SHOWER,
+        _PLANET,
+        _CASE,
+        SACLocationType.RATCHET_CHALLENGE,
+        77_820_004,
+        lambda world: True_(),
+    ),
+    SACLocation(
+        SACTitaniumBoltLocations.THE_SHOWERS_1,
+        _PLANET,
+        _CASE,
+        SACLocationType.TITANIUM_BOLT,
+        77_820_901,
+        lambda world: True_(),
+    ),
+    SACLocation(
+        SACMissionLocations.THE_SHOWERS_COMPLETE,
+        _PLANET,
+        _CASE,
+        SACLocationType.CASE_COMPLETE,
+        77_820_005,
+        lambda world: True_(),
+    ),
+    SACLocation(
+        SACMissionLocations.THE_SHOWERS_PLUMBING_TROUBLES,
+        _PLANET,
+        _CASE,
+        SACLocationType.MISSION,
+        77_820_006,
+        lambda world: True_(),
+    ),
+    SACLocation(
+        SACMissionLocations.THE_SHOWERS_RUB_A_DUB_DEATH,
+        _PLANET,
+        _CASE,
+        SACLocationType.MISSION,
+        77_820_007,
+        lambda world: True_(),
+    ),
+    SACLocation(
+        SACSkillPointLocations.THE_SHOWERS_RUBA_DUB_CLUB,
+        _PLANET,
+        _CASE,
+        SACLocationType.SKILL_POINT,
+        77_820_009,
+        lambda world: True_(),
+    ),
+    SACLocation(
+        SACSkillPointLocations.THE_SHOWERS_MODESTY,
+        _PLANET,
+        _CASE,
+        SACLocationType.SKILL_POINT,
+        77_820_010,
+        lambda world: True_(),
+    ),
+    SACLocation(
+        SACCutsceneLocations.THE_SHOWERS_ENTER_CUTSCENE,
+        _PLANET,
+        _CASE,
+        SACLocationType.CUTSCENE,
+        77_820_008,
+        lambda world: True_(),
+    ),
+)

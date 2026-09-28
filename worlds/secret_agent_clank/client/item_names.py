@@ -9,6 +9,11 @@ LEGACY_EQUIPMENT_NAMES = {
     for character in ("Ratchet", "Clank")
 }
 LEGACY_EQUIPMENT_NAMES.update({
+    "Kick Blast (Ratchet)": EQUIPMENT_INTERNAL_TO_DISPLAY["kickblast"],
+    "Agency PDA (Ratchet)": EQUIPMENT_INTERNAL_TO_DISPLAY["ratchetpda"],
+    "Bolt Transfer (Ratchet)": EQUIPMENT_INTERNAL_TO_DISPLAY["bolttransfer"],
+})
+LEGACY_EQUIPMENT_NAMES.update({
     old: EQUIPMENT_INTERNAL_TO_DISPLAY[internal]
     for old, internal in {
         "Unlock: Clank Bowtie": "throwTie",

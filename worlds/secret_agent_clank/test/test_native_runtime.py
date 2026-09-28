@@ -64,7 +64,8 @@ class NativeRuntimeTests(unittest.TestCase):
         self.runtime.progression = Mock(ng_plus=1)
         self.runtime.progression.prepare.return_value = []
         self.hooks.patches = []
-        with patch("worlds.secret_agent_clank.core.native_runtime.RuntimeSymbols"):
+        with patch("worlds.secret_agent_clank.core.native_runtime.RuntimeSymbols"), \
+                patch("worlds.secret_agent_clank.core.native_runtime.VendorCatalog.prepare", return_value=[]):
             self.assertFalse(self.runtime.service(set(), {}))
         self.assertEqual(self.hooks.prepare.call_args.kwargs["vendor_locations"], {})
         self.assertFalse(self.runtime.progression.prepare.call_args.kwargs["vendor_enabled"])
@@ -135,7 +136,8 @@ class NativeRuntimeTests(unittest.TestCase):
         calls = []
         self.hooks.install_at_loader_gate.side_effect = lambda g: calls.append("install")
         gate.release.side_effect = lambda: calls.append("release")
-        with patch("worlds.secret_agent_clank.core.native_runtime.RuntimeSymbols"):
+        with patch("worlds.secret_agent_clank.core.native_runtime.RuntimeSymbols"), \
+                patch("worlds.secret_agent_clank.core.native_runtime.VendorCatalog.prepare", return_value=[]):
             self.assertFalse(self.runtime.service({"throwTie"}, {11: True}))
         self.assertEqual(calls, ["install", "release"])
         self.assertTrue(self.runtime.awaiting_start)

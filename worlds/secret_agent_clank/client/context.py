@@ -208,13 +208,7 @@ class SACContext(PineMixin, DeathLinkMixin, CommonContext):
         }
 
     def _maybe_scout_vendor(self) -> None:
-        """Send a LocationScouts request for whatever vendor rows are newly eligible --
-        only once the native vendor screen is actually open (Core.vendor.active), and
-        even then only for rows whose owning case is already unlocked (Core.owned_cases)
-        -- so opening the vendor never reveals/hints a case's contents before the player
-        has actually reached that case. Cheap and idempotent to call every poll tick
-        while the vendor is open: _scouted_location_ids means already-sent ids are
-        never re-requested, and a newly-unlocked case's rows go out the next tick."""
+        """Scout the seed's vendor catalog once the shared shop is opened."""
         if self.slot is None or not self._wiring.vendor.active:
             return
         server_locations = getattr(self, "server_locations", None)
@@ -222,7 +216,6 @@ class SACContext(PineMixin, DeathLinkMixin, CommonContext):
             return
         request = self.vendor_scouts.request(
             server_locations, hint=bool(self.slot_data.get("send_scouted_locations", True)),
-            owned_cases=self._wiring.owned_cases,
         )
         new_ids = [lid for lid in request["locations"] if lid not in self._scouted_location_ids]
         if not new_ids:
@@ -307,6 +300,10 @@ class SACContext(PineMixin, DeathLinkMixin, CommonContext):
                 missions_all       = lambda: self.slot_data.get("all_missions", 0) == 1,
                 on_bolt_state_changed = self._save_bolt_state,
             )
+            self._wiring.native_runtime.vendor_locations = {
+                name for name, location_id in self._location_name_to_id.items()
+                if location_id in self.server_locations
+            }
             checked = self._checked_location_names()
             asyncio.create_task(self._pine_guarded(lambda: self._wiring.sync_from_ap(checked)))
             asyncio.create_task(self._apply_received_items())

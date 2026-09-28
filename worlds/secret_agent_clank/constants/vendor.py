@@ -37,3 +37,6 @@ class SACVendorWeapons:
 VENDOR_WEAPONS: tuple[str, ...] = tuple(
     value for name, value in vars(SACVendorWeapons).items() if not name.startswith("_")
 )
+
+# Purchases introduced only in challenge mode.
+NG_PLUS_VENDOR_ITEMS = frozenset({SACRatchetWeapons.RYNO, SACClankWeapons.KICKSPLOSION})

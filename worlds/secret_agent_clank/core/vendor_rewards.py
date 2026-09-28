@@ -55,7 +55,8 @@ class VendorRewards:
             pointer, count, selected = header
             rows = self.vendor.read_items()
             rewards = [(row, self.scouts.for_row(row)) for row in rows]
-            if any(reward is not None for row, reward in rewards) and not self.icon.installed:
+            if any(row.icon == self.icon.ICON_ID or reward is not None
+                   for row, reward in rewards) and not self.icon.installed:
                 self.icon.prepare(symbols, indices=self.indices, palette=self.palette, selected_only=False)
                 self.icon.apply()
             if self.vendor._native_header() != header:

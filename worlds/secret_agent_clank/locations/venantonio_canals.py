@@ -1,57 +1,106 @@
-"""All locations tied to Venantonio Canals, grouped into a CaseLocations bundle by which options.py toggle (if any) gates each part -- see locations/__init__.py for how these get merged/re-derived for regions.py."""
+"""Every location in Venantonio Canals, each carrying its planet, case and access rule."""
+from rule_builder.rules import True_
+
 from ..constants import (
-    ALIEN_CODES_BY_CASE,
-    CASE_NAME_TO_CASE,
-    CUTSCENE_TO_CASE,
-    GADGETBOT_CHALLENGES_BY_CASE,
-    KEYCARDS_BY_CASE,
-    MISSION_COMPLETE_NAME,
-    RATCHET_CHALLENGES_BY_CASE,
-    SKILL_POINTS_BY_CASE,
-    SPECIAL_CHALLENGES_BY_CASE,
-    WEAPONS_BY_CASE,
     SACCases,
+    SACCutsceneLocations,
+    SACMissionLocations,
+    SACPlanets,
+    SACSkillPointLocations,
+    SACSpecialChallengeLocations,
 )
-from ._shared import BASE_ID, CASE_ID_BLOCK_SIZE, CaseLocations, SACLocationData, all_mission_locations
+from .model import SACLocation, SACLocationType
 
-_CASE_NAME = SACCases.VENANTONIO_CANALS
-_CASE_ID = CASE_NAME_TO_CASE[_CASE_NAME].case_id
-_next_id = BASE_ID + (_CASE_ID - 1) * CASE_ID_BLOCK_SIZE
+_PLANET = SACPlanets.VENANTONIO
+_CASE = SACCases.VENANTONIO_CANALS
 
-
-def _take_id() -> int:
-    global _next_id
-    taken, _next_id = _next_id, _next_id + 1
-    return taken
-
-
-_always_on: dict[str, SACLocationData] = {}
-for _name in WEAPONS_BY_CASE.get(_CASE_NAME, ()):
-    _always_on[_name] = SACLocationData(_take_id(), _CASE_NAME)
-for _name in (
-    *GADGETBOT_CHALLENGES_BY_CASE.get(_CASE_NAME, ()),
-    *SPECIAL_CHALLENGES_BY_CASE.get(_CASE_NAME, ()),
-    *RATCHET_CHALLENGES_BY_CASE.get(_CASE_NAME, ()),
-):
-    _always_on[_name] = SACLocationData(_take_id(), _CASE_NAME)
-
-_mission: dict[str, SACLocationData] = {
-    MISSION_COMPLETE_NAME[_CASE_NAME]: SACLocationData(_take_id(), _CASE_NAME),
-}
-
-_all_missions: dict[str, SACLocationData] = all_mission_locations(_CASE_NAME, _take_id)
-
-_cutscene: dict[str, SACLocationData] = {
-    _cutscene_name: SACLocationData(_take_id(), _CASE_NAME)
-    for _cutscene_name, _case_name in CUTSCENE_TO_CASE.items() if _case_name == _CASE_NAME
-}
-
-_other: dict[str, SACLocationData] = {}
-for _name in (
-    *SKILL_POINTS_BY_CASE.get(_CASE_NAME, ()),
-    *KEYCARDS_BY_CASE.get(_CASE_NAME, ()),
-    *ALIEN_CODES_BY_CASE.get(_CASE_NAME, ()),
-):
-    _other[_name] = SACLocationData(_take_id(), _CASE_NAME)
-
-VENANTONIO_CANALS_LOCATIONS = CaseLocations(_always_on, _mission, _all_missions, _cutscene, _other)
+LOCATIONS: tuple[SACLocation, ...] = (
+    SACLocation(
+        SACSpecialChallengeLocations.VENANTONIO_CANALS_VEHICLE_GREAT_ESCAPE,
+        _PLANET,
+        _CASE,
+        SACLocationType.SPECIAL_CHALLENGE,
+        77_816_000,
+        lambda world: True_(),
+    ),
+    SACLocation(
+        SACSpecialChallengeLocations.VENANTONIO_CANALS_VEHICLE_SPEEDBOATING,
+        _PLANET,
+        _CASE,
+        SACLocationType.SPECIAL_CHALLENGE,
+        77_816_001,
+        lambda world: True_(),
+    ),
+    SACLocation(
+        SACSpecialChallengeLocations.VENANTONIO_CANALS_VEHICLE_THREADING_THE_NEEDLE,
+        _PLANET,
+        _CASE,
+        SACLocationType.SPECIAL_CHALLENGE,
+        77_816_002,
+        lambda world: True_(),
+    ),
+    SACLocation(
+        SACMissionLocations.VENANTONIO_CANALS_COMPLETE,
+        _PLANET,
+        _CASE,
+        SACLocationType.CASE_COMPLETE,
+        77_816_003,
+        lambda world: True_(),
+    ),
+    SACLocation(
+        SACMissionLocations.VENANTONIO_CANALS_DANGER_OFF_STARBOARD,
+        _PLANET,
+        _CASE,
+        SACLocationType.MISSION,
+        77_816_004,
+        lambda world: True_(),
+    ),
+    SACLocation(
+        SACMissionLocations.VENANTONIO_CANALS_POWER_JET_BOATING,
+        _PLANET,
+        _CASE,
+        SACLocationType.MISSION,
+        77_816_005,
+        lambda world: True_(),
+    ),
+    SACLocation(
+        SACSkillPointLocations.VENANTONIO_CANALS_EVASIVE_MANEUVERS,
+        _PLANET,
+        _CASE,
+        SACLocationType.SKILL_POINT,
+        77_816_007,
+        lambda world: True_(),
+    ),
+    SACLocation(
+        SACSkillPointLocations.VENANTONIO_CANALS_DEEP_SIX,
+        _PLANET,
+        _CASE,
+        SACLocationType.SKILL_POINT,
+        77_816_008,
+        lambda world: True_(),
+    ),
+    SACLocation(
+        SACSkillPointLocations.VENANTONIO_CANALS_WAKE_OF_DESTRUCTION,
+        _PLANET,
+        _CASE,
+        SACLocationType.SKILL_POINT,
+        77_816_009,
+        lambda world: True_(),
+    ),
+    SACLocation(
+        SACSkillPointLocations.VENANTONIO_CANALS_RINGMASTER,
+        _PLANET,
+        _CASE,
+        SACLocationType.SKILL_POINT,
+        77_816_010,
+        lambda world: True_(),
+    ),
+    SACLocation(
+        SACCutsceneLocations.VENANTONIO_CANALS_COMPLETE_CUTSCENE,
+        _PLANET,
+        _CASE,
+        SACLocationType.CUTSCENE,
+        77_816_006,
+        lambda world: True_(),
+    ),
+)

@@ -82,26 +82,29 @@ NG+ seeds add 14 shared `Vendor: <weapon>` purchase locations, excluding
 RYNO. They are recorded independently of base-weapon purchases and ownership.
 NG+ 0 generates no Titan locations and explicitly skips both native Titan
 offer lists at the loader gate. NG+ 1 and 2 enable Titan purchase checks.
-New seeds include 16 Ratchet weapon-mod purchase checks and matching unlock
+New seeds include 14 Ratchet weapon-mod purchase checks and matching unlock
 items; NG+ 1 and 2 also include three Clank mods. Disabled characters' mods
 are excluded, as are mod checks when no vendor case exists. Buying a mod marks
 its location without granting its effect. Receiving its AP item installs it
 without completing the purchase check or granting the underlying weapon.
 The purchase remains offered if its AP mod was received first. Existing seeds
 retain their old vanilla mod behavior; generate a new seed for mod checks.
-Unchecked Titan offers use the V4 definition for their native price and icon,
+Unchecked Titan offers use the V4 definition for their native price,
 so receiving a Titan early does not remove its purchase location. These offers
 do not require the gameplay weapon to reach V4 first. With Progressive Weapons
 off, an owned weapon automatically advances from V4 to Titan V5 in NG+,
 then combat XP advances it to V8. No purchase or separate Titan Upgrade item
 is required. With it on, the fifth progressive copy provides V5 instead.
-Titan location logic requires access to the original weapon's purchase/pickup
-check and at least one reachable vendor. It does not require receiving that
-weapon's AP item. Edit `VENDOR_REQUIREMENTS` in `rules/vendor_access.py` to set
+All purchase checks share one Vendor region and require a reachable vendor.
+The menu lists only unchecked AP purchases, with AP icons, independent of native
+case progress, weapon ownership, and weapon level. Base purchases, mods, and
+Titan/Proto upgrades retain separate transaction identities. Seed options still
+exclude disabled characters and NG+ checks. Charge-Up and Earthquake mods are
+challenge rewards, not vendor checks. Edit `VENDOR_REQUIREMENTS` in `rules/vendor_access.py` to set
 each case's vendor item requirements. Case access is included automatically;
 use `False_()` for cases without vendors. Current `True_()` entries are editable
-defaults, not verified routes. Shared requirements also apply to ordinary vendor
-locations, preserving their existing per-location rules. Generate a new seed
+defaults, not verified routes. Shared requirements apply to every vendor
+location. Generate a new seed
 after changing these rules. The client applies the selected NG+ count to the
 native replay field when gameplay is ready.
 

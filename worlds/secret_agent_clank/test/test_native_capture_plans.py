@@ -7,6 +7,7 @@ from ..core.patches.gain_storage import GainStorage
 from ..core.patches.mission_travel import MissionTravel
 from ..core.patches.progression import Progression
 from ..core.patches.vendor_presentation import VendorPresentation
+from ..core.patches.vendor_catalog import VendorCatalog
 from ..core.patches.connection_warning import ConnectionWarning
 from ..core.patches.titan_vendor import TitanOffers, TitanVendor
 from ..core.patches.weapon_mods import WeaponMods
@@ -80,6 +81,7 @@ class NativeCapturePlansTests(unittest.TestCase):
                         hooks.patches.extend(progression.prepare(symbols, hooks, module,
                                                                  vendor_enabled=vendor))
                         if vendor:
+                            hooks.patches.extend(VendorCatalog(p).prepare(symbols, hooks))
                             hooks.patches.extend(VendorPresentation(p).prepare(symbols, hooks))
                         hooks.patches.extend(ConnectionWarning(p).prepare(symbols, hooks))
                         spans = sorted((x.address, x.address + len(x.replacement)) for x in hooks.patches)

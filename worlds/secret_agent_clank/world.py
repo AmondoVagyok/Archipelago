@@ -15,6 +15,7 @@ from .constants import (
     SACOperatives,
 )
 from .constants.planets import ALL_CASES, PLANET_ACCESS_ITEM_NAME
+from .constants.vendor import NG_PLUS_VENDOR_ITEMS
 from .constants.weapon_progression import (
     LEVELLED_INTERNALS,
     PROGRESSIVE_TO_INTERNAL,
@@ -165,10 +166,12 @@ class SecretAgentClankWorld(World):
         # disabled_operatives()), so their weapons/gadgets can never be
         # received or function in-game.
         for name in WEAPON_ITEM_TABLE:
-            owned_by_clank = name in GADGETS_FROM_WEAPON_TABLE
+            owned_by_clank = name.endswith("(Clank)")
             if owned_by_clank and not clank_enabled:
                 continue
             if not owned_by_clank and not ratchet_enabled:
+                continue
+            if name in NG_PLUS_VENDOR_ITEMS and not self.options.ng_plus.value:
                 continue
             if not self.has_vendor and name in VENDOR_ONLY_ITEM_NAMES:
                 continue

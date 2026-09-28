@@ -2,7 +2,7 @@ import unittest
 from unittest.mock import Mock
 from ..core.titanium_bolts import TitaniumBoltState
 from ..constants.titanium_bolts import TITANIUM_BOLT_ENTRIES
-from ..locations import TITANIUM_BOLT_LOCATIONS, ALL_LOCATIONS, ALWAYS_ON_LOCATIONS
+from ..locations import TITANIUM_BOLT_LOCATIONS, ALL_LOCATIONS
 from .test_runtime import Memory
 
 
@@ -64,5 +64,5 @@ class TitaniumBoltTests(unittest.TestCase):
     def test_all_bolts_are_always_on_with_unique_location_ids(self):
         self.assertEqual(len(TITANIUM_BOLT_LOCATIONS), 23)
         self.assertEqual(len(ALL_LOCATIONS), len({v.code for v in ALL_LOCATIONS.values()}))
-        for name, data in TITANIUM_BOLT_LOCATIONS.items():
-            self.assertEqual(ALWAYS_ON_LOCATIONS[name], data)
+        for data in TITANIUM_BOLT_LOCATIONS.values():
+            self.assertTrue(data.available(Mock()))  # no option gates a titanium bolt

@@ -1,57 +1,132 @@
-"""All locations tied to Max Security Cells, grouped into a CaseLocations bundle by which options.py toggle (if any) gates each part -- see locations/__init__.py for how these get merged/re-derived for regions.py."""
+"""Every location in Max-Security Cells, each carrying its planet, case and access rule."""
+from rule_builder.rules import True_
+
 from ..constants import (
-    ALIEN_CODES_BY_CASE,
-    CASE_NAME_TO_CASE,
-    CUTSCENE_TO_CASE,
-    GADGETBOT_CHALLENGES_BY_CASE,
-    KEYCARDS_BY_CASE,
-    MISSION_COMPLETE_NAME,
-    RATCHET_CHALLENGES_BY_CASE,
-    SKILL_POINTS_BY_CASE,
-    SPECIAL_CHALLENGES_BY_CASE,
-    WEAPONS_BY_CASE,
     SACCases,
+    SACCutsceneLocations,
+    SACMissionLocations,
+    SACPlanets,
+    SACRatchetChallengeLocations,
+    SACRatchetWeapons,
+    SACSkillPointLocations,
+    SACTitaniumBoltLocations,
 )
-from ._shared import BASE_ID, CASE_ID_BLOCK_SIZE, CaseLocations, SACLocationData, all_mission_locations
+from .model import SACLocation, SACLocationType
 
-_CASE_NAME = SACCases.MAX_SECURITY_CELLS
-_CASE_ID = CASE_NAME_TO_CASE[_CASE_NAME].case_id
-_next_id = BASE_ID + (_CASE_ID - 1) * CASE_ID_BLOCK_SIZE
+_PLANET = SACPlanets.PRISON_PLANET
+_CASE = SACCases.MAX_SECURITY_CELLS
 
-
-def _take_id() -> int:
-    global _next_id
-    taken, _next_id = _next_id, _next_id + 1
-    return taken
-
-
-_always_on: dict[str, SACLocationData] = {}
-for _name in WEAPONS_BY_CASE.get(_CASE_NAME, ()):
-    _always_on[_name] = SACLocationData(_take_id(), _CASE_NAME)
-for _name in (
-    *GADGETBOT_CHALLENGES_BY_CASE.get(_CASE_NAME, ()),
-    *SPECIAL_CHALLENGES_BY_CASE.get(_CASE_NAME, ()),
-    *RATCHET_CHALLENGES_BY_CASE.get(_CASE_NAME, ()),
-):
-    _always_on[_name] = SACLocationData(_take_id(), _CASE_NAME)
-
-_mission: dict[str, SACLocationData] = {
-    MISSION_COMPLETE_NAME[_CASE_NAME]: SACLocationData(_take_id(), _CASE_NAME),
-}
-
-_all_missions: dict[str, SACLocationData] = all_mission_locations(_CASE_NAME, _take_id)
-
-_cutscene: dict[str, SACLocationData] = {
-    _cutscene_name: SACLocationData(_take_id(), _CASE_NAME)
-    for _cutscene_name, _case_name in CUTSCENE_TO_CASE.items() if _case_name == _CASE_NAME
-}
-
-_other: dict[str, SACLocationData] = {}
-for _name in (
-    *SKILL_POINTS_BY_CASE.get(_CASE_NAME, ()),
-    *KEYCARDS_BY_CASE.get(_CASE_NAME, ()),
-    *ALIEN_CODES_BY_CASE.get(_CASE_NAME, ()),
-):
-    _other[_name] = SACLocationData(_take_id(), _CASE_NAME)
-
-MAX_SECURITY_CELLS_LOCATIONS = CaseLocations(_always_on, _mission, _all_missions, _cutscene, _other)
+LOCATIONS: tuple[SACLocation, ...] = (
+    SACLocation(
+        SACRatchetWeapons.SHARDGUN,
+        _PLANET,
+        _CASE,
+        SACLocationType.RATCHET_WEAPON,
+        77_802_000,
+        lambda world: True_(),
+    ),
+    SACLocation(
+        SACRatchetWeapons.WALLOPER,
+        _PLANET,
+        _CASE,
+        SACLocationType.RATCHET_WEAPON,
+        77_802_001,
+        lambda world: True_(),
+    ),
+    SACLocation(
+        SACRatchetChallengeLocations.MAX_SECURITY_CELLS_KARMIC_BREAKDOWN,
+        _PLANET,
+        _CASE,
+        SACLocationType.RATCHET_CHALLENGE,
+        77_802_002,
+        lambda world: True_(),
+    ),
+    SACLocation(
+        SACRatchetChallengeLocations.MAX_SECURITY_CELLS_NO_SHELTER,
+        _PLANET,
+        _CASE,
+        SACLocationType.RATCHET_CHALLENGE,
+        77_802_003,
+        lambda world: True_(),
+    ),
+    SACLocation(
+        SACRatchetChallengeLocations.MAX_SECURITY_CELLS_PAST_DUE,
+        _PLANET,
+        _CASE,
+        SACLocationType.RATCHET_CHALLENGE,
+        77_802_004,
+        lambda world: True_(),
+    ),
+    SACLocation(
+        SACRatchetChallengeLocations.MAX_SECURITY_CELLS_SPEAK_SOFTLY_AND,
+        _PLANET,
+        _CASE,
+        SACLocationType.RATCHET_CHALLENGE,
+        77_802_005,
+        lambda world: True_(),
+    ),
+    SACLocation(
+        SACRatchetChallengeLocations.MAX_SECURITY_CELLS_MEGA_CHALLENGE_CELLBLOCK,
+        _PLANET,
+        _CASE,
+        SACLocationType.RATCHET_CHALLENGE,
+        77_802_006,
+        lambda world: True_(),
+    ),
+    SACLocation(
+        SACTitaniumBoltLocations.MAX_SECURITY_CELLS_1,
+        _PLANET,
+        _CASE,
+        SACLocationType.TITANIUM_BOLT,
+        77_802_901,
+        lambda world: True_(),
+    ),
+    SACLocation(
+        SACMissionLocations.MAX_SECURITY_CELLS_COMPLETE,
+        _PLANET,
+        _CASE,
+        SACLocationType.CASE_COMPLETE,
+        77_802_007,
+        lambda world: True_(),
+    ),
+    SACLocation(
+        SACMissionLocations.MAX_SECURITY_CELLS_LIFE_IN_PRISON,
+        _PLANET,
+        _CASE,
+        SACLocationType.MISSION,
+        77_802_008,
+        lambda world: True_(),
+    ),
+    SACLocation(
+        SACMissionLocations.MAX_SECURITY_CELLS_CONSECUTIVE_LIFE_SENTENCES,
+        _PLANET,
+        _CASE,
+        SACLocationType.MISSION,
+        77_802_009,
+        lambda world: True_(),
+    ),
+    SACLocation(
+        SACSkillPointLocations.MAX_SECURITY_CELLS_STAINLESS_STEEL,
+        _PLANET,
+        _CASE,
+        SACLocationType.SKILL_POINT,
+        77_802_011,
+        lambda world: True_(),
+    ),
+    SACLocation(
+        SACSkillPointLocations.MAX_SECURITY_CELLS_PLAYING_WITH_FIRE,
+        _PLANET,
+        _CASE,
+        SACLocationType.SKILL_POINT,
+        77_802_012,
+        lambda world: True_(),
+    ),
+    SACLocation(
+        SACCutsceneLocations.MAX_SECURITY_CELLS_ENTER_CUTSCENE,
+        _PLANET,
+        _CASE,
+        SACLocationType.CUTSCENE,
+        77_802_010,
+        lambda world: True_(),
+    ),
+)

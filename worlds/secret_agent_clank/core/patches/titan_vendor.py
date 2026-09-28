@@ -45,7 +45,7 @@ class TitanVendor(PatchSet):
             raise RuntimeError("Incomplete Titan flag table read")
         return data
 
-    def prepare(self, symbols, hooks, checked):
+    def prepare(self, symbols, hooks, checked, available_locations=None):
         self.patches = []
         self.table = None
         p = self.pine
@@ -66,7 +66,8 @@ class TitanVendor(PatchSet):
         arena = buy + 0x164
         table, reader, recorder = arena + 8, arena + 28, arena + 80
         flags = bytearray(20)
-        mapping = {WEAPON_ORDER.index(i): n for i, n in TITAN_LOCATIONS.items()}
+        mapping = {WEAPON_ORDER.index(i): n for i, n in TITAN_LOCATIONS.items()
+                   if available_locations is None or n in available_locations}
         for slot, name in mapping.items():
             flags[slot] = 2 if name in checked else 3
         # s2=weapon, s4=3. Return past the caller's original branch and icon
@@ -103,7 +104,7 @@ class TitanPrice(PatchSet):
     def prepare(self, symbols, allocate):
         self.patches = []
         p = self.pine
-        """The browsing price must use V4 even if AP has granted another tier."""
+        """Browsing prices use the check tier, independent of AP weapon ownership."""
         browse, current, fixed = require(
             symbols, NativeFunctions.SCRNVENDOR_UPDATE_BROWSE_STATE, NativeFunctions.GADGET_GET_DATA_DEF, NativeFunctions.GADGET_GET_DEF_AT_LEVEL,
         )
@@ -112,13 +113,11 @@ class TitanPrice(PatchSet):
         assert p.read_int32(site) == jump(current, True)
         assert p.read_int32(site + 4) & 0xFFFF0000 == 0x3C100000
         assert p.read_int32(site + 8) == 0x8C430030
-        # s0 is still the selected row here; the original LUI delay slot must
-        # run only after testing its type. a0 remains the weapon id.
-        # Share the original LUI as the branch delay slot. This must fit the
-        # 32-byte remainder of a vendor-only module's hook arena.
-        code = packed([0x8E03000C, 0x24020004, 0x14620003,
-                       p.read_int32(site + 4), jump(fixed), 0x24050003,
-                       jump(current), 0])
+        # This call is reached only for base (0) and Titan/Proto (4) rows;
+        # ammo and mods have separate branches. Price base checks at V1 and
+        # upgrades at V4, regardless of the AP item's received weapon tier.
+        code = packed([0x8E03000C, 0x24050000, 0x10600002,
+                       p.read_int32(site + 4), 0x24050003, jump(fixed), 0])
         address = allocate(code)
         self.patches = [Patch(site, original, packed([jump(address, True), 0]))]
         return self.patches

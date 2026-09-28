@@ -44,7 +44,7 @@ class NativeVendorTests(unittest.TestCase):
 
     def test_rejects_invalid_count_and_selection(self):
         self.vendor.bind_runtime(self.symbols)
-        for count, selection in ((33, 0), (1, 1), (0, 0)):
+        for count, selection in ((65, 0), (1, 1), (0, 0)):
             struct.pack_into('<4I', self.memory.data, 0x6D43F8, 0x5904F0, count, 3, selection)
             self.assertEqual(self.vendor.read_items(), [])
 

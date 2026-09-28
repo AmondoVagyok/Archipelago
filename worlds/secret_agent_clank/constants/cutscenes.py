@@ -39,7 +39,6 @@ _RAW_CUTSCENES: tuple[CaseStructure, ...] = (
     CaseStructure(
         SACCases.ROOFTOP_DEATHTRAP, SACCutscenes.RESCURE_CLANK_CUTSCENE, event_flag=0b00000010, event_address=0x206BE2,
     ),
-    CaseStructure(SACCases.ASYANICA_ROOFTOPS, SACCutscenes.ENTER_CUTSCENE, event_flag=0b00000100, event_address=0x206BE2),
     CaseStructure(SACCases.LARGER_THAN_LIFE, SACCutscenes.ENTER_CUTSCENE, event_flag=0b00001000, event_address=0x206BE2),
     CaseStructure(
         SACCases.LARGER_THAN_LIFE, SACCutscenes.GODZILLA_LAZER_BEAM, event_flag=0b00100000, event_address=0x206BE2,
@@ -84,9 +83,6 @@ _RAW_CUTSCENES: tuple[CaseStructure, ...] = (
     ),
     CaseStructure(SACCases.THE_SHOWERS, SACCutscenes.ENTER_CUTSCENE, event_flag=0b00001000, event_address=0x206BEC),
     CaseStructure(
-        SACCases.SPACESHIP_GRAVEYARD, SACCutscenes.ENTER_CUTSCENE, event_flag=0b00000001, event_address=0x206BEE,
-    ),
-    CaseStructure(
         SACCases.SPACESHIP_GRAVEYARD, SACCutscenes.COMPLETE_CUTSCENE, event_flag=0b00000010, event_address=0x206BEE,
     ),
     CaseStructure(SACCases.SAINT_QWARK, SACCutscenes.ENTERE_CUTSCENE, event_flag=0b00000100, event_address=0x206BEE),
@@ -122,7 +118,6 @@ class SACCutsceneLocations:
     MAX_SECURITY_CELLS_ENTER_CUTSCENE = "Prison Planet (Ratchet) - Max-Security Cells: Enter Cutscene"
     ROOFTOP_DEATHTRAP_ENTER_CUTSCENE = "Asyanica (Gadgetbots) - Rooftop Deathtrap: Enter Cutscene"
     ROOFTOP_DEATHTRAP_RESCURE_CLANK_CUTSCENE = "Asyanica (Gadgetbots) - Rooftop Deathtrap: Rescure Clank Cutscene"
-    ASYANICA_ROOFTOPS_ENTER_CUTSCENE = "Asyanica (Clank) - Asyanica Rooftops: Enter Cutscene"
     LARGER_THAN_LIFE_ENTER_CUTSCENE = "Asyanica (Qwark) - Larger Than Life: Enter Cutscene"
     LARGER_THAN_LIFE_GODZILLA_LAZER_BEAM = "Asyanica (Qwark) - Larger Than Life: Godzilla Lazer Beam"
     LARGER_THAN_LIFE_COMPLETE_CUTSCENE = "Asyanica (Qwark) - Larger Than Life: Complete Cutscene"
@@ -146,7 +141,6 @@ class SACCutsceneLocations:
     GALACTIC_BOLT_RESERVE_COMPLETE_CUTSCENE = "Fort Sprocket (Clank) - Galactic Bolt Reserve: Complete Cutscene"
     INSIDE_THE_A_EYE_COMPLETE_CUTSCENE = "Fort Sprocket (Gadgetbots) - Inside the A-Eye: Complete Cutscene"
     THE_SHOWERS_ENTER_CUTSCENE = "Prison Planet (Ratchet) - The Showers: Enter Cutscene"
-    SPACESHIP_GRAVEYARD_ENTER_CUTSCENE = "Spaceship Graveyard (Clank) - Spaceship Graveyard: Enter Cutscene"
     SPACESHIP_GRAVEYARD_COMPLETE_CUTSCENE = "Spaceship Graveyard (Clank) - Spaceship Graveyard: Complete Cutscene"
     SAINT_QWARK_ENTERE_CUTSCENE = "Spaceship Graveyard (Qwark) - Saint Qwark: Enter Cutscene"
     PRISON_BREAKOUT_ENTER_CUTSCENE = "Prison Planet (Ratchet) - Prison Breakout!: Enter Cutscene"

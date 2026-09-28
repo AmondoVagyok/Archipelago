@@ -1,57 +1,122 @@
-"""All locations tied to Dams Edge Hydrano, grouped into a CaseLocations bundle by which options.py toggle (if any) gates each part -- see locations/__init__.py for how these get merged/re-derived for regions.py."""
+"""Every location in Dam's Edge, Hydrano, each carrying its planet, case and access rule."""
+from rule_builder.rules import True_
+
 from ..constants import (
-    ALIEN_CODES_BY_CASE,
-    CASE_NAME_TO_CASE,
-    CUTSCENE_TO_CASE,
-    GADGETBOT_CHALLENGES_BY_CASE,
-    KEYCARDS_BY_CASE,
-    MISSION_COMPLETE_NAME,
-    RATCHET_CHALLENGES_BY_CASE,
-    SKILL_POINTS_BY_CASE,
-    SPECIAL_CHALLENGES_BY_CASE,
-    WEAPONS_BY_CASE,
     SACCases,
+    SACCutsceneLocations,
+    SACMissionLocations,
+    SACPlanets,
+    SACSkillPointLocations,
+    SACSpecialChallengeLocations,
 )
-from ._shared import BASE_ID, CASE_ID_BLOCK_SIZE, CaseLocations, SACLocationData, all_mission_locations
+from .model import SACLocation, SACLocationType
 
-_CASE_NAME = SACCases.DAMS_EDGE_HYDRANO
-_CASE_ID = CASE_NAME_TO_CASE[_CASE_NAME].case_id
-_next_id = BASE_ID + (_CASE_ID - 1) * CASE_ID_BLOCK_SIZE
+_PLANET = SACPlanets.HYDRANO
+_CASE = SACCases.DAMS_EDGE_HYDRANO
 
-
-def _take_id() -> int:
-    global _next_id
-    taken, _next_id = _next_id, _next_id + 1
-    return taken
-
-
-_always_on: dict[str, SACLocationData] = {}
-for _name in WEAPONS_BY_CASE.get(_CASE_NAME, ()):
-    _always_on[_name] = SACLocationData(_take_id(), _CASE_NAME)
-for _name in (
-    *GADGETBOT_CHALLENGES_BY_CASE.get(_CASE_NAME, ()),
-    *SPECIAL_CHALLENGES_BY_CASE.get(_CASE_NAME, ()),
-    *RATCHET_CHALLENGES_BY_CASE.get(_CASE_NAME, ()),
-):
-    _always_on[_name] = SACLocationData(_take_id(), _CASE_NAME)
-
-_mission: dict[str, SACLocationData] = {
-    MISSION_COMPLETE_NAME[_CASE_NAME]: SACLocationData(_take_id(), _CASE_NAME),
-}
-
-_all_missions: dict[str, SACLocationData] = all_mission_locations(_CASE_NAME, _take_id)
-
-_cutscene: dict[str, SACLocationData] = {
-    _cutscene_name: SACLocationData(_take_id(), _CASE_NAME)
-    for _cutscene_name, _case_name in CUTSCENE_TO_CASE.items() if _case_name == _CASE_NAME
-}
-
-_other: dict[str, SACLocationData] = {}
-for _name in (
-    *SKILL_POINTS_BY_CASE.get(_CASE_NAME, ()),
-    *KEYCARDS_BY_CASE.get(_CASE_NAME, ()),
-    *ALIEN_CODES_BY_CASE.get(_CASE_NAME, ()),
-):
-    _other[_name] = SACLocationData(_take_id(), _CASE_NAME)
-
-DAMS_EDGE_HYDRANO_LOCATIONS = CaseLocations(_always_on, _mission, _all_missions, _cutscene, _other)
+LOCATIONS: tuple[SACLocation, ...] = (
+    SACLocation(
+        SACSpecialChallengeLocations.DAMS_EDGE_HYDRANO_VEHICLE_CHASING_A_LEAD,
+        _PLANET,
+        _CASE,
+        SACLocationType.SPECIAL_CHALLENGE,
+        77_825_000,
+        lambda world: True_(),
+    ),
+    SACLocation(
+        SACSpecialChallengeLocations.DAMS_EDGE_HYDRANO_VEHICLE_RUSH_HOUR,
+        _PLANET,
+        _CASE,
+        SACLocationType.SPECIAL_CHALLENGE,
+        77_825_001,
+        lambda world: True_(),
+    ),
+    SACLocation(
+        SACSpecialChallengeLocations.DAMS_EDGE_HYDRANO_VEHICLE_DRIVING_TEST,
+        _PLANET,
+        _CASE,
+        SACLocationType.SPECIAL_CHALLENGE,
+        77_825_002,
+        lambda world: True_(),
+    ),
+    SACLocation(
+        SACMissionLocations.DAMS_EDGE_HYDRANO_COMPLETE,
+        _PLANET,
+        _CASE,
+        SACLocationType.CASE_COMPLETE,
+        77_825_003,
+        lambda world: True_(),
+    ),
+    SACLocation(
+        SACMissionLocations.DAMS_EDGE_HYDRANO_SHIP_S_SIGNAL,
+        _PLANET,
+        _CASE,
+        SACLocationType.MISSION,
+        77_825_004,
+        lambda world: True_(),
+    ),
+    SACLocation(
+        SACMissionLocations.DAMS_EDGE_HYDRANO_FOLLOW_THAT_CAR,
+        _PLANET,
+        _CASE,
+        SACLocationType.MISSION,
+        77_825_005,
+        lambda world: True_(),
+    ),
+    SACLocation(
+        SACMissionLocations.DAMS_EDGE_HYDRANO_THE_DRIFT_KING,
+        _PLANET,
+        _CASE,
+        SACLocationType.MISSION,
+        77_825_006,
+        lambda world: True_(),
+    ),
+    SACLocation(
+        SACSkillPointLocations.DAMS_EDGE_HYDRANO_YEEE_HAAAAAW,
+        _PLANET,
+        _CASE,
+        SACLocationType.SKILL_POINT,
+        77_825_009,
+        lambda world: True_(),
+    ),
+    SACLocation(
+        SACSkillPointLocations.DAMS_EDGE_HYDRANO_OFFENSIVE_DRIVER,
+        _PLANET,
+        _CASE,
+        SACLocationType.SKILL_POINT,
+        77_825_010,
+        lambda world: True_(),
+    ),
+    SACLocation(
+        SACSkillPointLocations.DAMS_EDGE_HYDRANO_SLIPPERY_SLOPE,
+        _PLANET,
+        _CASE,
+        SACLocationType.SKILL_POINT,
+        77_825_011,
+        lambda world: True_(),
+    ),
+    SACLocation(
+        SACSkillPointLocations.DAMS_EDGE_HYDRANO_RING_AROUND_THE_ROSIE,
+        _PLANET,
+        _CASE,
+        SACLocationType.SKILL_POINT,
+        77_825_012,
+        lambda world: True_(),
+    ),
+    SACLocation(
+        SACCutsceneLocations.DAMS_EDGE_HYDRANO_ENTER_CUTSCENE,
+        _PLANET,
+        _CASE,
+        SACLocationType.CUTSCENE,
+        77_825_007,
+        lambda world: True_(),
+    ),
+    SACLocation(
+        SACCutsceneLocations.DAMS_EDGE_HYDRANO_COMPLETE_CUTSCENE,
+        _PLANET,
+        _CASE,
+        SACLocationType.CUTSCENE,
+        77_825_008,
+        lambda world: True_(),
+    ),
+)

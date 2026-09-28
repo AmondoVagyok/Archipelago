@@ -62,7 +62,11 @@ WEAPON_MODS = (
 )
 
 
+# No Shelter and Past Due award these mods; they are not shop purchases.
+CHALLENGE_MOD_IDS = frozenset({5, 14})
+VENDOR_MODS = tuple(mod for mod in WEAPON_MODS if mod.mod_id not in CHALLENGE_MOD_IDS)
+
 def enabled_mods(characters, ng_plus):
-    return tuple(mod for mod in WEAPON_MODS
+    return tuple(mod for mod in VENDOR_MODS
                  if ('Clank' if mod.ng_plus else 'Ratchet') in characters
                  and (not mod.ng_plus or ng_plus > 0))

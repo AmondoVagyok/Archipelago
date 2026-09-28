@@ -17,7 +17,7 @@ class ProgressionTests(unittest.TestCase):
             mem.batch_write_int32([(replay + 0x1C + offset * 4, word)])
         symbols = {"GADGET_g_GadgetList": 0x100000, "GLOBALVARS_IsInReplayMode__Fv": replay}
         # A relocated module has a valid code signature but a null save pointer.
-        self.assertEqual(pr.prepare(symbols, SimpleNamespace(patches=[]), 1), [])
+        self.assertEqual(pr.prepare(symbols, SimpleNamespace(patches=[]), 1, vendor_enabled=False), [])
         self.assertEqual(pr.save_pointer_address, pointer)
         self.assertIsNone(pr.ng_address)
         mem.batch_write_int32([(0x206328, 1), (0x206324, 0xFFFFFFFF), (0x206338, 3)])

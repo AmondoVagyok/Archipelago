@@ -115,7 +115,7 @@ class Progression(PatchSet):
                 f"(module {module}, requested {len(data)} bytes, "
                 f"weapon XP {self.weapon_xp}, health XP {self.health_xp}, "
                 f"bolts {self.bolts}, NG+ {self.ng_plus}, vendor {vendor_enabled})")
-        if self.ng_plus and vendor_enabled:
+        if vendor_enabled:
             edits.extend(TitanPrice(p).prepare(symbols, allocate))
         targets = [(NativeFunctions.PLAYER_GRANT_BOLTS, self.bolts, 4, 0x27BDFFF0, 0xFFB00000)]
         # Treehouse has no combat XP sources. Its small vendor-only arena

@@ -38,8 +38,8 @@ class WeaponModTests(unittest.TestCase):
         return regs[2]
 
     def test_catalog_filters_characters_and_postgame(self):
-        self.assertEqual(len(enabled_mods({"Ratchet": 1, "Clank": 1}, 0)), 16)
-        self.assertEqual(len(enabled_mods({"Ratchet": 1, "Clank": 1}, 1)), 19)
+        self.assertEqual(len(enabled_mods({"Ratchet": 1, "Clank": 1}, 0)), 14)
+        self.assertEqual(len(enabled_mods({"Ratchet": 1, "Clank": 1}, 1)), 17)
         self.assertEqual(len(enabled_mods({"Clank": 1}, 2)), 3)
         self.assertEqual(enabled_mods({"Qwark": 1}, 2), ())
         self.assertEqual(len({mod.mod_id for mod in WEAPON_MODS}), 19)

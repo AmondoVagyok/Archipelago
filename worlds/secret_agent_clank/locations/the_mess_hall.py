@@ -1,57 +1,123 @@
-"""All locations tied to The Mess Hall, grouped into a CaseLocations bundle by which options.py toggle (if any) gates each part -- see locations/__init__.py for how these get merged/re-derived for regions.py."""
+"""Every location in The Mess Hall, each carrying its planet, case and access rule."""
+from rule_builder.rules import Has, True_
+
 from ..constants import (
-    ALIEN_CODES_BY_CASE,
-    CASE_NAME_TO_CASE,
-    CUTSCENE_TO_CASE,
-    GADGETBOT_CHALLENGES_BY_CASE,
-    KEYCARDS_BY_CASE,
-    MISSION_COMPLETE_NAME,
-    RATCHET_CHALLENGES_BY_CASE,
-    SKILL_POINTS_BY_CASE,
-    SPECIAL_CHALLENGES_BY_CASE,
-    WEAPONS_BY_CASE,
     SACCases,
+    SACCutsceneLocations,
+    SACMissionLocations,
+    SACPlanets,
+    SACRatchetChallengeLocations,
+    SACSkillPointLocations,
+    SACTitaniumBoltLocations,
 )
-from ._shared import BASE_ID, CASE_ID_BLOCK_SIZE, CaseLocations, SACLocationData, all_mission_locations
+from ..items import PROGRESSIVE_WRENCH_ITEM_NAME
+from .model import SACLocation, SACLocationType
 
-_CASE_NAME = SACCases.THE_MESS_HALL
-_CASE_ID = CASE_NAME_TO_CASE[_CASE_NAME].case_id
-_next_id = BASE_ID + (_CASE_ID - 1) * CASE_ID_BLOCK_SIZE
-
-
-def _take_id() -> int:
-    global _next_id
-    taken, _next_id = _next_id, _next_id + 1
-    return taken
+_PLANET = SACPlanets.PRISON_PLANET
+_CASE = SACCases.THE_MESS_HALL
 
 
-_always_on: dict[str, SACLocationData] = {}
-for _name in WEAPONS_BY_CASE.get(_CASE_NAME, ()):
-    _always_on[_name] = SACLocationData(_take_id(), _CASE_NAME)
-for _name in (
-    *GADGETBOT_CHALLENGES_BY_CASE.get(_CASE_NAME, ()),
-    *SPECIAL_CHALLENGES_BY_CASE.get(_CASE_NAME, ()),
-    *RATCHET_CHALLENGES_BY_CASE.get(_CASE_NAME, ()),
-):
-    _always_on[_name] = SACLocationData(_take_id(), _CASE_NAME)
+# Ratchet Challenges here are wrench-combo based -- with Progressive Wrench in the
+# pool they need its first copy; otherwise the wrench is fully capable from the start.
+def _wrench_rule(world):
+    return Has(PROGRESSIVE_WRENCH_ITEM_NAME) if world.options.progressive_wrench else True_()
 
-_mission: dict[str, SACLocationData] = {
-    MISSION_COMPLETE_NAME[_CASE_NAME]: SACLocationData(_take_id(), _CASE_NAME),
-}
 
-_all_missions: dict[str, SACLocationData] = all_mission_locations(_CASE_NAME, _take_id)
-
-_cutscene: dict[str, SACLocationData] = {
-    _cutscene_name: SACLocationData(_take_id(), _CASE_NAME)
-    for _cutscene_name, _case_name in CUTSCENE_TO_CASE.items() if _case_name == _CASE_NAME
-}
-
-_other: dict[str, SACLocationData] = {}
-for _name in (
-    *SKILL_POINTS_BY_CASE.get(_CASE_NAME, ()),
-    *KEYCARDS_BY_CASE.get(_CASE_NAME, ()),
-    *ALIEN_CODES_BY_CASE.get(_CASE_NAME, ()),
-):
-    _other[_name] = SACLocationData(_take_id(), _CASE_NAME)
-
-THE_MESS_HALL_LOCATIONS = CaseLocations(_always_on, _mission, _all_missions, _cutscene, _other)
+LOCATIONS: tuple[SACLocation, ...] = (
+    SACLocation(
+        SACRatchetChallengeLocations.THE_MESS_HALL_NAILS_FOR_BREAKFAST,
+        _PLANET,
+        _CASE,
+        SACLocationType.RATCHET_CHALLENGE,
+        77_808_000,
+        _wrench_rule,
+    ),
+    SACLocation(
+        SACRatchetChallengeLocations.THE_MESS_HALL_TYHRRANOID_RECYCLING,
+        _PLANET,
+        _CASE,
+        SACLocationType.RATCHET_CHALLENGE,
+        77_808_001,
+        _wrench_rule,
+    ),
+    SACLocation(
+        SACRatchetChallengeLocations.THE_MESS_HALL_ITS_RAINING_PHLEGM_HALLELUJAH,
+        _PLANET,
+        _CASE,
+        SACLocationType.RATCHET_CHALLENGE,
+        77_808_002,
+        _wrench_rule,
+    ),
+    SACLocation(
+        SACRatchetChallengeLocations.THE_MESS_HALL_MEATLOAF_TUESDAYS,
+        _PLANET,
+        _CASE,
+        SACLocationType.RATCHET_CHALLENGE,
+        77_808_003,
+        _wrench_rule,
+    ),
+    SACLocation(
+        SACRatchetChallengeLocations.THE_MESS_HALL_MEGA_CHALLENGE_CAFETERIA,
+        _PLANET,
+        _CASE,
+        SACLocationType.RATCHET_CHALLENGE,
+        77_808_004,
+        _wrench_rule,
+    ),
+    SACLocation(
+        SACTitaniumBoltLocations.THE_MESS_HALL_1,
+        _PLANET,
+        _CASE,
+        SACLocationType.TITANIUM_BOLT,
+        77_808_901,
+        _wrench_rule,
+    ),
+    SACLocation(
+        SACMissionLocations.THE_MESS_HALL_COMPLETE,
+        _PLANET,
+        _CASE,
+        SACLocationType.CASE_COMPLETE,
+        77_808_005,
+        lambda world: True_(),
+    ),
+    SACLocation(
+        SACMissionLocations.THE_MESS_HALL_NO_TIME_FOR_SECONDS,
+        _PLANET,
+        _CASE,
+        SACLocationType.MISSION,
+        77_808_006,
+        lambda world: True_(),
+    ),
+    SACLocation(
+        SACMissionLocations.THE_MESS_HALL_THE_LUNCH_MENU_FOREVER,
+        _PLANET,
+        _CASE,
+        SACLocationType.MISSION,
+        77_808_007,
+        lambda world: True_(),
+    ),
+    SACLocation(
+        SACSkillPointLocations.THE_MESS_HALL_EMPTY_THE_WARRENS,
+        _PLANET,
+        _CASE,
+        SACLocationType.SKILL_POINT,
+        77_808_009,
+        lambda world: True_(),
+    ),
+    SACLocation(
+        SACSkillPointLocations.THE_MESS_HALL_ANTAEUS,
+        _PLANET,
+        _CASE,
+        SACLocationType.SKILL_POINT,
+        77_808_010,
+        lambda world: True_(),
+    ),
+    SACLocation(
+        SACCutsceneLocations.THE_MESS_HALL_ENTER_CUTSCENE,
+        _PLANET,
+        _CASE,
+        SACLocationType.CUTSCENE,
+        77_808_008,
+        lambda world: True_(),
+    ),
+)

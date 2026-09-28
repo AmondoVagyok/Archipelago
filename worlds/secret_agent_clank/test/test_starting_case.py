@@ -5,7 +5,7 @@ from pathlib import Path
 from test.general import gen_steps, setup_multiworld
 from worlds.AutoWorld import call_all
 
-from ..constants import ALL_CASES, CASE_NAME_TO_INFOBOT
+from ..constants import ALL_CASES, CASE_NAME_TO_INFOBOT, SACCases
 from ..constants.native_modules import CASE_MODULES
 from ..core.patches import jump, packed
 from ..core.patches.starting_case import StartingCase
@@ -70,8 +70,8 @@ class StartingCaseTests(unittest.TestCase):
         before = bytes(p.data)
         hook = StartingCase(p, lambda _: None)
         with self.assertRaises(ValueError):
-            hook.configure({"starting_case": "Boltaire Museum", "operatives": {"Qwark": 1}})
-        hook.configure({"starting_case": "Suck and Jive", "operatives": {"Qwark": 1}})
+            hook.configure({"starting_case": SACCases.BOLTAIRE_MUSEUM, "operatives": {"Qwark": 1}})
+        hook.configure({"starting_case": SACCases.SUCK_AND_JIVE, "operatives": {"Qwark": 1}})
         self.assertTrue(hook.service())
         writes = list(p.writes)
         hook.service()
@@ -83,7 +83,7 @@ class StartingCaseTests(unittest.TestCase):
         p = FrontendMemory()
         p.data[StartingCase.CALLS[1]] ^= 1
         hook = StartingCase(p, lambda _: None)
-        hook.configure({"starting_case": "Max-Security Cells", "operatives": {"Ratchet": 1}})
+        hook.configure({"starting_case": SACCases.MAX_SECURITY_CELLS, "operatives": {"Ratchet": 1}})
         with self.assertRaises(RuntimeError):
             hook.service()
         self.assertEqual(p.writes, [])
@@ -94,7 +94,7 @@ class StartingCaseTests(unittest.TestCase):
         hook.configure({})
         hook.service()
         self.assertEqual(p.writes, [])
-        hook.configure({"starting_case": "Max-Security Cells", "operatives": {"Ratchet": 1}})
+        hook.configure({"starting_case": SACCases.MAX_SECURITY_CELLS, "operatives": {"Ratchet": 1}})
         p.batch_write_int32([(0x1AAE78, 3)])
         p.writes.clear()
         self.assertFalse(hook.service())
@@ -103,7 +103,7 @@ class StartingCaseTests(unittest.TestCase):
     def test_unloaded_frontend_is_never_restored_over_gameplay(self):
         p = FrontendMemory()
         hook = StartingCase(p, lambda _: None)
-        hook.configure({"starting_case": "Max-Security Cells", "operatives": {"Ratchet": 1}})
+        hook.configure({"starting_case": SACCases.MAX_SECURITY_CELLS, "operatives": {"Ratchet": 1}})
         hook.service()
         p.batch_write_int32([(0x1AAE78, 3)])
         p.writes.clear()
@@ -116,17 +116,17 @@ class StartingCaseTests(unittest.TestCase):
         expected = packed([jump(StartingCase.CHANGE_LEVEL, True), 0x8C440ECC])
         p.data[load:load + 8] = expected
         hook = StartingCase(p, lambda _: None)
-        hook.configure({"starting_case": "Max-Security Cells", "operatives": {"Ratchet": 1}})
+        hook.configure({"starting_case": SACCases.MAX_SECURITY_CELLS, "operatives": {"Ratchet": 1}})
         hook.service()
         self.assertEqual(p.read_bytes(load, 8), expected)
 
     def test_wrapper_executes_init_then_sets_destination_and_shared_flags(self):
         # Execute the emitted instructions with real branch delay semantics.
         # Model the native initializer as a call that clobbers caller registers.
-        for name, flags in [("Max-Security Cells", (0, 0)),
-                            ("Asyanica Rooftops", (1, 0)),
-                            ("Rooftop Deathtrap", (0, 0)),
-                            ("Suck and Jive", (0, 1)), ("Gondola Ascent", (0, 0))]:
+        for name, flags in [(SACCases.MAX_SECURITY_CELLS, (0, 0)),
+                            (SACCases.ASYANICA_ROOFTOPS, (1, 0)),
+                            (SACCases.ROOFTOP_DEATHTRAP, (0, 0)),
+                            (SACCases.SUCK_AND_JIVE, (0, 1)), (SACCases.GONDOLA_ASCENT, (0, 0))]:
             p = FrontendMemory()
             hook = StartingCase(p, lambda _: None)
             for edit in hook.prepare(name):
@@ -194,4 +194,4 @@ class StartingCaseTests(unittest.TestCase):
         p.data[:] = path.read_bytes()
         hook = StartingCase(p, lambda _: None)
         self.assertTrue(hook.is_frontend())
-        self.assertEqual(len(hook.prepare("Max-Security Cells")), 9)
+        self.assertEqual(len(hook.prepare(SACCases.MAX_SECURITY_CELLS)), 9)

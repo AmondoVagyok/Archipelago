@@ -12,7 +12,7 @@ class SACClankWeapons:
     HOLOKNUCKLES      = "Holo-Knuckles (Clank)"
     SUPERKICK         = "Clank Fu Kick (Clank)"
     LIGHTNINGUMBRELLA = "Thunderstorm Umbrella (Clank)"
-    KICKSPLOSION      = "Clank Fu Hot Foot (Clank)"
+    KICKSPLOSION      = "Hot Foot 2.1 Beta (Clank)"
 
 
 @dataclass(frozen=True)

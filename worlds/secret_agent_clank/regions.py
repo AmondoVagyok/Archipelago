@@ -19,28 +19,20 @@ from .constants.ratchet_challenges import RATCHET_CHALLENGES
 from .constants.weapon_mods import enabled_mods
 from .constants.weapon_progression import TITAN_LOCATIONS
 from .constants.weapons import (
-    CASE_BY_WEAPON_NAME,
     GADGET_INTERNAL_TO_DISPLAY,
     RATCHET_WEAPON_INTERNAL_TO_DISPLAY,
 )
 from .entities import SACLocation
-from .locations import (
-    ALIEN_CODE_LOCATIONS,
-    ALL_STORY_MISSION_LOCATIONS,
-    ALWAYS_ON_LOCATIONS,
-    CUTSCENE_LOCATIONS,
-    KEYCARD_LOCATIONS,
-    MOD_VENDOR_LOCATIONS,
-    SKILL_POINT_LOCATIONS,
-    STORY_MISSION_LOCATIONS,
-    TITAN_VENDOR_LOCATIONS,
-)
-from .options import Goal, Missions
+from .locations import BASE_VENDOR_LOCATIONS, CASE_LOCATIONS, MOD_VENDOR_LOCATIONS, TITAN_VENDOR_LOCATIONS
+from .options import Goal
 from .rules.rule_helpers import case_access_rule, disabled_operatives
-from .rules.vendor_access import VENDOR_ONLY_ITEM_NAMES, VENDOR_REQUIREMENTS
+from .rules.vendor_access import VENDOR_REQUIREMENTS
 
 if TYPE_CHECKING:
     from .world import SecretAgentClankWorld
+
+# Stable sort: within a case region, locations keep their case file's order per type.
+REGION_LOCATIONS = tuple(sorted(CASE_LOCATIONS, key=lambda location: location.region_order))
 
 
 def create_regions(world: "SecretAgentClankWorld") -> None:
@@ -61,45 +53,28 @@ def create_regions(world: "SecretAgentClankWorld") -> None:
     world.weapon_mod_catalog = (
         enabled_mods(world.options.operatives.value, world.options.ng_plus.value) if has_vendor else ()
     )
-    # Weapons/gadgets whose ONLY native source is the vendor (see
-    # core/patches/locations.py's VENDOR_LOCATIONS, applied by
-    # rules/vendor_access.py's set_vendor_rules()) can never be obtained at
-    # all once Clank is disabled -- exclude them from generation outright
-    # (same principle as the module docstring's disabled-operative case
-    # exclusion) instead of leaving a location no item can ever fill.
-    vendor_only_names: frozenset[str] = frozenset()
-    if not has_vendor:
-        vendor_only_names = VENDOR_ONLY_ITEM_NAMES
     if world.using_ut:
         saved_ids = world.passthrough.get("weapon_mod_ids", ())
         world.weapon_mod_catalog = tuple(mod for mod in enabled_mods(
             world.options.operatives.value, world.options.ng_plus.value) if mod.mod_id in saved_ids)
-    if world.weapon_mod_catalog:
-        mod_region = Region("Mod Vendor", player, multiworld)
+    if has_vendor:
+        vendor_region = Region("Vendor", player, multiworld)
+        def enabled_item(name):
+            return (SACOperatives.CLANK if name.endswith("(Clank)")
+                    else SACOperatives.RATCHET) not in disabled
+        for definition in BASE_VENDOR_LOCATIONS.values():
+            if enabled_item(definition.name) and definition.available(world.options):
+                vendor_region.locations.append(SACLocation(
+                    player, definition.name, definition.code, vendor_region))
         for mod in world.weapon_mod_catalog:
-            mod_region.locations.append(SACLocation(player, mod.location,
-                MOD_VENDOR_LOCATIONS[mod.location].code, mod_region))
-        menu_region.connect(mod_region)
-        multiworld.regions.append(mod_region)
-    if world.options.ng_plus.value and has_vendor:
-        # TITAN_VENDOR_LOCATIONS covers every leveled weapon unconditionally,
-        # but a Titan tier's own rule (rules/vendor_access.py's
-        # set_vendor_rules()) requires reaching the ORIGINAL, non-Titan
-        # location for that weapon -- if the case that original pickup lives
-        # in is disabled (its operative excluded), that location was never
-        # created and the Titan tier's rule collapses to False_(), leaving a
-        # permanently unreachable location in the pool (a real "Fill error"
-        # trigger: user reported repeated NG+ Titan Vendor fill failures).
-        # Skip creating that Titan location entirely instead, same principle
-        # as vendor_only_names above.
-        internal_to_display = {**RATCHET_WEAPON_INTERNAL_TO_DISPLAY, **GADGET_INTERNAL_TO_DISPLAY}
-        vendor_region = Region("Titan Vendor", player, multiworld)
-        for internal, name in TITAN_LOCATIONS.items():
-            original_case = CASE_NAME_TO_CASE.get(CASE_BY_WEAPON_NAME.get(internal_to_display.get(internal, ""), ""))
-            if original_case is None or original_case.operative in disabled:
-                continue
-            data = TITAN_VENDOR_LOCATIONS[name]
-            vendor_region.locations.append(SACLocation(player, name, data.code, vendor_region))
+            vendor_region.locations.append(SACLocation(
+                player, mod.location, MOD_VENDOR_LOCATIONS[mod.location].code, vendor_region))
+        if world.options.ng_plus.value:
+            internal_to_display = {**RATCHET_WEAPON_INTERNAL_TO_DISPLAY, **GADGET_INTERNAL_TO_DISPLAY}
+            for internal, name in TITAN_LOCATIONS.items():
+                if enabled_item(internal_to_display[internal]):
+                    vendor_region.locations.append(SACLocation(
+                        player, name, TITAN_VENDOR_LOCATIONS[name].code, vendor_region))
         menu_region.connect(vendor_region)
         multiworld.regions.append(vendor_region)
     case_regions: dict[str, Region] = {
@@ -107,44 +82,16 @@ def create_regions(world: "SecretAgentClankWorld") -> None:
         for case in ALL_CASES if case.operative not in disabled
     }
 
-    location_tables = [ALWAYS_ON_LOCATIONS]
-    # Missions: exactly one of these two sets is used per seed, never both
-    # -- level_completion is one location per case ("{Case} Complete"),
-    # all is one location per individual CHAPTER_ENTRIES mission within
-    # each case (see locations/__init__.py's docstring and each case
-    # file's own *_MISSION_LOCATIONS / *_ALL_MISSIONS_LOCATIONS dicts).
-    if world.options.all_missions.value == Missions.option_all:
-        location_tables.append(ALL_STORY_MISSION_LOCATIONS)
-    else:
-        location_tables.append(STORY_MISSION_LOCATIONS)
-    if world.options.skill_points:
-        location_tables.append(SKILL_POINT_LOCATIONS)
-    if world.options.all_cutscenes:
-        location_tables.append(CUTSCENE_LOCATIONS)
-    if world.options.all_keycards:
-        location_tables.append(KEYCARD_LOCATIONS)
-
-    for table in location_tables:
-        for loc_name, loc_data in table.items():
-            if loc_name in vendor_only_names:
-                continue
-            region = case_regions.get(loc_data.case)
-            if region is None:
-                continue
-            location = SACLocation(player, loc_name, loc_data.code, region)
-            region.locations.append(location)
-
-    # Alien Codes -- only the case-confirmed codes exist here at all
-    # (ALIEN_CODE_LOCATIONS already excludes the still-TODO ones). Gated
-    # on its own option (not just folded into location_tables above) to
-    # match create_regions()'s own per-category option checks.
-    if world.options.all_alien_codes:
-        for loc_name, loc_data in ALIEN_CODE_LOCATIONS.items():
-            region = case_regions.get(loc_data.case)
-            if region is None:
-                continue
-            location = SACLocation(player, loc_name, loc_data.code, region)
-            region.locations.append(location)
+    # Each record's own type decides whether its option category is on (see
+    # locations/model.py's SACLocation.available()); rules are applied later
+    # from the same records by rules/__init__.py's set_rules().
+    for definition in REGION_LOCATIONS:
+        if not definition.available(world.options):
+            continue
+        region = case_regions.get(definition.case)
+        if region is None:
+            continue
+        region.locations.append(SACLocation(player, definition.name, definition.code, region))
 
     _create_victory(world, case_regions, disabled)
 

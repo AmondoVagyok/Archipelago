@@ -277,10 +277,7 @@ class Core:
 
     @property
     def owned_cases(self) -> frozenset[str]:
-        """Case names currently unlocked via AP, as of the last apply_inventory() call
-        (see _owned_cases' own docstring) -- client/context.py uses this to withhold
-        vendor scouting, and native_runtime/hooks.sync_vendor_cases() to hide a
-        locked case's vendor offers in-game, until that case is actually unlocked."""
+        """Case names currently unlocked via AP."""
         return frozenset(self._owned_cases)
 
     # -- Bolts / NG+ (plain global values, CONFIRMED live addresses) -------

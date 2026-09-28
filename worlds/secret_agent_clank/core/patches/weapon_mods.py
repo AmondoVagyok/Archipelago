@@ -1,6 +1,6 @@
 """Vendor transaction flags are independent of AP mod ownership."""
 from ...constants.native_functions import NativeFunctions
-from ...constants.weapon_mods import WEAPON_MODS, enabled_mods
+from ...constants.weapon_mods import WEAPON_MODS, VENDOR_MODS, enabled_mods
 from ...constants.weapons import EQUIPMENT_DISPLAY_TO_INTERNAL
 from ..inventories.weapons import WEAPON_ORDER
 from ..symbols import require
@@ -99,7 +99,7 @@ class WeaponMods(PatchSet):
             self.validated = True
         writes = []
         active = {mod.name for mod in self.catalog}
-        for mod in WEAPON_MODS:
+        for mod in VENDOR_MODS:
             address = self.base + WEAPON_ORDER.index(EQUIPMENT_DISPLAY_TO_INTERNAL[mod.weapon]) * 0x74 + 0x68 + mod.slot
             desired = int(mod.name in active and mod.name in self.received)
             if p.read_int8(address) != desired:

@@ -32,6 +32,7 @@ class CPU:
                 if fn == 0: self.r[rd] = self.r[rt] << shift
                 elif fn == 2: self.r[rd] = self.r[rt] >> shift
                 elif fn in (0x21, 0x2D): self.r[rd] = self.r[rs] + self.r[rt]
+                elif fn == 0x23: self.r[rd] = self.r[rs] - self.r[rt]
                 elif fn == 0x25: self.r[rd] = self.r[rs] | self.r[rt]
                 elif fn == 0x2B: self.r[rd] = int(self.r[rs] < self.r[rt])
                 elif fn == 8: delayed = self.r[rs]

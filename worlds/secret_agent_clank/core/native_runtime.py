@@ -1,5 +1,6 @@
 """Install native location hooks before each loaded module starts gameplay."""
 from ..constants.native_modules import CASE_MODULES
+from ..constants.weapons import EQUIPMENT_INTERNAL_TO_DISPLAY
 from .main_menu import is_main_menu
 from .patches import PICKUP_LOCATIONS, VENDOR_LOCATIONS
 from .patches.loader_gate import LoaderGate
@@ -7,6 +8,7 @@ from .patches.mission_travel import MissionTravel
 from .patches.starting_case import StartingCase
 from .patches.connection_warning import ConnectionWarning
 from .patches.titan_vendor import TitanOffers, TitanVendor
+from .patches.vendor_catalog import VendorCatalog
 from .symbols import RuntimeSymbols
 
 
@@ -21,6 +23,7 @@ class NativeRuntime:
         self.progression = None
         self.weapon_mods = None
         self.vendor_modules = None
+        self.vendor_locations = None
         self.presentation = None
         self.connection_warning = ConnectionWarning(pine)
         self.ap_connected = False
@@ -65,7 +68,9 @@ class NativeRuntime:
                 self.hooks.installed = False
                 vendor_enabled = self.vendor_modules is None or target in self.vendor_modules
                 self.hooks.prepare(symbols, pickup_locations=PICKUP_LOCATIONS,
-                                   vendor_locations=VENDOR_LOCATIONS if vendor_enabled else {}, checked=checked,
+                                   vendor_locations={slot: name for slot, name in VENDOR_LOCATIONS.items()
+                                       if vendor_enabled and (self.vendor_locations is None or
+                                           EQUIPMENT_INTERNAL_TO_DISPLAY.get(name, name) in self.vendor_locations)}, checked=checked,
                                    entitlements=entitlements)
                 if self.wrench is not None:
                     self.hooks.patches.extend(self.wrench.prepare(symbols, target))
@@ -75,17 +80,18 @@ class NativeRuntime:
                         symbols, self.hooks, target, checked, vendor_enabled))
                 if self.progression is not None:
                     if self.progression.ng_plus and vendor_enabled:
-                        self.hooks.patches.extend(TitanVendor(p).prepare(symbols, self.hooks, checked))
+                        self.hooks.patches.extend(TitanVendor(p).prepare(symbols, self.hooks, checked, self.vendor_locations))
                     elif vendor_enabled:
                         self.hooks.patches.extend(TitanOffers(p).prepare(symbols))
                     self.hooks.patches.extend(self.progression.prepare(
                         symbols, self.hooks, target, vendor_enabled=vendor_enabled))
+                if vendor_enabled:
+                    self.hooks.patches.extend(VendorCatalog(p).prepare(symbols, self.hooks))
                 if self.presentation is not None and vendor_enabled:
                     self.hooks.patches.extend(self.presentation.prepare(symbols, self.hooks))
                 self.hooks.patches.extend(self.connection_warning.prepare(symbols, self.hooks))
                 self.hooks.install_at_loader_gate(self.gate)
                 self.connection_warning.refresh(self.ap_connected)
-                self.hooks.sync_vendor_cases(self.owned_cases, loader_gate=self.gate)
                 self.generation += 1
                 self.gate.release()
                 self.awaiting_start = True
@@ -105,7 +111,6 @@ class NativeRuntime:
                 if self.hooks.entitlement_table is not None and not p.read_int8(self.hooks.entitlement_table + 40):
                     return False
                 self.hooks.sync_checked(checked)
-                self.hooks.sync_vendor_cases(self.owned_cases)
                 self.hooks.sync_entitlements(entitlements)
                 return True
             if not self.reset_notice:
