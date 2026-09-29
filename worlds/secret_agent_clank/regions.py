@@ -99,6 +99,12 @@ def create_regions(world: "SecretAgentClankWorld") -> None:
         menu_region.connect(region, f"To {case_name}")
 
     multiworld.regions += [menu_region, *case_regions.values()]
+    from .locations.weapon_levels import create_weapon_level_locations
+    create_weapon_level_locations(world, menu_region)
+    from .locations.nanotech import create_nanotech_locations
+    create_nanotech_locations(world, menu_region)
+    from .locations.stealth import create_stealth_locations
+    create_stealth_locations(world, menu_region)
 
 
 def _create_victory(

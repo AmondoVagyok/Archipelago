@@ -33,6 +33,7 @@ class CPU:
                 elif fn == 2: self.r[rd] = self.r[rt] >> shift
                 elif fn in (0x21, 0x2D): self.r[rd] = self.r[rs] + self.r[rt]
                 elif fn == 0x23: self.r[rd] = self.r[rs] - self.r[rt]
+                elif fn == 0x24: self.r[rd] = self.r[rs] & self.r[rt]
                 elif fn == 0x25: self.r[rd] = self.r[rs] | self.r[rt]
                 elif fn == 0x2B: self.r[rd] = int(self.r[rs] < self.r[rt])
                 elif fn == 8: delayed = self.r[rs]
@@ -53,6 +54,9 @@ class CPU:
             elif op == 14: self.r[rt] = self.r[rs] ^ imm
             elif op == 15: self.r[rt] = imm << 16
             elif op == 35: self.r[rt] = self.memory.read_int32(addr)
+            elif op == 32:
+                value = self.memory.read_int8(addr)
+                self.r[rt] = value - 256 if value & 128 else value
             elif op == 36: self.r[rt] = self.memory.read_int8(addr)
             elif op == 40: self.memory.write_int8(addr, self.r[rt] & 255)
             elif op == 43: self.memory.write_int32(addr, self.r[rt])

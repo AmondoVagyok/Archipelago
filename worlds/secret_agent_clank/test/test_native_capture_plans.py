@@ -54,7 +54,7 @@ class NativeCapturePlansTests(unittest.TestCase):
                 continue  # Title DLL has no gameplay hook plan.
             symbols = RuntimeSymbols.parse(raw[:0x1000000], 0)
             for ng in (0, 1, 2):
-                for progressive in (False, True):
+                for progressive in (False, True, 1):
                     with self.subTest(capture=capture.name, ng=ng, progressive=progressive):
                         p = CaptureMemory()
                         p.data[:] = raw

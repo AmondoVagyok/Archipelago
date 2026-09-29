@@ -1,6 +1,7 @@
 """Build the shared shop from AP transaction flags, not the native save roster."""
 import struct
 
+from ...constants.vendor_unlocks import VENDOR_CASES
 from ...constants.native_functions import NativeFunctions
 from ...constants.weapon_mods import WEAPON_MODS
 from ...constants.weapons import EQUIPMENT_DISPLAY_TO_INTERNAL
@@ -52,6 +53,19 @@ class VendorCatalog(PatchSet):
         code += [branch(address + len(code) * 4, tail), 0]
         return packed(code)
 
+    def sync_cases(self, owned_cases):
+        # Change only the descriptor comparison byte. Transaction flags remain
+        # untouched, so unlocking a purchased slot cannot resurrect its check.
+        owned_cases = frozenset(owned_cases)
+        if getattr(self, "_synced_cases", None) == owned_cases:
+            return
+        writes = [(address, unchecked if case in owned_cases else 255)
+                  for address, case, unchecked in self.case_descriptors
+                  if self.pine.read_int8(address) != (unchecked if case in owned_cases else 255)]
+        if writes:
+            self.pine.batch_write_int8(writes)
+        self._synced_cases = owned_cases
+
     def prepare(self, symbols, hooks):
         p = self.pine
         buy, begin, add, end = require(symbols, NativeFunctions.SCRNVENDOR_PROCESS_PURCHASE,
@@ -85,6 +99,14 @@ class VendorCatalog(PatchSet):
         code = self.routine(0, *args)
         descriptors = builder + self.START + len(code)
         code = self.routine(descriptors, *args)
+        self._synced_cases = None
+        self.case_descriptors = []
+        index = 0
+        for kind in ("vendor", "mods", "titan"):
+            for name in hooks.locations.get(kind, {}).values():
+                self.case_descriptors.append((descriptors + index * 8 + 7,
+                                              VENDOR_CASES[name], 3 if kind == "titan" else 1))
+                index += 1
         buffer = descriptors + len(entries) * 8
         payload = bytearray(original[:self.START]) + code
         for entry in entries:

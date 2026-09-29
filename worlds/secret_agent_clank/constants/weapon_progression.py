@@ -1,4 +1,10 @@
-"""Only native multi-level weapons participate; tools stay single unlocks."""
+"""Only native multi-level weapons participate; tools stay single unlocks.
+
+Roster: https://ratchetandclank.fandom.com/wiki/Secret_Agent_Clank_(game)
+Challenge tiers: https://ratchetandclank.fandom.com/wiki/Secret_Agent_Clank_vendors
+RYNO V4 cap: https://ratchet-galaxy.com/en/games/psp/secret-agent-clank/inventory/weapons/ryno
+Six Clank weapons and nine Ratchet weapons; no PDAs, tools, or Clank Fu moves.
+"""
 from .clank_gadgets import SACClankWeapons, SACProgressiveClankWeapons, SACProtoWeapons
 from .vendor import vendor_location_name
 from .weapons import (
@@ -33,8 +39,23 @@ UNLOCK_TO_PROGRESSIVE = {
 PROGRESSIVE_TO_INTERNAL = {
     progressive: EQUIPMENT_DISPLAY_TO_INTERNAL[unlock] for unlock, progressive in UNLOCK_TO_PROGRESSIVE.items()
 }
+PROGRESSIVE_TO_UNLOCK = {progressive: unlock for unlock, progressive in UNLOCK_TO_PROGRESSIVE.items()}
 def max_level(internal, ng_plus):
+    if internal not in LEVELLED_INTERNALS:
+        return 1
     return 4 if internal == "ryno" or not ng_plus else 8
+
+
+def checked_levels(internal, mode, ng_plus):
+    """Shared generation/runtime selection, including the RYNO exception."""
+    cap = max_level(internal, ng_plus)
+    candidates = {0: (), 1: (4,), 2: (8,), 3: (4, 8), 4: range(2, 9)}[mode]
+    return tuple(level for level in candidates if level <= cap)
+
+
+def level_location_name(internal, level):
+    from .weapons import EQUIPMENT_INTERNAL_TO_DISPLAY
+    return f"{EQUIPMENT_INTERNAL_TO_DISPLAY[internal]} Level {level}"
 
 # Unlock display name -> Titan/Proto display name, matched by shared class
 # attribute name (same pattern as UNLOCK_TO_PROGRESSIVE above).

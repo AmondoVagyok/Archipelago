@@ -19,6 +19,10 @@ To launch from the repository root with its Python environment:
 
 ## Goals
 
+Skill point checks use `skill_points: off`, `easy`, or `hard`. Easy includes 27
+checks; hard includes all 65 before disabled operatives are filtered out.
+See [the skill point tiers and operative requirements](skill-points.md).
+
 - `goal: alien_codes` works with `all_alien_codes` on or off. The client reads all 27 native collection bits and sends AP goal status when all are collected.
 - `goal: chalice_of_power` works with `all_keycards` on or off. Collect the red, blue, and yellow cards, enter High Impact Treehouse, open the keycard door, and **pick up the Chalice**. Cards alone or an open door do not complete the goal.
 - Treehouse access is exposed when the native three-card set is complete. Fully close/reopen Case Files if it was already open when access changed.
@@ -94,19 +98,55 @@ so receiving a Titan early does not remove its purchase location. These offers
 do not require the gameplay weapon to reach V4 first. With Progressive Weapons
 off, an owned weapon automatically advances from V4 to Titan V5 in NG+,
 then combat XP advances it to V8. No purchase or separate Titan Upgrade item
-is required. With it on, the fifth progressive copy provides V5 instead.
-All purchase checks share one Vendor region and require a reachable vendor.
-The menu lists only unchecked AP purchases, with AP icons, independent of native
-case progress, weapon ownership, and weapon level. Base purchases, mods, and
-Titan/Proto upgrades retain separate transaction identities. Seed options still
-exclude disabled characters and NG+ checks. Charge-Up and Earthquake mods are
-challenge rewards, not vendor checks. Edit `VENDOR_REQUIREMENTS` in `rules/vendor_access.py` to set
-each case's vendor item requirements. Case access is included automatically;
-use `False_()` for cases without vendors. Current `True_()` entries are editable
-defaults, not verified routes. Shared requirements apply to every vendor
-location. Generate a new seed
-after changing these rules. The client applies the selected NG+ count to the
-native replay field when gameplay is ready.
+is required. In automatic mode, the fifth progressive copy provides V5 instead.
+In manual mode, both an earned V4 and the fifth copy are needed for that bridge.
+
+`progressive_weapons` accepts `off`, `manual`, or `automatic`. Manual mode uses
+combat XP but caps each weapon at the number of its received progressive copies.
+Automatic mode grants that level immediately and disables combat XP. The first
+copy unlocks V1 in either mode. Existing boolean `true` settings and old boolean
+slot data still mean automatic. The weapon XP multiplier works in off/manual mode.
+
+`weapon_level_checks` accepts `off`, `level_4`, `level_8`, `level_4_and_8`, or `all`.
+All includes V2-V4, plus V5-V8 in NG+. Only the six Clank combat weapons and nine
+Ratchet weapons have level checks; gadgets, PDAs and Clank Fu moves do not.
+The RYNO is NG+ only and stops at V4, with no Titan tier. See the
+[SAC wiki gameplay roster](https://ratchetandclank.fandom.com/wiki/Secret_Agent_Clank_(game)),
+[SAC vendor tiers](https://ratchetandclank.fandom.com/wiki/Secret_Agent_Clank_vendors),
+and [RYNO level list](https://ratchet-galaxy.com/en/games/psp/secret-agent-clank/inventory/weapons/ryno).
+
+Ratchet's level locations require access to any Ratchet case and the weapon.
+Clank temporarily requires any Clank case; fill in `CLANK_WEAPON_LEVEL_CASES`
+in `locations/weapon_levels.py` to specify the permitted cases for each weapon.
+Progressive modes additionally require as many copies as the target level.
+Checks are sent when an owned weapon actually reaches the level, including earned
+XP levels in manual mode. Generate a new seed for these options; restart the
+client and reset the level to install the manual XP guard. Automated tests cover
+the emitted guard instructions; live emulator validation remains pending.
+All purchase checks share one Vendor region and require a reachable vendor plus
+ownership of the slot's case file. Scouting/hints and native vendor rows use the
+same mapping in `constants/vendor_unlocks.py`, based on the
+[SAC vendor unlock table](https://ratchetandclank.fandom.com/wiki/Secret_Agent_Clank_vendors).
+All gates are Clank or Ratchet cases. Bolt Foundry purchases use Clank's Galactic
+Bolt Reserve ([Hard Currency](https://ratchetandclank.fandom.com/wiki/Hard_Currency)).
+Receiving a case unlocks its unchecked slots; reopen the vendor to rebuild its
+list. The gate belongs to the purchase slot, regardless of its randomized reward.
+Planet/character access modes use their corresponding unlocked cases. Planet
+mode adds a Museum case file when starting elsewhere, since Museum has no
+planet-access item.
+
+AP adaptations where the wiki has no specific case: Titan/Proto upgrades and
+Clank challenge-mode mods use the base weapon's case; Explosive Nature uses Bee
+Mine's source case; RYNO and Hot Foot 2.1 use Museum (the first vendor), with NG+
+still required. Native weapon ownership and levels do not gate randomized slots.
+Charge-Up and Earthquake remain challenge rewards. Seed options still filter
+operatives and NG+ content. `VENDOR_REQUIREMENTS` in `rules/vendor_access.py`
+controls physical access to the shared shop separately.
+
+Restart the client and reset the level in-game to install the vendor change.
+Generate a new seed for matching placement logic; existing seeds retain their
+old server-side placement rules. The client applies the selected NG+ count to
+the native replay field when gameplay is ready.
 
 Weapon XP Multiplier, Health XP Multiplier and Bolt Multiplier accept integer
 values from 1 to 10, default 1. They scale positive native gains, preserving
@@ -145,6 +185,13 @@ The detector uses the settled resident loader target; the previous level ID can
 remain in memory at the title screen. New Game loading still arms the mandatory
 gameplay hooks when the AP inventory is available.
 
+All skins unlock when AP initializes gameplay, without spending Titanium Bolts.
+The `clank_skin`, `ratchet_skin`, and `qwark_skin` cosmetic options select a skin
+to apply on level load; `in_game` keeps your choice from Special → Skins.
+Qwark's giant form follows the same costume. See [skin options](skins.md) for
+the complete list. If already playing when connecting, reset the level in-game
+as prompted to initialize the hooks and apply your selection.
+
 Once gameplay hooks are installed, a native heartbeat watchdog shows
 "Disconnected from Archipelago / Reconnect the AP client" when the server
 disconnects or the client stops responding. Client loss is detected after 180
@@ -153,3 +200,12 @@ the last message then expires normally. This requires the patched level to be
 running: it cannot warn before the client first installs hooks or while the game
 is stopped on a loading screen. Restart the client and reset the level in-game
 to install this update. Live HUD verification of this patch is pending.
+
+### Stealth takedown checks
+
+Set `stealth_takedown_checks` to `off` (default), `every_5`, `every_10`, or `all`.
+These add 0, 5, 2, or 25 cumulative successful Clank takedown locations.
+Enabling them requires Clank in `operatives`; otherwise generation reports an
+option error. The 5/10/25 access rules have TODOs for case and item requirements;
+until mapped they conservatively require all enabled Clank cases.
+See [stealth research and rule edit points](stealth-takedowns.md).

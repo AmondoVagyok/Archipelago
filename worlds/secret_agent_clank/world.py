@@ -19,6 +19,7 @@ from .constants.vendor import NG_PLUS_VENDOR_ITEMS
 from .constants.weapon_progression import (
     LEVELLED_INTERNALS,
     PROGRESSIVE_TO_INTERNAL,
+    PROGRESSIVE_TO_UNLOCK,
     UNLOCK_TO_PROGRESSIVE,
     max_level,
 )
@@ -93,8 +94,27 @@ class SecretAgentClankWorld(World):
     def create_event(self, name: str) -> SACItem:
         return SACItem(name, ItemClassification.progression, None, self.player)
 
+    def collect(self, state, item):
+        changed = super().collect(state, item)
+        if changed and item.name in PROGRESSIVE_TO_UNLOCK:
+            # Existing case rules name the base weapon. Keep its ownership in
+            # logic as well as the progressive count used by level checks.
+            state.add_item(PROGRESSIVE_TO_UNLOCK[item.name], self.player)
+        return changed
+
+    def remove(self, state, item):
+        changed = super().remove(state, item)
+        if changed and item.name in PROGRESSIVE_TO_UNLOCK:
+            state.remove_item(PROGRESSIVE_TO_UNLOCK[item.name], self.player)
+        return changed
+
     def generate_early(self) -> None:
         setup_options_from_slot_data(self)
+        if (self.options.stealth_takedown_checks.value
+                and not self.options.operatives.value.get(SACOperatives.CLANK, 0)):
+            raise OptionError(
+                "Stealth Takedown Checks requires Clank in operatives. "
+                "Enable Clank or set stealth_takedown_checks to off.")
 
     def create_regions(self) -> None:
         create_regions(self)
@@ -199,6 +219,10 @@ class SecretAgentClankWorld(World):
         elif self.options.infobots == Infobots.option_planets:
             active_planets = {case.planet for case in active_cases}
             pool += [item for planet, item in PLANET_ACCESS_ITEM_NAME.items() if planet in active_planets]
+            # Museum has no planet-access item. Its vendor stock still needs
+            # an obtainable case file when a different case starts the seed.
+            if clank_enabled and starting_case.name != SACCases.BOLTAIRE_MUSEUM:
+                pool.append(CASE_NAME_TO_INFOBOT[SACCases.BOLTAIRE_MUSEUM])
 
         # Character unlocks -- only for characters actually enabled (see
         # options.py's Operatives); a disabled operative has no cases
@@ -275,13 +299,16 @@ class SecretAgentClankWorld(World):
             # sending completions for (see client/context.py).
             "all_missions": self.options.all_missions.value,
             "all_cutscenes": bool(self.options.all_cutscenes.value),
-            "skill_points": bool(self.options.skill_points.value),
+            "skill_points": self.options.skill_points.value,
             "all_keycards": bool(self.options.all_keycards.value),
             "all_alien_codes": bool(self.options.all_alien_codes.value),
             "send_scouted_locations": bool(self.options.send_scouted_locations.value),
             "goal": self.options.goal.value,
             "progressive_wrench": bool(self.options.progressive_wrench.value),
-            "progressive_weapons": bool(self.options.progressive_weapons.value),
+            "progressive_weapons": self.options.progressive_weapons.value,
+            "weapon_level_checks": self.options.weapon_level_checks.value,
+            "nanotech_checks": bool(self.options.nanotech_checks),
+            "stealth_takedown_checks": self.options.stealth_takedown_checks.value,
             "weapon_xp_multiplier": self.options.weapon_xp_multiplier.value,
             "health_xp_multiplier": self.options.health_xp_multiplier.value,
             "bolt_multiplier": self.options.bolt_multiplier.value,
@@ -289,6 +316,9 @@ class SecretAgentClankWorld(World):
             "starting_weapons": self.options.starting_weapons.value,
             "starting_gadgets": self.options.starting_gadgets.value,
             "starting_bolts": self.options.starting_bolts.value,
+            "clank_skin": self.options.clank_skin.value,
+            "ratchet_skin": self.options.ratchet_skin.value,
+            "qwark_skin": self.options.qwark_skin.value,
             "trap_chance": self.options.trap_chance.value,
             "trap_weight": dict(self.options.trap_weight.value),
             "trap_duration": dict(self.options.trap_duration.value),

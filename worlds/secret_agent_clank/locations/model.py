@@ -35,6 +35,9 @@ class SACLocationType(Enum):
     VENDOR = auto()
     TITAN_VENDOR = auto()
     MOD_VENDOR = auto()
+    WEAPON_LEVEL = auto()
+    NANOTECH = auto()
+    STEALTH_TAKEDOWN = auto()
 
 
 # Order locations are appended to their case region in -- keeps the pre-refactor
@@ -70,7 +73,11 @@ class SACLocation:
             case SACLocationType.MISSION:
                 return options.all_missions.value == Missions.option_all
             case SACLocationType.SKILL_POINT:
-                return bool(options.skill_points)
+                from ..constants.skill_point_requirements import SKILL_POINT_REQUIREMENTS
+                requirement = SKILL_POINT_REQUIREMENTS[self.name]
+                return (options.skill_points.value >= requirement.difficulty
+                        and all(options.operatives.value.get(operative, 0)
+                                for operative in requirement.operatives))
             case SACLocationType.CUTSCENE:
                 return bool(options.all_cutscenes)
             case SACLocationType.KEYCARD:

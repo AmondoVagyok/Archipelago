@@ -33,6 +33,9 @@ from .vendors import (BASE_VENDOR_LOCATIONS as _BASE_VENDOR,
                       MOD_VENDOR_LOCATIONS as _MOD_VENDOR, TITAN_VENDOR_LOCATIONS as _TITAN_VENDOR)
 from .venantonio_canals import LOCATIONS as VENANTONIO_CANALS_LOCATIONS
 from .venantonio_labs import LOCATIONS as VENANTONIO_LABS_LOCATIONS
+from .weapon_levels import WEAPON_LEVEL_LOCATIONS
+from .nanotech import NANOTECH_LOCATIONS
+from .stealth import STEALTH_TAKEDOWN_LOCATIONS
 
 __all__ = [
     "ALIEN_CODE_LOCATIONS", "ALL_LOCATIONS", "BASE_ID", "CASE_LOCATIONS", "KEYCARD_LOCATIONS", "LOCATIONS",
@@ -73,7 +76,8 @@ CASE_LOCATIONS: tuple[SACLocation, ...] = (
     *UNDERWATER_BUNKER_LOCATIONS,
     *KLUNKS_LAIR_LOCATIONS,
 )
-LOCATIONS: tuple[SACLocation, ...] = (*CASE_LOCATIONS, *_BASE_VENDOR, *_TITAN_VENDOR, *_MOD_VENDOR)
+LOCATIONS: tuple[SACLocation, ...] = (*CASE_LOCATIONS, *_BASE_VENDOR, *_TITAN_VENDOR, *_MOD_VENDOR,
+                                    *WEAPON_LEVEL_LOCATIONS.values(), *NANOTECH_LOCATIONS.values(), *STEALTH_TAKEDOWN_LOCATIONS.values())
 
 
 def _by_type(*types: SACLocationType) -> dict[str, SACLocation]:

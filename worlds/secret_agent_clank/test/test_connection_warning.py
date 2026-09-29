@@ -57,6 +57,44 @@ class ConnectionWarningTests(unittest.TestCase):
             self.warning.refresh(True)
         self.assertEqual(self.p.read_int32(self.warning.heartbeat), 0)
 
+    def test_retail_prologue_replays_relocated_address_on_both_paths(self):
+        # Read from the running USA game: register saves follow this LUI.
+        original = packed([0x27BDFFE0, 0x3C020053])
+        code = self.warning.routine(self.warning.heartbeat, self.message,
+            self.show, self.render, original, self.cooldown)
+        self.p.write_bytes(self.warning.entry, code)
+        for heartbeat in (0, HEARTBEAT_FRAMES):
+            with self.subTest(heartbeat=heartbeat):
+                self.p.write_int32(self.warning.heartbeat, heartbeat)
+                cpu = CPU(self.p)
+                cpu.r[m.SP] = 0x1F0000
+                sp, ra = cpu.r[m.SP], cpu.r[m.RA]
+                def show(cpu):
+                    cpu.r[m.V0] = 0xBAD
+                cpu.run(self.warning.entry, stop=self.render + 8, stubs={self.show: show})
+                self.assertEqual(cpu.r[m.SP], sp - 32)
+                self.assertEqual(cpu.r[m.RA], ra)
+                self.assertEqual(cpu.r[m.V0], 0x530000)
+                self.assertEqual(cpu.calls, [self.show] if heartbeat == 0 else [])
+
+    def test_prepare_accepts_retail_lui_but_rejects_unexpected_instructions(self):
+        symbols = {'HUD_ShowOneLiner__FPCcbi': self.show, 'HUD_RenderOneLiner__Fv': self.render}
+        with patch('worlds.secret_agent_clank.core.patches.connection_warning.triangle_storage',
+                   return_value=(0x150000, bytes(352))), patch(
+                   'worlds.secret_agent_clank.core.patches.connection_warning.ItemNotifications') as notifications:
+            notifications.return_value.bind.return_value = True
+            notifications.return_value.binding = (0, 0, self.cooldown)
+            for high in (0x53, 0x60):
+                original = packed([0x27BDFFE0, m.lui(m.V0, high)])
+                self.p.write_bytes(self.render, original)
+                edits = self.warning.prepare(symbols, SimpleNamespace(patches=[]))
+                self.assertEqual(edits[-1].original, original)
+                self.assertEqual(self.p.read_bytes(self.render, 8), original)
+            self.p.write_bytes(self.render, packed([0x27BDFFE0, m.jr(m.RA)]))
+            with self.assertRaisesRegex(RuntimeError, 'render prologue changed'):
+                self.warning.prepare(symbols, SimpleNamespace(patches=[]))
+            self.assertIsNone(self.warning.heartbeat)
+
     def test_prepare_fits_shared_storage_and_rejects_overlap(self):
         symbols = {'HUD_ShowOneLiner__FPCcbi': self.show, 'HUD_RenderOneLiner__Fv': self.render}
         self.p.write_bytes(self.render, self.original)
@@ -76,6 +114,7 @@ class ConnectionWarningTests(unittest.TestCase):
 class ConnectionLifecycleTests(unittest.IsolatedAsyncioTestCase):
     async def test_server_loss_marks_watchdog_offline(self):
         context = SACContext.__new__(SACContext)
+        context._stealth_load_task = None
         context._wiring = SimpleNamespace(native_runtime=SimpleNamespace(ap_connected=True))
         with patch.object(CommonContext, 'connection_closed', new_callable=AsyncMock) as closed:
             await context.connection_closed()

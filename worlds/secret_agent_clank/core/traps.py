@@ -99,7 +99,9 @@ class Traps:
         now = self.clock()
         elapsed = min(0.5, max(0, now - self.last_tick)) if self.last_tick is not None and playing else 0
         self.last_tick = now if playing else None
-        if not self.managed or not playing:
+        # Menus pause duration, not enforcement: the cheat menu can clear
+        # these same bits while the level and save are still valid.
+        if not self.managed:
             return
         address = self.address(symbols)
         if address is None:
@@ -111,6 +113,9 @@ class Traps:
                 active |= TRAP_BITS[name]
         expired = self.managed & ~active
         current = self.pine.read_int32(address)
+        switching = TRAP_BITS[SACTraps.WEAPON_SWITCHING]
+        if active & switching and not current & switching:
+            self.pine.write_int32(self.switching_timer(symbols), 360)
         self.pine.write_int32(address, (current & ~expired) | (self.original & expired) | active)
         self.remaining = {name: seconds for name, seconds in remaining.items() if seconds > 0}
         self.managed = active

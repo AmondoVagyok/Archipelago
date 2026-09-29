@@ -37,6 +37,29 @@ class TrapTests(unittest.TestCase):
         self.assertFalse(self.traps.remaining)
         self.assertEqual(self.traps.managed, 0)
 
+    def test_menu_ticks_enforce_traps_without_spending_duration(self):
+        for name, bits in TRAP_BITS.items():
+            with self.subTest(trap=name):
+                self.traps.activate(name, {})
+                duration = dict(self.traps.remaining)
+                for _ in range(3):
+                    self.memory.write_int32(0x100000, 1 << 12)
+                    self.now += 10
+                    self.traps.tick({}, False)
+                    self.assertEqual(self.memory.read_int32(0x100000),
+                                     (1 << 12) | self.traps.managed)
+                    self.assertEqual(self.traps.remaining, duration)
+                self.traps.restore({})
+
+    def test_switching_reactivation_does_not_reset_running_countdown(self):
+        self.traps.activate(SACTraps.WEAPON_SWITCHING, {})
+        self.memory.write_int32(0x100004, 123)
+        self.traps.tick({}, False)
+        self.assertEqual(self.memory.read_int32(0x100004), 123)
+        self.memory.write_int32(0x100000, 0)
+        self.traps.tick({}, False)
+        self.assertEqual(self.memory.read_int32(0x100004), 360)
+
     def test_switching_initializes_native_countdown(self):
         self.traps.activate(SACTraps.WEAPON_SWITCHING, {})
         self.assertEqual(self.memory.read_int32(0x100004), 360)

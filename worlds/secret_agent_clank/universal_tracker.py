@@ -20,7 +20,8 @@ def setup_options_from_slot_data(world: "SecretAgentClankWorld") -> None:
     world.options.operatives.value = dict(passthrough["operatives"])
     world.options.all_missions.value = passthrough["all_missions"]
     world.options.all_cutscenes.value = bool(passthrough["all_cutscenes"])
-    world.options.skill_points.value = bool(passthrough["skill_points"])
+    from .options import SkillPoints
+    world.options.skill_points.value = SkillPoints.from_any(passthrough["skill_points"]).value
     world.options.all_keycards.value = bool(passthrough["all_keycards"])
     world.options.all_alien_codes.value = bool(passthrough["all_alien_codes"])
     world.options.goal.value = passthrough["goal"]
@@ -28,7 +29,11 @@ def setup_options_from_slot_data(world: "SecretAgentClankWorld") -> None:
     # Item pool composition -- affects create_items()'s pool exactly like
     # the real generation, so a re_gen'd world's item IDs/counts still match.
     world.options.ng_plus.value = passthrough["ng_plus"]
-    world.options.progressive_weapons.value = bool(passthrough["progressive_weapons"])
+    from .options import ProgressiveWeapons
+    world.options.progressive_weapons.value = ProgressiveWeapons.from_any(passthrough["progressive_weapons"]).value
+    world.options.weapon_level_checks.value = passthrough.get("weapon_level_checks", 0)
+    world.options.nanotech_checks.value = passthrough.get("nanotech_checks", False)
+    world.options.stealth_takedown_checks.value = passthrough.get("stealth_takedown_checks", 0)
     world.options.starting_weapons.value = passthrough["starting_weapons"]
     world.options.starting_gadgets.value = passthrough["starting_gadgets"]
     world.options.starting_bolts.value = passthrough["starting_bolts"]

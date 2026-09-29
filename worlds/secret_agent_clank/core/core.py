@@ -29,6 +29,8 @@ from .patches.weapon_mods import WeaponMods
 from .patches.wrench import PROGRESSIVE_WRENCH, WrenchProgression
 from .quick_select import QuickSelectState
 from .skill_points import SkillPointState
+from .stealth import StealthState
+from .skins import Skins
 from .titanium_bolts import TitaniumBoltState
 from .traps import Traps
 from .vendor_rewards import VendorRewards
@@ -63,11 +65,15 @@ class Core:
         self.vendor        = self.case.vendor
         self.location_hooks = LocationHooks(pine)
         self.native_runtime = NativeRuntime(pine, self.location_hooks, self._log)
+        self.skins = Skins(pine)
+        self.native_runtime.skins = self.skins
         self.vendor_rewards = VendorRewards(pine, self.vendor, self._log)
         self.native_runtime.presentation = self.vendor_rewards.text
         self.wrench = WrenchProgression(pine)
         self.native_runtime.wrench = self.wrench
+        self.stealth = StealthState(pine)
         self.progression = Progression(pine)
+        self.progression.stealth = self.stealth
         self.native_runtime.progression = self.progression
         self.weapon_mods = WeaponMods(pine)
         self.native_runtime.weapon_mods = self.weapon_mods
@@ -306,6 +312,7 @@ class Core:
     # -- Tick --------------------------------------------------------------
 
     def tick(self) -> None:
+        self.stealth.poll()
         if self.main_menu.poll():
             self.case.is_ready = False
             self._invalidate_level()
@@ -438,6 +445,9 @@ class Core:
         self._reapply_all_inventories()
 
         self.progression.sync()
+        for name in (*self.progression.level_checks(), *self.progression.nanotech_checks(), *self.stealth.checks()):
+            if name not in self._checked_items and self.send_location(name):
+                self._checked_items.add(name)
         self.weapon_mods.sync()
         self.wrench.sync()
         self.bolt_rewards.deliver()

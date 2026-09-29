@@ -18,6 +18,15 @@ _PLANET = SACPlanets.FORT_SPROCKET
 _CASE = SACCases.INSIDE_THE_A_EYE
 
 LOCATIONS: tuple[SACLocation, ...] = (
+    # Preserve the AP name/ID and native flag; earned in Vaultbreakers.
+    SACLocation(
+        SACSkillPointLocations.GALACTIC_BOLT_RESERVE_VAULT_VAULT,
+        _PLANET,
+        _CASE,
+        SACLocationType.SKILL_POINT,
+        77_818_007,
+        lambda world: True_(),
+    ),
     SACLocation(
         SACGadgetbotChallengeLocations.INSIDE_THE_A_EYE_VAULTBREAKERS,
         _PLANET,

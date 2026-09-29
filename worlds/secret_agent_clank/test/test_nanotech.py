@@ -1,0 +1,72 @@
+import unittest
+
+from test.general import setup_multiworld
+from ..world import SecretAgentClankWorld
+from ..constants.nanotech import CLANK_XP_SAVE_OFFSET
+from ..core.patches.progression import Progression
+from .test_runtime import Memory
+
+
+class NanotechTests(unittest.TestCase):
+    def test_clank_saved_xp_only_and_ng_caps(self):
+        mem = Memory()
+        p = Progression(mem)
+        p.configure({"nanotech_checks": True})
+        p.ng_address = 0x300ED4
+        # Ratchet's XP must not send Clank checks.
+        mem.batch_write_int32([(0x3198FC, 999999)])
+        self.assertEqual(p.nanotech_checks(), ())
+        for ng, count in ((0, 45), (1, 70), (2, 70)):
+            p.configure({"nanotech_checks": True, "ng_plus": ng})
+            mem.batch_write_int32([(0x300000 + CLANK_XP_SAVE_OFFSET, 469200)])
+            self.assertEqual(len(p.nanotech_checks()), count)
+        p.ng_address = None
+        self.assertEqual(p.nanotech_checks(), ())
+
+    def test_threshold_boundary_and_old_slots(self):
+        mem = Memory()
+        p = Progression(mem)
+        p.ng_address = 0x300ED4
+        for xp, count in ((699, 0), (700, 1), (2199, 1), (2200, 2)):
+            p.configure({"nanotech_checks": True})
+            mem.batch_write_int32([(0x300000 + CLANK_XP_SAVE_OFFSET, xp)])
+            self.assertEqual(len(p.nanotech_checks()), count)
+        p.configure({})
+        self.assertEqual(p.nanotech_checks(), ())
+
+    def test_generation_caps_and_disabled(self):
+        for ng, count in ((0, 45), (1, 70), (2, 70)):
+            mw = setup_multiworld(SecretAgentClankWorld, options={"ng_plus": ng})
+            locations = [l for l in mw.get_locations(1) if l.name.startswith("Clank Nanotech Level")]
+            self.assertEqual(len(locations), count)
+        mw = setup_multiworld(SecretAgentClankWorld, options={"nanotech_checks": False})
+        self.assertFalse(any(l.name.startswith("Clank Nanotech Level") for l in mw.get_locations(1)))
+
+    def test_clank_access_required_and_disabled_operative(self):
+        from BaseClasses import CollectionState
+        from ..constants import CASE_NAME_TO_INFOBOT, SACCases
+        mw = setup_multiworld(SecretAgentClankWorld, options={"infobots": "cases"})
+        state = CollectionState(mw)
+        for item in mw.precollected_items[1]:
+            state.remove(item)
+        location = mw.get_location("Clank Nanotech Level 16", 1)
+        self.assertFalse(location.can_reach(state))
+        state.collect(mw.worlds[1].create_item(CASE_NAME_TO_INFOBOT[SACCases.BOLTAIRE_MUSEUM]))
+        self.assertTrue(location.can_reach(state))
+        mw = setup_multiworld(SecretAgentClankWorld, options={
+            "goal": "qwark_opera", "operatives": {"Ratchet": 1, "Qwark": 1}})
+        self.assertFalse(any(l.name.startswith("Clank Nanotech Level") for l in mw.get_locations(1)))
+
+    def test_native_capture_layout(self):
+        from pathlib import Path
+        from types import SimpleNamespace
+        from ..core.symbols import RuntimeSymbols
+        path = Path(__file__).parents[1] / ".research/vendor_audit_live.ram"
+        if not path.exists():
+            self.skipTest("Local capture unavailable")
+        mem = Memory()
+        mem.data[:] = path.read_bytes()
+        symbols = RuntimeSymbols.parse(mem.data, 0)
+        p = Progression(mem)
+        p.configure({"nanotech_checks": True})
+        p.prepare(symbols, SimpleNamespace(patches=[]), 1, vendor_enabled=False)

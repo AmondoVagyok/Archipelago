@@ -1,6 +1,7 @@
 """AP-scouted vendor presentation, independent of native price and purchase ID."""
 from dataclasses import dataclass
 
+from ..constants.vendor_unlocks import VENDOR_ROW_CASES
 from ..constants.weapon_mods import WEAPON_MODS
 from ..constants.weapon_progression import TITAN_LOCATIONS
 from ..constants.weapons import EQUIPMENT_INTERNAL_TO_DISPLAY
@@ -45,10 +46,10 @@ class VendorScouts:
             (4, WEAPON_ORDER.index(internal)): location_ids[name]
             for internal, name in TITAN_LOCATIONS.items() if name in location_ids})
         self.rewards = {}
-    def request(self, server_locations, hint: bool = False, owned_cases=None):
-        # Seed membership is authoritative; the native save and case unlocks
-        # must not hide or delay the contents of an AP vendor check.
-        locations = sorted(set(self.locations.values()) & set(server_locations))
+    def request(self, server_locations, hint: bool = False, owned_cases=()):
+        locations = sorted({location for row, location in self.locations.items()
+                            if VENDOR_ROW_CASES[row] in owned_cases}
+                           & set(server_locations))
         return {"cmd": "LocationScouts", "locations": locations, "create_as_hint": 2 if hint else 0}
 
     def update(self, items, item_name, player_name):

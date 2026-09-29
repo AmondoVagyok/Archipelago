@@ -26,6 +26,19 @@ class NativeRuntimeTests(unittest.TestCase):
         self.assertFalse(self.runtime.service(set(), {}))
         self.runtime.connection_warning.refresh.assert_not_called()
 
+    def test_active_runtime_updates_vendor_case_gates(self):
+        from ..constants.planets import SACCases
+        self.hooks.installed = True
+        self.hooks.is_current.return_value = True
+        self.runtime.vendor_catalog = Mock()
+        self.runtime.owned_cases = frozenset({SACCases.THE_SHOWERS})
+        self.assertTrue(self.runtime.service(set(), {}))
+        self.runtime.vendor_catalog.sync_cases.assert_called_once_with(self.runtime.owned_cases)
+        self.runtime.vendor_catalog.reset_mock()
+        self.hooks.is_current.return_value = False
+        self.runtime.service(set(), {})
+        self.runtime.vendor_catalog.sync_cases.assert_not_called()
+
     def test_close_expires_watchdog_only_in_current_game_module(self):
         self.p.get_game_id = lambda: "SCUS-97623"
         self.hooks.installed = True
@@ -65,7 +78,9 @@ class NativeRuntimeTests(unittest.TestCase):
         self.runtime.progression.prepare.return_value = []
         self.hooks.patches = []
         with patch("worlds.secret_agent_clank.core.native_runtime.RuntimeSymbols"), \
-                patch("worlds.secret_agent_clank.core.native_runtime.VendorCatalog.prepare", return_value=[]):
+                patch("worlds.secret_agent_clank.core.native_runtime.VendorCatalog") as catalog:
+            catalog.return_value.prepare.return_value = []
+            catalog.return_value.sync_cases.side_effect = lambda cases: calls.append("case gates")
             self.assertFalse(self.runtime.service(set(), {}))
         self.assertEqual(self.hooks.prepare.call_args.kwargs["vendor_locations"], {})
         self.assertFalse(self.runtime.progression.prepare.call_args.kwargs["vendor_enabled"])
@@ -137,9 +152,11 @@ class NativeRuntimeTests(unittest.TestCase):
         self.hooks.install_at_loader_gate.side_effect = lambda g: calls.append("install")
         gate.release.side_effect = lambda: calls.append("release")
         with patch("worlds.secret_agent_clank.core.native_runtime.RuntimeSymbols"), \
-                patch("worlds.secret_agent_clank.core.native_runtime.VendorCatalog.prepare", return_value=[]):
+                patch("worlds.secret_agent_clank.core.native_runtime.VendorCatalog") as catalog:
+            catalog.return_value.prepare.return_value = []
+            catalog.return_value.sync_cases.side_effect = lambda cases: calls.append("case gates")
             self.assertFalse(self.runtime.service({"throwTie"}, {11: True}))
-        self.assertEqual(calls, ["install", "release"])
+        self.assertEqual(calls, ["install", "case gates", "release"])
         self.assertTrue(self.runtime.awaiting_start)
         self.p.batch_write_int32([(0x100, 4)])
         gate.reset_mock()

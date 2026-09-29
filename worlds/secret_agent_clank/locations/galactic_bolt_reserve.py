@@ -87,14 +87,6 @@ LOCATIONS: tuple[SACLocation, ...] = (
         lambda world: _HOLOMONICLE,
     ),
     SACLocation(
-        SACSkillPointLocations.GALACTIC_BOLT_RESERVE_VAULT_VAULT,
-        _PLANET,
-        _CASE,
-        SACLocationType.SKILL_POINT,
-        77_818_007,
-        lambda world: _HOLOMONICLE,
-    ),
-    SACLocation(
         SACCutsceneLocations.GALACTIC_BOLT_RESERVE_ENTER_CUTSCENE,
         _PLANET,
         _CASE,

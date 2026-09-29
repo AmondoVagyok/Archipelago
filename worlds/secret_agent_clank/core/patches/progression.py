@@ -1,15 +1,24 @@
 """Native AP weapon tiers and gain multipliers, installed at the loader gate."""
 import struct
+from bisect import bisect_right
+
+from ...constants.nanotech import (CLANK_START_NANOTECH, CLANK_XP_SAVE_OFFSET,
+    CLANK_XP_THRESHOLDS, nanotech_levels, nanotech_location_name)
 from collections import Counter
 
 from ...constants.native_functions import NativeFunctions
-from ...constants.weapon_progression import PROGRESSIVE_TO_INTERNAL, TITAN_LOCATIONS, max_level
+from ...constants.weapon_progression import (
+    LEVELLED_INTERNALS, PROGRESSIVE_TO_INTERNAL, TITAN_LOCATIONS,
+    checked_levels, level_location_name, max_level,
+)
 from ..inventories.weapons import WEAPON_ORDER
 from ..symbols import require
 from .asm import Patch, jump, packed
 from .gain_storage import GainStorage
 from .patch import PatchSet
 from .titan_vendor import TitanPrice
+from .mips import (A0, T0, T1, T2, V0, ZERO, RA, addiu, addu, beq, jr,
+                   lbu, li32, lw, sll, sltiu, sltu, sub_)
 
 
 class Progression(PatchSet):
@@ -24,7 +33,12 @@ class Progression(PatchSet):
 
     def __init__(self, pine):
         super().__init__(pine)
+        self.stealth = None
         self.enabled = False
+        self.manual = False
+        self.check_mode = 0
+        self.nanotech_checks_enabled = False
+        self.cap_address = None
         self.ng_plus = 0
         self.weapon_xp = self.health_xp = self.bolts = 1
         self.levels = {}
@@ -35,7 +49,17 @@ class Progression(PatchSet):
         self.pending_definitions = ()
 
     def configure(self, data):
-        self.enabled = bool(data.get("progressive_weapons", False))
+        mode = data.get("progressive_weapons", False)
+        # Old slot data used a boolean toggle: true always meant automatic.
+        mode = (2 if mode else 0) if isinstance(mode, bool) else int(mode)
+        if mode not in (0, 1, 2):
+            raise ValueError("progressive_weapons must be off, manual, or automatic")
+        self.enabled = mode != 0
+        self.manual = mode == 1
+        self.check_mode = int(data.get("weapon_level_checks", 0))
+        if self.check_mode not in range(5):
+            raise ValueError("weapon_level_checks must be between 0 and 4")
+        self.nanotech_checks_enabled = bool(data.get("nanotech_checks", False))
         self.ng_plus = int(data.get("ng_plus", 0))
         if self.ng_plus not in (0, 1, 2):
             raise ValueError("ng_plus must be between 0 and 2")
@@ -53,12 +77,59 @@ class Progression(PatchSet):
     def ownership(self):
         return {name: level > 0 for name, level in self.levels.items()}
 
+    @staticmethod
+    def manual_xp_wrapper(base, caps, target, original, multiplier):
+        """GADGET_GetsXP(unsigned gadget index, unsigned XP, bool): stop at cap.
+
+        The cap table is updated on sync, so another AP copy resumes native XP
+        without reinstalling code. Only caller-saved registers are scratched.
+        """
+        words = [sltiu(T0, A0, len(WEAPON_ORDER)), 0, 0,
+                 *li32(T0, caps), addu(T0, T0, A0), lbu(T2, 0, T0),
+                 sll(T0, A0, 7), sll(T1, A0, 3), sub_(T0, T0, T1),
+                 sll(T1, A0, 2), sub_(T0, T0, T1),
+                 *li32(T1, base), addu(T0, T0, T1), lw(T1, 0x5C, T0),
+                 addiu(T1, T1, 1), sltu(T0, T1, T2), 0, 0]
+        tail = (Progression.gain_wrapper(target, original, 5, multiplier)
+                if multiplier != 1 else original + packed([jump(target + 8), 0]))
+        stop = len(words) + len(tail) // 4
+        words[1] = beq(T0, ZERO, stop - 2)
+        words[18] = beq(T0, ZERO, stop - 19)
+        return packed(words) + tail + packed([jr(RA), addu(V0, ZERO, ZERO)])
+
+    def level_checks(self):
+        if not self.check_mode or self.base is None:
+            return ()
+        result = []
+        for internal in LEVELLED_INTERNALS:
+            base = self.base + WEAPON_ORDER.index(internal) * 0x74
+            if not self.pine.read_int32(base + 0x70):
+                continue
+            level = self.pine.read_int32(base + 0x5C) + 1
+            for target in checked_levels(internal, self.check_mode, self.ng_plus):
+                if level >= target:
+                    result.append(level_location_name(internal, target))
+        return result
+
+    def nanotech_checks(self):
+        # sync() clears ng_address during transitions or before save initialization.
+        if not self.nanotech_checks_enabled or self.ng_address is None:
+            return ()
+        save = self.ng_address - 0xED4
+        xp = self.pine.read_int32(save + CLANK_XP_SAVE_OFFSET)
+        if xp > 0x7FFFFFFF:
+            return ()
+        health = CLANK_START_NANOTECH + bisect_right(CLANK_XP_THRESHOLDS, xp) - 1
+        return tuple(nanotech_location_name(level) for level in nanotech_levels(self.ng_plus)
+                     if level <= health)
+
     def prepare(self, symbols, hooks, module, *, vendor_enabled=True):
         self.patches = []
         p = self.pine
         self.ng_address = None
         self.save_pointer_address = None
         self.pending_definitions = ()
+        self.cap_address = None
         self.module = module
         self.base = symbols.get("GADGET_g_GadgetList")
         replay = require(symbols, NativeFunctions.GLOBALVARS_IS_IN_REPLAY_MODE)
@@ -73,6 +144,20 @@ class Progression(PatchSet):
         # The relocated module has not run its initialization at this gate.
         # Validate code now, but dereference initialized data in sync().
         self.save_pointer_address = pointer
+        if self.nanotech_checks_enabled:
+            table = require(symbols, "g_LevelProgressionExperienceData_Clank")
+            expected = b"".join(struct.pack("<III", index, xp, CLANK_START_NANOTECH + index)
+                                for index, xp in enumerate(CLANK_XP_THRESHOLDS))
+            if p.read_bytes(table, len(expected)) != expected:
+                raise RuntimeError("Clank nanotech progression table changed")
+            add_clank = require(symbols, "GLOBALVARS_AddClankExperience__Fi")
+            # The dedicated Clank routine loads XP from pGV + 0x18000 + 0x1930.
+            for offset, word in ((0x4C, 0x3C030001), (0x54, 0x34638000),
+                                 (0x5C, 0x00832021), (0x60, 0x8C821930)):
+                if p.read_int32(add_clank + offset) != word:
+                    raise RuntimeError("Clank nanotech XP save layout changed")
+            if require(symbols, "pGV") != pointer:
+                raise RuntimeError("Clank nanotech save pointer changed")
         if self.enabled or self.ng_plus:
             if self.base is None:
                 raise RuntimeError("Missing native gadget list")
@@ -87,7 +172,7 @@ class Progression(PatchSet):
         if buy is not None:
             ranges.append((buy + 0x1FC, buy + 0x338))
         edits = []
-        if self.enabled or (module == 31 and self.ng_plus):
+        if (self.enabled and not self.manual) or (module == 31 and self.ng_plus):
             xp = require(symbols, NativeFunctions.GADGET_GETS_XP)
             if p.read_bytes(xp, 8) != packed([0x27BDFFB0, 0xFFB30028]):
                 raise RuntimeError("Weapon XP entry changed")
@@ -117,6 +202,15 @@ class Progression(PatchSet):
                 f"bolts {self.bolts}, NG+ {self.ng_plus}, vendor {vendor_enabled})")
         if vendor_enabled:
             edits.extend(TitanPrice(p).prepare(symbols, allocate))
+        if self.manual and module != 31:
+            xp = require(symbols, NativeFunctions.GADGET_GETS_XP)
+            original = p.read_bytes(xp, 8)
+            if original != packed([0x27BDFFB0, 0xFFB30028]):
+                raise RuntimeError("Weapon XP entry changed")
+            self.cap_address = allocate(bytes(len(WEAPON_ORDER)))
+            wrapper = self.manual_xp_wrapper(self.base, self.cap_address, xp, original, self.weapon_xp)
+            address = allocate(wrapper)
+            edits.append(Patch(xp, original, packed([jump(address), 0])))
         targets = [(NativeFunctions.PLAYER_GRANT_BOLTS, self.bolts, 4, 0x27BDFFF0, 0xFFB00000)]
         # Treehouse has no combat XP sources. Its small vendor-only arena
         # needs only the bolt handler for any environmental bolt gains.
@@ -134,6 +228,16 @@ class Progression(PatchSet):
                 raise RuntimeError(f"Gain routine changed: {name}")
             address = allocate(self.gain_wrapper(target, original, register, multiplier))
             edits.append(Patch(target, original, packed([jump(address), 0])))
+        if self.stealth is not None:
+            from ...constants.native_modules import CASE_MODULES
+            from ...constants import CASES_BY_OPERATIVE, SACOperatives
+            # Shared DLLs can contain Clank code even on another operative's
+            # route. Only the Clank success call is intercepted, never generic kills.
+            clank_modules = {CASE_MODULES[case.name] for case in CASES_BY_OPERATIVE[SACOperatives.CLANK]}
+            if module in clank_modules:
+                edits.extend(self.stealth.prepare(symbols, allocate))
+            else:
+                self.stealth.binding = None
         self.patches = edits
         return edits
 
@@ -163,11 +267,17 @@ class Progression(PatchSet):
         writes = []
         if self.ng_address is not None and self.pine.read_int32(self.ng_address) != self.ng_plus:
             writes.append((self.ng_address, self.ng_plus))
-        if self.ng_plus and not self.enabled:
+        if self.cap_address is not None:
+            caps = bytes(self.levels.get(internal, 0) for internal in WEAPON_ORDER)
+            if self.pine.read_bytes(self.cap_address, len(caps)) != caps:
+                self.pine.write_bytes(self.cap_address, caps)
+        if self.ng_plus and (not self.enabled or self.manual):
             # V4 has no combat path into Titan: normally the vendor supplies
             # V5. AP vendor purchases are checks, so bridge that boundary as
             # soon as an owned weapon reaches V4. Leave V5-V8 XP untouched.
             for internal in TITAN_LOCATIONS:
+                if self.manual and self.levels.get(internal, 0) < 5:
+                    continue
                 base = self.base + WEAPON_ORDER.index(internal) * 0x74
                 if self.pine.read_int32(base + 0x70) and self.pine.read_int32(base + 0x5C) == 3:
                     writes.extend(((base + 0x5C, 4), (base + 0x64, 0)))
@@ -175,6 +285,14 @@ class Progression(PatchSet):
             base = self.base + WEAPON_ORDER.index(internal) * 0x74
             native = max(0, level - 1)
             current = self.pine.read_int32(base + 0x5C)
+            if self.manual:
+                # Raise the ceiling, not the earned level. Clamp saves from a
+                # previous session and discard XP while frozen at the ceiling.
+                if current > native:
+                    writes.append((base + 0x5C, native))
+                if current >= native and self.pine.read_int32(base + 0x64):
+                    writes.append((base + 0x64, 0))
+                continue
             if current != native and (self.enabled or current < native):
                 writes.append((base + 0x5C, native))
             if (self.enabled or current < native) and self.pine.read_int32(base + 0x64):

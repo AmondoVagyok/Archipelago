@@ -40,8 +40,16 @@ class ConnectionWarning:
         show, render = require(symbols, "HUD_ShowOneLiner__FPCcbi", "HUD_RenderOneLiner__Fv")
         original = p.read_bytes(render, 8)
         first, second = words(original)
-        if first != m.addiu(m.SP, m.SP, -32) or second & 0xFFE00000 != 0xFFA00000:
-            raise RuntimeError("Connection warning render prologue changed")
+        # Retail HUD_RenderOneLiner starts with the stack allocation followed
+        # by LUI v0 (the relocated HUD address), before saving registers.
+        # Both that instruction and the stack-save variant can be replayed
+        # verbatim by routine(); neither is a branch or uses the incoming v0.
+        replayable = (second & 0xFFFF0000 == 0x3C020000
+                      or second & 0xFFE00000 == 0xFFA00000)
+        if first != m.addiu(m.SP, m.SP, -32) or not replayable:
+            raise RuntimeError(
+                f"Connection warning render prologue changed at {render:#x}: "
+                f"{first:08x} {second:08x}")
         storage, native = triangle_storage(p, symbols)
         # Vendor text uses the head of this verified no-op function. Reserve
         # only the tail; reject overlap with any other native patch.

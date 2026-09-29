@@ -1,7 +1,11 @@
 from rule_builder.rules import CanReachRegion, False_, Has, True_
 
 from ..constants.clank_gadgets import SACClankGadgets
-from ..constants.planets import SACCases
+from ..constants.planets import SACCases, CASE_NAME_TO_CASE, CASES_BY_OPERATIVE, PLANET_ACCESS_ITEM_NAME
+from ..constants import CHARACTER_ITEM_NAME, PROGRESSIVE_CHARACTER_ITEM_NAME
+from ..items import PROGRESSIVE_PLANET_ITEM_NAME
+from ..options import Infobots
+from ..constants.vendor_unlocks import VENDOR_CASES
 from ..constants.weapons import (
     GADGET_DISPLAY_TO_INTERNAL,
     RATCHET_WEAPON_DISPLAY_TO_INTERNAL,
@@ -63,10 +67,30 @@ def any_vendor_rule(world):
     return rule
 
 
+def vendor_case_rule(world, case_name):
+    """Match resolved AP case ownership, including alternative access modes."""
+    rule = Has(case_name)
+    case = CASE_NAME_TO_CASE[case_name]
+    mode = world.options.infobots
+    if mode == Infobots.option_character_unlocks:
+        item = PROGRESSIVE_CHARACTER_ITEM_NAME.get(case.operative)
+        if item:
+            count = list(CASES_BY_OPERATIVE[case.operative]).index(case) + 1
+            return rule | Has(item, count)
+        return rule | Has(CHARACTER_ITEM_NAME[case.operative])
+    if mode == Infobots.option_progressive_planet:
+        if case.planet in world.progressive_planets:
+            return rule | Has(PROGRESSIVE_PLANET_ITEM_NAME,
+                              world.progressive_planets.index(case.planet) + 1)
+    elif mode != Infobots.option_cases and case.planet in PLANET_ACCESS_ITEM_NAME:
+        return rule | Has(PLANET_ACCESS_ITEM_NAME[case.planet])
+    return rule
+
+
 def set_vendor_rules(world):
-    # Every purchase uses the same physical vendor access. Native inventory,
-    # original pickup cases and weapon levels do not gate AP purchase checks.
+    # Unlock the slot with its case, independently of the randomized reward.
     available_vendor = any_vendor_rule(world)
     for location in world.multiworld.get_locations(world.player):
         if location.parent_region.name == "Vendor":
-            world.set_rule(location, available_vendor)
+            world.set_rule(location, available_vendor & vendor_case_rule(
+                world, VENDOR_CASES[location.name]))

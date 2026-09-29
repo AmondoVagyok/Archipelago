@@ -80,11 +80,39 @@ class SACContext(PineMixin, DeathLinkMixin, CommonContext):
         self._processed_trap_count: int | None = None
         self._notification_count = None
         self._notification_slot = None
+        self._stealth_identity = None
+        self._stealth_load_task = None
 
         self._wiring = Core(self.pine, log=logger.info)
         self._wiring.vendor_rewards.scouts = self.vendor_scouts
         self._wiring.native_runtime.configure_vendors(
             name for name, rule in VENDOR_REQUIREMENTS.items() if not isinstance(rule, False_))
+
+    async def _load_stealth_state(self, key, state):
+        self.stored_data.pop(key, None)
+        await self.send_msgs([{"cmd": "Set", "key": key, "want_reply": True,
+                               "operations": [{"operation": "default", "value": 0}]}])
+        while key not in self.stored_data:
+            await asyncio.sleep(0.1)
+        state.load(self.stored_data[key])
+        # Retry any progress whose write was interrupted by a disconnect.
+        state.on_count(state.count)
+
+    def _configure_stealth(self, identity):
+        if self._stealth_load_task is not None:
+            self._stealth_load_task.cancel()
+        state = self._wiring.stealth
+        state.configure(int(self.slot_data.get("stealth_takedown_checks", 0)),
+                        reset=identity != self._stealth_identity)
+        self._stealth_identity = identity
+        key = f"secret_agent_clank_stealth_{self.team}_{self.slot}"
+        def save(count):
+            asyncio.create_task(self.send_msgs([
+                {"cmd": "Set", "key": key,
+                 "operations": [{"operation": "max", "value": count}]}]))
+        state.on_count = save
+        if state.mode:
+            self._stealth_load_task = asyncio.create_task(self._load_stealth_state(key, state))
 
     def _bolt_storage_keys(self) -> tuple[str, str]:
         """AP data-storage keys for this connection's bolt-reward delivery state -- never a local file (see core/bolt_rewards.py's docstring): an external file can't follow the player across machines or survive a wipe, and AP already provides durable per-slot server storage built for exactly this."""
@@ -216,6 +244,7 @@ class SACContext(PineMixin, DeathLinkMixin, CommonContext):
             return
         request = self.vendor_scouts.request(
             server_locations, hint=bool(self.slot_data.get("send_scouted_locations", True)),
+            owned_cases=self._wiring.owned_cases,
         )
         new_ids = [lid for lid in request["locations"] if lid not in self._scouted_location_ids]
         if not new_ids:
@@ -251,6 +280,8 @@ class SACContext(PineMixin, DeathLinkMixin, CommonContext):
         await self.send_connect(game=self.game)
 
     async def connection_closed(self) -> None:
+        if self._stealth_load_task is not None:
+            self._stealth_load_task.cancel()
         self._wiring.native_runtime.ap_connected = False
         await super().connection_closed()
 
@@ -269,12 +300,14 @@ class SACContext(PineMixin, DeathLinkMixin, CommonContext):
                 self._notification_count = None
                 self._wiring.notifications.queue.clear()
             self.slot_data = args.get("slot_data", {})
+            self._configure_stealth(identity)
             self.vendor_scouts.rewards.clear()
             self._scouted_location_ids.clear()
             self._wiring.native_runtime.starting_case.configure(self.slot_data)
             asyncio.create_task(self._load_bolt_state())
             asyncio.create_task(self._load_trap_state())
             self._wiring.progression.configure(self.slot_data)
+            self._wiring.skins.configure(self.slot_data)
             self._wiring.weapon_mods.configure(self.slot_data)
             self._wiring.wrench.enabled = bool(self.slot_data.get("progressive_wrench", False))
             self._wiring.progressive_planets = self.slot_data.get("progressive_planets")

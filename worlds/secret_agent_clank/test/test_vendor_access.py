@@ -72,7 +72,7 @@ class VendorAccessTests(unittest.TestCase):
         state.collect(m.worlds[1].create_item(SACClankGadgets.JETBOOTS))
         self.assertTrue(location.can_reach(state))
 
-    def test_all_purchase_types_share_one_vendor_without_case_gates(self):
+    def test_purchase_types_require_their_specific_case(self):
         from ..constants.weapon_mods import VENDOR_MODS
         requirements = {name: False_() for name in vendor_access.VENDOR_REQUIREMENTS}
         requirements[SACCases.ASYANICA_ROOFTOPS] = Has(SACClankGadgets.JETBOOTS)
@@ -87,10 +87,54 @@ class VendorAccessTests(unittest.TestCase):
             self.assertFalse(m.get_location(name, 1).can_reach(state))
         state.collect(world.create_item(CASE_NAME_TO_INFOBOT[SACCases.ASYANICA_ROOFTOPS]))
         state.collect(world.create_item(SACClankGadgets.JETBOOTS))
-        for name in names:
+        self.assertTrue(m.get_location(VENDOR_MODS[0].location, 1).can_reach(state))
+        for name in names[:-1]:
+            self.assertFalse(m.get_location(name, 1).can_reach(state), name)
+        state.collect(world.create_item(SACCases.GALACTIC_BOLT_RESERVE))
+        for name in (names[0], names[1], names[3]):
             self.assertTrue(m.get_location(name, 1).can_reach(state), name)
+        self.assertFalse(m.get_location(names[2], 1).can_reach(state))
+        state.collect(world.create_item(SACCases.AZCOTAL_ALLEY))
+        self.assertTrue(m.get_location(names[2], 1).can_reach(state))
         self.assertFalse(state.has(SACRatchetWeapons.SHOCKROCKET, 1))
         self.assertFalse(state.has(CASE_NAME_TO_INFOBOT[SACCases.INSIDE_THE_A_EYE], 1))
+
+    def test_all_catalog_gates_match_client_case_ownership_in_every_access_mode(self):
+        from ..constants.vendor_unlocks import VENDOR_CASES
+        from ..core.inventories.case_unlocks import resolve_owned_cases
+        for mode in range(4):
+            m = setup_multiworld(SecretAgentClankWorld, seed=12345,
+                                 options={"ng_plus": 1, "infobots": mode})
+            world = m.worlds[1]
+            locations = m.get_region("Vendor", 1).locations
+            self.assertEqual({loc.name for loc in locations}, set(VENDOR_CASES))
+            self.assertTrue(all("(Clank)" in case or "(Ratchet)" in case
+                                for case in VENDOR_CASES.values()))
+            # Isolate stock availability from the physical route to the shop.
+            for loc in locations:
+                world.set_rule(loc, vendor_access.vendor_case_rule(world, VENDOR_CASES[loc.name]))
+            state = CollectionState(m)
+            received = [item.name for item in m.precollected_items[1]]
+            items = [item for item in m.itempool if item.name.startswith("Case File")
+                     or "Access" in item.name or item.name.startswith("Progressive")]
+            for item in [None, *items]:
+                if item is not None:
+                    state.collect(item)
+                    received.append(item.name)
+                owned = resolve_owned_cases(received, character_unlocks=mode == 3,
+                                            progressive_planets=world.progressive_planets)
+                for loc in locations:
+                    self.assertEqual(loc.access_rule(state), VENDOR_CASES[loc.name] in owned,
+                                     (mode, loc.name, received))
+
+    def test_planet_mode_can_unlock_museum_stock_from_another_start(self):
+        from Fill import distribute_items_restrictive
+        m = setup_multiworld(SecretAgentClankWorld, seed=12345, options={
+            "infobots": "planets", "ng_plus": 1, "operatives": {"Clank": 1}})
+        self.assertNotEqual(m.worlds[1].starting_case, SACCases.BOLTAIRE_MUSEUM)
+        self.assertIn(SACCases.BOLTAIRE_MUSEUM, [item.name for item in m.itempool])
+        distribute_items_restrictive(m)
+        self.assertTrue(m.fulfills_accessibility())
 
     def test_reported_four_checks_reachable_with_all_items(self):
         m = setup_vendor_world(SecretAgentClankWorld, options={"ng_plus": 1})

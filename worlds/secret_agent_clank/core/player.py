@@ -6,11 +6,6 @@ if TYPE_CHECKING:
 
 
 class CharacterState:
-    # TODO: unconfirmed -- the other RaC worlds use a small int (e.g. 0 idle,
-    # 2 running) for movement_state and a distinct set of values above some
-    # threshold for "dead". Left unset until SAC's actual dead-state value(s)
-    # are found live, so is_dead fails closed (never reports dead) rather
-    # than guessing wrong and silently mis-triggering death handling.
     DEAD_STATE_VALUES: frozenset[int] = frozenset()
 
     def __init__(self, pine: "Pine") -> None:

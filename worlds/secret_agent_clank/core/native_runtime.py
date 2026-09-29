@@ -22,8 +22,10 @@ class NativeRuntime:
         self.wrench = None
         self.progression = None
         self.weapon_mods = None
+        self.skins = None
         self.vendor_modules = None
         self.vendor_locations = None
+        self.vendor_catalog = None
         self.presentation = None
         self.connection_warning = ConnectionWarning(pine)
         self.ap_connected = False
@@ -63,6 +65,9 @@ class NativeRuntime:
                 self.gate.release()
                 return False
             if target is not None:
+                stealth = getattr(self.progression, "stealth", None)
+                if stealth is not None and stealth.mode and not stealth.loaded:
+                    return False  # Keep the loader parked until slot progress is known.
                 symbols = RuntimeSymbols(p)
                 symbols.refresh()
                 self.hooks.installed = False
@@ -75,6 +80,8 @@ class NativeRuntime:
                 if self.wrench is not None:
                     self.hooks.patches.extend(self.wrench.prepare(symbols, target))
                 self.hooks.patches.extend(MissionTravel(p).prepare(symbols))
+                if self.skins is not None:
+                    self.hooks.patches.extend(self.skins.prepare(symbols))
                 if self.weapon_mods is not None:
                     self.hooks.patches.extend(self.weapon_mods.prepare(
                         symbols, self.hooks, target, checked, vendor_enabled))
@@ -85,12 +92,17 @@ class NativeRuntime:
                         self.hooks.patches.extend(TitanOffers(p).prepare(symbols))
                     self.hooks.patches.extend(self.progression.prepare(
                         symbols, self.hooks, target, vendor_enabled=vendor_enabled))
-                if vendor_enabled:
-                    self.hooks.patches.extend(VendorCatalog(p).prepare(symbols, self.hooks))
+                self.vendor_catalog = VendorCatalog(p) if vendor_enabled else None
+                if self.vendor_catalog is not None:
+                    self.hooks.patches.extend(self.vendor_catalog.prepare(symbols, self.hooks))
                 if self.presentation is not None and vendor_enabled:
                     self.hooks.patches.extend(self.presentation.prepare(symbols, self.hooks))
                 self.hooks.patches.extend(self.connection_warning.prepare(symbols, self.hooks))
                 self.hooks.install_at_loader_gate(self.gate)
+                if self.vendor_catalog is not None:
+                    self.vendor_catalog.sync_cases(self.owned_cases)
+                if self.skins is not None:
+                    self.skins.sync()
                 self.connection_warning.refresh(self.ap_connected)
                 self.generation += 1
                 self.gate.release()
@@ -110,8 +122,12 @@ class NativeRuntime:
                     return False
                 if self.hooks.entitlement_table is not None and not p.read_int8(self.hooks.entitlement_table + 40):
                     return False
+                if self.vendor_catalog is not None:
+                    self.vendor_catalog.sync_cases(self.owned_cases)
                 self.hooks.sync_checked(checked)
                 self.hooks.sync_entitlements(entitlements)
+                if self.skins is not None:
+                    self.skins.sync()
                 return True
             if not self.reset_notice:
                 self.log("[SAC] Native checks are mandatory. Reset the level in-game once to initialize AP; do not load a savestate.")

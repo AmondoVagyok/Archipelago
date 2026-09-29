@@ -48,6 +48,38 @@ class VendorCatalogTests(unittest.TestCase):
         self.assertEqual(build((2, 2, 2)), [])
         self.assertEqual(build((4, 4, 4)), [])
 
+    def test_case_unlocks_filter_native_rows_without_changing_purchase_flags(self):
+        from ..constants.planets import SACCases as C
+        p = CaptureMemory()
+        start, descriptors, header, add, tail = 0x110000, 0x120000, 0x130000, 0x140000, 0x110700
+        entries = ((5, 0, 0, 1, C.GALACTIC_BOLT_RESERVE),
+                   (7, 19, 3, 1, C.THE_SHOWERS),
+                   (5, 0, 4, 3, C.GALACTIC_BOLT_RESERVE))
+        p.write_int8 = lambda a, v: p.batch_write_int8([(a, v)])
+        catalog = VendorCatalog(p)
+        catalog.case_descriptors = []
+        for i, (weapon, mod, kind, unchecked, case) in enumerate(entries):
+            p.write_bytes(descriptors + i * 8, struct.pack('<2I', 0x160000 + i,
+                weapon | mod << 8 | kind << 16 | unchecked << 24))
+            p.batch_write_int8([(0x160000 + i, unchecked)])
+            catalog.case_descriptors.append((descriptors + i * 8 + 7, case, unchecked))
+        p.write_bytes(start, catalog.routine(descriptors, 3, 0, add, 0x170000, 0x170001, start, tail))
+        def build(cases):
+            catalog.sync_cases(cases)
+            rows = []
+            cpu = CPU(p)
+            cpu.r[23] = header
+            cpu.run(start, stop=tail, stubs={add: lambda c: rows.append((c.r[7], c.r[8], c.r[9]))})
+            return rows
+        self.assertEqual(build(set()), [])
+        self.assertEqual(build({C.THE_SHOWERS}), [(3, 7, 19)])
+        self.assertEqual(build({C.GALACTIC_BOLT_RESERVE}), [(0, 5, 0), (4, 5, 0)])
+        self.assertEqual(p.read_bytes(0x160000, 3), bytes((1, 1, 3)))
+        p.batch_write_int8([(0x160000, 2)])
+        self.assertEqual(build(set()), [])
+        self.assertEqual(build({C.GALACTIC_BOLT_RESERVE}), [(4, 5, 0)])
+        self.assertEqual(p.read_int8(0x160000), 2)
+
     def test_browsing_price_uses_base_or_upgrade_tier(self):
         p = CaptureMemory()
         browse, current, fixed, storage = 0x110000, 0x120000, 0x130000, 0x140000

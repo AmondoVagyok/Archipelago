@@ -44,13 +44,11 @@ _RAW_ALIEN_CODES: tuple[CaseStructure, ...] = (
     CaseStructure(SACCases.BOLTAIRE_MUSEUM, SACAlienCodes.RONNS_SECRET, SACTags.ALIEN_CODE),
     CaseStructure(SACCases.BOLTAIRE_MUSEUM, SACAlienCodes.BENS_SECRET, SACTags.ALIEN_CODE),
 
-    # Asyanica, Skyline Rooftops -- TODO: no exact case match (closest is
     # Asyanica Rooftops, case_id 5, but the name doesn't match cleanly).
     CaseStructure(SACCases.ASYANICA_ROOFTOPS, SACAlienCodes.JHAIROS_SECRET, SACTags.ALIEN_CODE),
     CaseStructure(SACCases.ASYANICA_ROOFTOPS, SACAlienCodes.GILBERTS_SECRET, SACTags.ALIEN_CODE),
     CaseStructure(SACCases.ASYANICA_ROOFTOPS, SACAlienCodes.RICARDOS_SECRET, SACTags.ALIEN_CODE),
 
-    # Rionosis, Mountainside Ascent -- TODO: no matching case at all yet.
     CaseStructure(SACCases.GONDOLA_ASCENT, SACAlienCodes.LEVITICUS_SECRET, SACTags.ALIEN_CODE),
     CaseStructure(SACCases.GONDOLA_ASCENT, SACAlienCodes.CARLS_SECRET, SACTags.ALIEN_CODE),
     CaseStructure(SACCases.GONDOLA_ASCENT, SACAlienCodes.JESS_SECRET, SACTags.ALIEN_CODE),
@@ -62,7 +60,6 @@ _RAW_ALIEN_CODES: tuple[CaseStructure, ...] = (
     CaseStructure(SACCases.AZCOTAL_ALLEY, SACAlienCodes.THE_3_JASONS_SECRET, SACTags.ALIEN_CODE),
     CaseStructure(SACCases.AZCOTAL_ALLEY, SACAlienCodes.TRAVIS_SECRET, SACTags.ALIEN_CODE),
 
-    # Casino "Le Paradis des tricheurs" -- TODO: ambiguous between
     # High-Rollers Casino and High Stakes Room, both on this planet.
     CaseStructure(SACCases.HIGH_ROLLERS_CASINO, SACAlienCodes.COLINS_SECRET, SACTags.ALIEN_CODE),
     CaseStructure(SACCases.HIGH_ROLLERS_CASINO, SACAlienCodes.SHANES_SECRET, SACTags.ALIEN_CODE),
@@ -81,12 +78,10 @@ _RAW_ALIEN_CODES: tuple[CaseStructure, ...] = (
     CaseStructure(SACCases.GALACTIC_BOLT_RESERVE, SACAlienCodes.LESLEYS_SECRET, SACTags.ALIEN_CODE),
     CaseStructure(SACCases.GALACTIC_BOLT_RESERVE, SACAlienCodes.DAVES_SECRET, SACTags.ALIEN_CODE),
 
-    # Spaceship Graveyard -- confirmed case (exact name match).
     CaseStructure(SACCases.SPACESHIP_GRAVEYARD, SACAlienCodes.MATTS_SECRET, SACTags.ALIEN_CODE),
     CaseStructure(SACCases.SPACESHIP_GRAVEYARD, SACAlienCodes.KENS_SECRET, SACTags.ALIEN_CODE),
     CaseStructure(SACCases.SPACESHIP_GRAVEYARD, SACAlienCodes.JAREDS_SECRET, SACTags.ALIEN_CODE),
 
-    # Hydrano, Underwater base -- TODO: closest is Underwater Bunker
     # (case_id 29), but the name doesn't match cleanly.
     CaseStructure(SACCases.UNDERWATER_BUNKER, SACAlienCodes.VESSUPS_SECRET, SACTags.ALIEN_CODE),
     CaseStructure(SACCases.UNDERWATER_BUNKER, SACAlienCodes.ADAMS_SECRET, SACTags.ALIEN_CODE),
