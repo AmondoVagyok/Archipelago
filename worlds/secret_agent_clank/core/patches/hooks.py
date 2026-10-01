@@ -8,6 +8,9 @@ from .weapon_pickup import WeaponPickup
 
 class LocationHooks:
     def __init__(self, pine):
+        # Checked here rather than at import so generation/fuzzing under -O can still load the world.
+        if not __debug__:
+            raise RuntimeError("Native hook validation must not run with Python assertions disabled")
         self.pine = pine
         self.patches = []
         self.module = None

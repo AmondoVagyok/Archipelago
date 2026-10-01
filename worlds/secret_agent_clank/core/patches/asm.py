@@ -2,9 +2,6 @@
 import struct
 from dataclasses import dataclass
 
-if not __debug__:
-    raise RuntimeError("Native hook validation must not run with Python assertions disabled")
-
 MARKER = b"SAC_LOC_HOOK_V1\0"
 
 
