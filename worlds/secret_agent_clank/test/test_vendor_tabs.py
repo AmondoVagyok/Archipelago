@@ -5,13 +5,17 @@ from types import SimpleNamespace
 
 from ..core.patches import PICKUP_LOCATIONS, VENDOR_LOCATIONS, LocationHooks
 from ..core.patches import mips as m
-from ..core.patches.asm import packed, words, jump
+from ..core.patches.asm import jump, packed, words
 from ..core.patches.vendor_catalog import VendorCatalog
 from ..core.patches.vendor_tabs import VendorTabs
 from ..core.symbols import RuntimeSymbols
 from .mips_cpu import CPU
 from .test_native_capture_plans import CaptureMemory
 
+
+def _signed16(word):
+    """Sign-extend an instruction's 16-bit immediate."""
+    return (word & 32767) - (word & 32768)
 
 class VendorTabsTests(unittest.TestCase):
     def memory(self):
@@ -101,9 +105,8 @@ class VendorTabsTests(unittest.TestCase):
                     for offset, before, after in zip(range(low, high, 4), words(original[low:high]), words(code)):
                         op = before >> 26
                         if op in (1, 4, 5, 6, 7, 20, 21, 22, 23) or (op == 17 and before >> 21 & 31 == 8):
-                            signed = lambda w: (w & 32767) - (w & 32768)
-                            expected = mapping[offset + 4 + 4 * signed(before)]
-                            self.assertEqual(mapping[offset] + 4 + 4 * signed(after), expected)
+                            expected = mapping[offset + 4 + 4 * _signed16(before)]
+                            self.assertEqual(mapping[offset] + 4 + 4 * _signed16(after), expected)
                             self.assertEqual(before >> 16, after >> 16)
                         else:
                             self.assertEqual(before, after)

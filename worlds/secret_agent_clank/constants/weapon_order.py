@@ -1,12 +1,8 @@
-"""Native WEAPON_ORDER slot layout for the shared Ratchet/Clank GadgetData array -- the
-single source of truth for every internal (non-display) weapon/gadget slot name, so no
-other module hand-types one of these strings a second time."""
+"""Slot layout of the native GadgetData array shared by Ratchet and Clank, and the internal slot names."""
 from enum import IntEnum
 
-# Positional slot order (index == raw weapon-table slot id). None = blank
-# slot (0) or a slot with no name ever observed in-game (1) -- neither gets
-# a WeaponAddresses entry from core/inventories/weapons.py's build_weapons(),
-# matching rac_size_matters/core/weapons.py's `if name is not None` filtering.
+# Index == native slot id. None marks a slot with no name (0 is blank, 1 is unnamed);
+# those slots are never bound or tracked.
 WEAPON_ORDER: list["str | None"] = [
     None,                          # slot 0   blank
     None,                          # slot 1   unknown/unnamed (category 2, no name)
@@ -50,10 +46,7 @@ WEAPON_ORDER: list["str | None"] = [
     "kicksplosion",                # slot 39   category 3
 ]
 
-# One member per named WEAPON_ORDER slot (the two None/blank slots have no
-# member) -- built directly from WEAPON_ORDER itself so a member can never
-# drift out of sync with the string it names. Lets callers write
-# WeaponSlot.SHOCKROCKET instead of retyping "shockrocket" by hand.
+# Named slot ids, e.g. WeaponSlot.SHOCKROCKET == 5.
 WeaponSlot = IntEnum(
     "WeaponSlot", {name.upper(): index for index, name in enumerate(WEAPON_ORDER) if name is not None},
 )

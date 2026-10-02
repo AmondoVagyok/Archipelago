@@ -8,7 +8,7 @@ from .types import CaseStructure, SACTags, group_by_case, with_display_names
 
 @dataclass(frozen=True)
 class SACGadgetbotChallenges:
-    """String constants for Gadgetbot Challenge event titles (short form only -- see GADGETBOT_CHALLENGES below for which case/address each belongs to)."""
+    """Short Gadgetbot Challenge titles; GADGETBOT_CHALLENGES below assigns each a case and address."""
 
     RESCUE_CLANK = "Rescue Clank"
     WORKING_DOWN = "Working Down"
@@ -73,8 +73,5 @@ class SACGadgetbotChallengeLocations:
 GADGETBOT_CHALLENGES: tuple[CaseStructure, ...] = with_display_names(
     _RAW_GADGETBOT_CHALLENGES, SACGadgetbotChallengeLocations)
 
-# Case.name -> its known Gadgetbot Challenges' full display names, derived
-# from GADGETBOT_CHALLENGES above. Order is declaration order
-# (display/iteration convenience) -- it does NOT imply anything about
-# address layout.
+# Case name -> its Gadgetbot Challenge location names, in declaration order.
 GADGETBOT_CHALLENGES_BY_CASE: dict[str, tuple[str, ...]] = group_by_case(GADGETBOT_CHALLENGES)

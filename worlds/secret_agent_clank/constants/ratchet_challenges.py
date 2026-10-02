@@ -8,7 +8,7 @@ from .types import CaseStructure, SACTags, group_by_case, with_display_names
 
 @dataclass(frozen=True)
 class SACRatchetChallenges:
-    """String constants for Ratchet Challenge event titles (short form only -- see RATCHET_CHALLENGES below for which case/address each belongs to)."""
+    """Short Ratchet Challenge titles; RATCHET_CHALLENGES below assigns each to its case."""
 
     CATCH_AS_CATCH_CAN = "Catch-as-Catch-Can"
     AMOEBOID_ON_A_POLE = "Amoeboid on a Pole"
@@ -166,7 +166,5 @@ class SACRatchetChallengeLocations:
 RATCHET_CHALLENGES: tuple[CaseStructure, ...] = with_display_names(
     _RAW_RATCHET_CHALLENGES, SACRatchetChallengeLocations)
 
-# Case.name -> its known Ratchet Challenges' full display names, derived
-# from RATCHET_CHALLENGES above. Order is declaration order (display/
-# iteration order) and matches native challenge indices within each case.
+# Case name -> its Ratchet Challenge location names, in native challenge order.
 RATCHET_CHALLENGES_BY_CASE: dict[str, tuple[str, ...]] = group_by_case(RATCHET_CHALLENGES)

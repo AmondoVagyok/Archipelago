@@ -1,8 +1,8 @@
-"""SAC has exactly one native shop (reached from Clank's pause menu). Base weapon/
-gadget offers, weapon mods (weapon_mods.py) and Titan/Proto upgrades
-(weapon_progression.py) are split into separate constant groups purely for code
-organization, not because there are multiple in-game vendors -- every vendor-purchase
-location shares the same "Vendor: {item}" naming regardless of group."""
+"""SAC's single shop, reached from Clank's pause menu.
+
+Base offers live here; weapon mods and Titan/Proto upgrades are in weapon_mods.py and
+weapon_progression.py. All of them share the "Vendor: <item>" location naming.
+"""
 from dataclasses import dataclass
 
 from .clank_gadgets import SACClankGadgets, SACClankWeapons
@@ -17,9 +17,7 @@ def vendor_location_name(display_name: str) -> str:
 
 @dataclass(frozen=True)
 class SACVendorWeapons:
-    """WEAPON_ORDER-struct weapons/gadgets whose ONLY native source is the vendor --
-    see core/patches/locations.py's VENDOR_LOCATIONS (native slot lookup) and
-    rules/vendor_access.py's VENDOR_ONLY_ITEM_NAMES (display-name gating)."""
+    """Equipment whose only native source is the vendor."""
     SHOCKROCKET       = SACRatchetWeapons.SHOCKROCKET
     PLASMAWHIP        = SACRatchetWeapons.PLASMAWHIP
     PORKBOMB          = SACRatchetWeapons.PORKBOMB

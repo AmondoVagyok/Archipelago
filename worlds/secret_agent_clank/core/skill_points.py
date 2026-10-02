@@ -1,4 +1,4 @@
-"""Skill point tracking -- see constants/skillpoints.py's SKILL_POINTS for the per-skill-point case/address/flag data (CONFIRMED live for all 65)."""
+"""Skill point tracking; flags (all 65 confirmed live) are in constants/skillpoints.py."""
 from typing import TYPE_CHECKING
 
 from ..constants.skillpoints import SKILL_POINTS

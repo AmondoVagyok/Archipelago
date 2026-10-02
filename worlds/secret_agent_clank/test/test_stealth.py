@@ -1,17 +1,29 @@
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
+from BaseClasses import CollectionState
+from Options import OptionError
+from rule_builder.rules import Has
 from test.general import setup_multiworld
-from ..world import SecretAgentClankWorld
-from ..constants.stealth import stealth_thresholds, stealth_location_name
-from ..core.stealth import StealthState, END, KILL
-from ..core.symbols import RuntimeSymbols
-from ..core.patches.progression import Progression
+
+from ..constants import CASE_NAME_TO_INFOBOT, CASES_BY_OPERATIVE, SACCases, SACOperatives
+from ..constants.stealth import stealth_location_name
+from ..core.patches import PICKUP_LOCATIONS, VENDOR_LOCATIONS, LocationHooks
 from ..core.patches import mips as m
-from .test_native_capture_plans import CaptureMemory
+from ..core.patches.mission_travel import MissionTravel
+from ..core.patches.progression import Progression
+from ..core.patches.titan_vendor import TitanOffers, TitanVendor
+from ..core.patches.vendor_catalog import VendorCatalog
+from ..core.patches.vendor_presentation import VendorPresentation
+from ..core.patches.weapon_mods import WeaponMods
+from ..core.stealth import END, StealthState
+from ..core.symbols import RuntimeSymbols
+from ..rules.stealth import stealth_access_rule
+from ..world import SecretAgentClankWorld
 from .mips_cpu import CPU
+from .test_native_capture_plans import CaptureMemory
 
 
 class StealthTests(unittest.TestCase):
@@ -24,7 +36,6 @@ class StealthTests(unittest.TestCase):
             for name, address in locations.items():
                 self.assertEqual(ids.setdefault(name, address), address)
             self.assertEqual(mw.worlds[1].fill_slot_data()["stealth_takedown_checks"], mode)
-        from Options import OptionError
         for mode in (1, 2, 3):
             for operatives in ({"Qwark": 1, "Ratchet": 1}, {"Qwark": 1, "Clank": 0}):
                 with self.assertRaisesRegex(OptionError, "requires Clank"):
@@ -34,8 +45,7 @@ class StealthTests(unittest.TestCase):
             "goal": "qwark_opera", "operatives": {"Qwark": 1}})
 
     def test_access_requires_a_clank_case(self):
-        from BaseClasses import CollectionState
-        from ..constants import CASE_NAME_TO_INFOBOT, SACCases
+
         mw = setup_multiworld(SecretAgentClankWorld, options={"stealth_takedown_checks": 3})
         state = CollectionState(mw)
         for item in mw.precollected_items[1]:
@@ -44,7 +54,6 @@ class StealthTests(unittest.TestCase):
         self.assertFalse(loc.can_reach(state))
         state.collect(mw.worlds[1].create_item(CASE_NAME_TO_INFOBOT[SACCases.BOLTAIRE_MUSEUM]))
         self.assertFalse(loc.can_reach(state))  # A single Clank case is not enough for the TODO fallback.
-        from ..constants import CASES_BY_OPERATIVE, SACOperatives
         for case in CASES_BY_OPERATIVE[SACOperatives.CLANK]:
             state.collect(mw.worlds[1].create_item(CASE_NAME_TO_INFOBOT[case.name]))
         self.assertTrue(loc.can_reach(state))
@@ -125,12 +134,6 @@ class StealthTests(unittest.TestCase):
         self.assertGreater(seen, 0)
 
     def test_combined_pickup_vendor_progression_and_stealth_plans(self):
-        from ..core.patches import LocationHooks, PICKUP_LOCATIONS, VENDOR_LOCATIONS
-        from ..core.patches.mission_travel import MissionTravel
-        from ..core.patches.weapon_mods import WeaponMods
-        from ..core.patches.titan_vendor import TitanVendor, TitanOffers
-        from ..core.patches.vendor_catalog import VendorCatalog
-        from ..core.patches.vendor_presentation import VendorPresentation
         paths = list((Path(__file__).parents[1] / ".research").glob("*.ram"))
         if not paths:
             self.skipTest("Local captures unavailable")
@@ -181,9 +184,8 @@ class StealthTests(unittest.TestCase):
         self.assertGreater(verified, 0, "No combined capture plans were tested")
 
     def test_editable_tiers_cover_all_milestones(self):
-        from unittest.mock import patch
-        from rule_builder.rules import Has
-        from ..rules.stealth import stealth_access_rule
+
+
         # Patching each tier demonstrates the intended edit points independently.
         with patch("worlds.secret_agent_clank.rules.stealth.stealth_5_rule", return_value=Has("five")) as five, \
              patch("worlds.secret_agent_clank.rules.stealth.stealth_10_rule", return_value=Has("ten")) as ten, \

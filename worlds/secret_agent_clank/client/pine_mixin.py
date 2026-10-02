@@ -1,7 +1,8 @@
-"""Owns the raw PINE socket to PCSX2: connect/reconnect/teardown, plus the poll loop that drives Core.tick() every cycle."""
+"""PINE connection to PCSX2 (connect, reconnect, teardown) and the poll loop that drives Core.tick()."""
 import asyncio
 
 from CommonClient import logger
+from Utils import async_start
 
 from .constants import EXPECTED_GAME_ID, PINE_CONNECT_SETTLE_DELAY_S, POLL_INTERVAL
 
@@ -43,11 +44,9 @@ class PineMixin:
 
     async def _attempt_pine_connect(self, is_reconnect: bool = False) -> None:
         async with self._pine_lock:
-            def _connect_and_get_game_id() -> str:
-                self.pine.connect()
-                return self.pine.get_game_id()
             try:
-                game_id = _connect_and_get_game_id()
+                self.pine.connect()
+                game_id = self.pine.get_game_id()
             except Exception:
                 logger.warning("[SAC] Could not connect to PCSX2. Use /reconnect once the emulator is running.")
                 await self._teardown_pine_connection()
@@ -112,7 +111,7 @@ class PineMixin:
         await self._apply_received_items()
 
     def _append_location_by_name(self, name: str) -> bool:
-        """Queue an AP location check, if -- and only if -- `name` is actually a location that exists in THIS seed."""
+        """Queue a location check; return False if `name` isn't a location in this seed."""
         loc_id = self._location_name_to_id.get(name)
         if loc_id is None:
             if name not in self._warned_missing_locations:
@@ -129,5 +128,5 @@ class PineMixin:
                                " — was game generated with the current options?")
             return False
         self._locally_checked_locations.add(loc_id)
-        asyncio.create_task(self.check_locations({loc_id}))
+        async_start(self.check_locations({loc_id}))
         return True

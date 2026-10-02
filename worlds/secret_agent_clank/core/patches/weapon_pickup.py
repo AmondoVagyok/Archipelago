@@ -1,4 +1,7 @@
-"""Native patch plan for modules with WeaponPickup code -- the common case (most levels have gadget pickups), combining pickup-grant, ownership-gate, and vendor-purchase interception into one shared 40-byte-per-table scheme."""
+"""Location patch plan for modules with WeaponPickup code.
+
+Intercepts pickup grants, ownership gates and vendor purchases.
+"""
 from ...constants.native_functions import NativeFunctions
 from ..symbols import require
 from .asm import MARKER, Patch, branch, jump, packed, words

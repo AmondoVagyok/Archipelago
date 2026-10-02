@@ -1,4 +1,4 @@
-"""Native patch plan for modules with a vendor but no WeaponPickup code (e.g."""
+"""Location patch plan for modules with a vendor but no WeaponPickup code, such as High Impact Treehouse."""
 from ...constants.native_functions import NativeFunctions
 from ..symbols import forbid, require
 from .asm import MARKER, Patch, branch, jump, packed, words

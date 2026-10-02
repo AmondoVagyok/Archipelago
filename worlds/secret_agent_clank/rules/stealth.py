@@ -1,18 +1,11 @@
 """Editable access rules for the three cumulative stealth milestone tiers."""
-from rule_builder.rules import CanReachRegion, False_, True_
 from ..constants import CASES_BY_OPERATIVE, SACOperatives
+from .rule_helpers import can_reach_all_cases
 
 
 def _all_clank_cases(world):
     """Conservative fallback until the actual takedown routes are mapped."""
-    existing = {region.name for region in world.multiworld.get_regions(world.player)}
-    cases = [case.name for case in CASES_BY_OPERATIVE[SACOperatives.CLANK] if case.name in existing]
-    if not cases:
-        return False_()
-    rule = True_()
-    for case in cases:
-        rule = rule & CanReachRegion(case)
-    return rule
+    return can_reach_all_cases(world, (case.name for case in CASES_BY_OPERATIVE[SACOperatives.CLANK]))
 
 
 def stealth_5_rule(world):

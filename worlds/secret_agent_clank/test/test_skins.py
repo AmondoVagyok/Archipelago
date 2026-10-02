@@ -1,16 +1,22 @@
-import unittest
 import struct
+import unittest
 from pathlib import Path
 
-from ..constants.skins import (ALL_SKINS_MASK, CLANK_SKINS, QWARK_SKINS, RATCHET_SKINS,
-                               SKIN_OWNED_OFFSET, SKIN_SAVE_OFFSET)
-from ..core.skins import Skins
+from ..constants.skins import (
+    ALL_SKINS_MASK,
+    CLANK_SKINS,
+    QWARK_SKINS,
+    RATCHET_SKINS,
+    SKIN_OWNED_OFFSET,
+    SKIN_SAVE_OFFSET,
+)
 from ..core.patches.asm import packed
+from ..core.skins import Skins
 from ..core.symbols import RuntimeSymbols
 from ..options import ClankSkin, QwarkSkin, RatchetSkin
+from .bases import SecretAgentClankTestBase
 from .mips_cpu import CPU
 from .test_runtime import Memory
-from .bases import SecretAgentClankTestBase
 
 
 class SkinMemory(Memory):

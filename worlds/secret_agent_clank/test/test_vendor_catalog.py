@@ -1,13 +1,14 @@
 import struct
 import unittest
 from pathlib import Path
-from types import SimpleNamespace
 
-from ..core.patches import LocationHooks, PICKUP_LOCATIONS, VENDOR_LOCATIONS, packed
-from ..core.patches.vendor_catalog import VendorCatalog
-from ..core.patches.titan_vendor import TitanVendor, TitanOffers, TitanPrice
-from ..core.patches.weapon_mods import WeaponMods
+from ..constants.planets import SACCases as C
+from ..core.patches import PICKUP_LOCATIONS, VENDOR_LOCATIONS, LocationHooks, packed
+from ..core.patches.asm import jump
 from ..core.patches.progression import Progression
+from ..core.patches.titan_vendor import TitanOffers, TitanPrice, TitanVendor
+from ..core.patches.vendor_catalog import VendorCatalog
+from ..core.patches.weapon_mods import WeaponMods
 from ..core.symbols import RuntimeSymbols
 from .mips_cpu import CPU
 from .test_native_capture_plans import CaptureMemory
@@ -49,7 +50,6 @@ class VendorCatalogTests(unittest.TestCase):
         self.assertEqual(build((4, 4, 4)), [])
 
     def test_case_unlocks_filter_native_rows_without_changing_purchase_flags(self):
-        from ..constants.planets import SACCases as C
         p = CaptureMemory()
         start, descriptors, header, add, tail = 0x110000, 0x120000, 0x130000, 0x140000, 0x110700
         entries = ((5, 0, 0, 1, C.GALACTIC_BOLT_RESERVE),
@@ -83,7 +83,6 @@ class VendorCatalogTests(unittest.TestCase):
     def test_browsing_price_uses_base_or_upgrade_tier(self):
         p = CaptureMemory()
         browse, current, fixed, storage = 0x110000, 0x120000, 0x130000, 0x140000
-        from ..core.patches.asm import jump
         p.write_bytes(browse + 0x178, packed([jump(current, True), 0x3C100059, 0x8C430030]))
         def allocate(code):
             p.write_bytes(storage, code)

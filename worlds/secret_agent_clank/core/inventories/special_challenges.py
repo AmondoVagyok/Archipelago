@@ -1,4 +1,4 @@
-"""Special Challenge completion tracking -- the Special Missions-operative counterpart to core/gadgetbot_challenges.py's GadgetbotChallengeInventory -- see constants/special_challenges.py's SPECIAL_CHALLENGES for the per-challenge case/address data."""
+"""Special Challenge tracking; addresses are in constants/special_challenges.py."""
 from typing import TYPE_CHECKING
 
 from ...constants.special_challenges import SPECIAL_CHALLENGES

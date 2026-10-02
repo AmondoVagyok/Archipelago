@@ -1,7 +1,9 @@
-# 2026-09-11 audit: runtime exports now supply GadgetData and pause state.
-# Historical case-unlock anchors below overlap mission state fields and MUST
-# NOT be applied by the normal client. See docs/address_research.md.
-"""Secret Agent Clank PS2 (SCUS-97623) RAM addresses."""
+"""Secret Agent Clank PS2 (SCUS-97623) RAM addresses.
+
+GadgetData and pause state come from runtime exports instead. The historical case-unlock
+anchors below overlap mission state fields and must NOT be applied by the normal client;
+see docs/address_research.md.
+"""
 from dataclasses import dataclass, field
 
 from ...constants.planets import ALL_CASES, CASE_ID_TO_CASE, SACCases
@@ -107,7 +109,7 @@ WEAPON_ARRAY_BASE_BY_CASE: dict[int, int] = {
     4: 0x00598678,   # Rooftop Deathtrap
     10: 0x0057C578,  # Azcotal Alley
     11: 0x005935F8,  # Gondola Ascent
-    12: 0x005935F8,  # Suck and Jive -- ALIASED to Gondola Ascent's base (shares its case_id/data at the engine level, not a separate discovery)
+    12: 0x005935F8,  # Suck and Jive -- shares Gondola Ascent's base address
     18: 0x00523478,  # Madam Butterqwark
     23: 0x0051BBF8,  # Saint Qwark
     27: 0x0051AC78,  # A Fiction Full Of Dollars

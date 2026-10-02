@@ -1,4 +1,4 @@
-"""String constants for Special Challenge locations -- the Special Missions-operative counterpart to constants/gadgetbot_challenges.py's Gadgetbot Challenges (same structural pattern: addresses recorded individually, each a plain 0/1 byte -- see SPECIAL_CHALLENGES below, CONFIRMED live for every entry so far)."""
+"""Special Missions challenge locations. Each address is a plain 0/1 byte, confirmed live."""
 
 from dataclasses import dataclass
 
@@ -8,7 +8,7 @@ from .types import CaseStructure, SACTags, group_by_case, with_display_names
 
 @dataclass(frozen=True)
 class SACSpecialChallenges:
-    """String constants for Special Challenge event titles (short form only -- see SPECIAL_CHALLENGES below for which case/address each belongs to)."""
+    """Short Special Challenge titles; SPECIAL_CHALLENGES below assigns each a case and address."""
 
     VEHICLE_GREAT_ESCAPE = "Vehicle: Great Escape"
     VEHICLE_SPEEDBOATING = "Vehicle: Speedboating"
@@ -79,7 +79,5 @@ class SACSpecialChallengeLocations:
 SPECIAL_CHALLENGES: tuple[CaseStructure, ...] = with_display_names(
     _RAW_SPECIAL_CHALLENGES, SACSpecialChallengeLocations)
 
-# Case.name -> its known Special Challenges' full display names, derived
-# from SPECIAL_CHALLENGES above. Order is declaration order (display/
-# iteration convenience) -- it does NOT imply anything about address layout.
+# Case name -> its Special Challenge location names, in declaration order.
 SPECIAL_CHALLENGES_BY_CASE: dict[str, tuple[str, ...]] = group_by_case(SPECIAL_CHALLENGES)

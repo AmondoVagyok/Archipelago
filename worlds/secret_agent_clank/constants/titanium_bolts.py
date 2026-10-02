@@ -20,9 +20,7 @@ TITANIUM_BOLT_CASES = {
     25: (SACCases.PRISON_BREAKOUT, 1),
     29: (SACCases.UNDERWATER_BUNKER, 1),
 }
-# Flavor-text overrides for specific bolts -- (module, index) -> the actual
-# in-game hint/description, in place of the plain numeric index. Anything
-# not listed here just uses str(index), as before.
+# (module, index) -> the bolt's in-game hint. Unlisted bolts are named by index.
 TITANIUM_BOLT_DESCRIPTIONS: dict[tuple[int, int], str] = {
     (1, 1): "JetBoot around the pillar",
     (1, 2): "Jump over the railings",

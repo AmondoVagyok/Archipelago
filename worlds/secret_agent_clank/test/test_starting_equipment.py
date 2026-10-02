@@ -17,9 +17,7 @@ class StartingEquipmentTests(unittest.TestCase):
                     "starting_weapons": weapons, "starting_gadgets": gadgets,
                     "progressive_weapons": progressive})
                 starting = [i.name for i in m.precollected_items[1]]
-                # Infobots=cases (the default) precollects a second Case
-                # File too when more than one is available -- see world.py's
-                # create_items()'s second_starting_case.
+                # Infobots=cases (the default) also precollects a second Case File.
                 starting_case_files = sum(1 for name in starting if name in case_file_names)
                 self.assertEqual(len(starting), starting_case_files + weapons + gadgets)
                 self.assertEqual(len(set(starting)), len(starting))

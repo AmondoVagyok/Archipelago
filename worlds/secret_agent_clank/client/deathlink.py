@@ -1,8 +1,8 @@
-import asyncio
 import time
 from typing import Any
 
 from CommonClient import logger
+from Utils import async_start
 
 
 class DeathLinkMixin:
@@ -21,7 +21,7 @@ class DeathLinkMixin:
         source = self.auth or "Ratchet"
         planet_name = self.current_planet or "an unknown planet"
         logger.info("[SAC] DeathLink sent.")
-        asyncio.create_task(
+        async_start(
             self.send_msgs([{
                 "cmd": "Bounce",
                 "tags": ["DeathLink"],

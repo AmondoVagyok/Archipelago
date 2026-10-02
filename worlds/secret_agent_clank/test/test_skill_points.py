@@ -4,10 +4,13 @@ from test.general import setup_multiworld
 
 from ..constants.operatives import ALL_OPERATIVES, SACOperatives
 from ..constants.planets import SACCases
-from ..constants.skillpoints import SKILL_POINTS, SACSkillPointLocations as Locations
 from ..constants.skill_point_requirements import (
-    EASY_SKILL_POINTS, HARD_SKILL_POINTS, SKILL_POINT_REQUIREMENTS,
+    EASY_SKILL_POINTS,
+    HARD_SKILL_POINTS,
+    SKILL_POINT_REQUIREMENTS,
 )
+from ..constants.skillpoints import SKILL_POINTS
+from ..constants.skillpoints import SACSkillPointLocations as Locations
 from ..locations import SKILL_POINT_LOCATIONS
 from ..options import SkillPoints
 from ..universal_tracker import setup_options_from_slot_data

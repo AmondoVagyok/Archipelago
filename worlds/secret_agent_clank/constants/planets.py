@@ -121,24 +121,15 @@ CASES_BY_OPERATIVE: dict[str, tuple[Case, ...]] = {
     operative: tuple(case for case in ALL_CASES if case.operative == operative) for operative in OPERATIVE_NAMES
 }
 
-# Display name -> the AP item that grants access to that planet's cases.
-# One access item per planet, mirroring the infobot-per-planet pattern the
-# other RaC worlds use — see items.py's PLANET_ACCESS_ITEM_TABLE. The
-# starting planet (Boltaire Museum) has none -- it's always reachable, see
-# rules.py.
+# Planet -> the item that opens its cases when Infobots=planets. The first
+# planet (Boltaire Museum) has no item; it is always open.
 PLANET_ACCESS_ITEM_NAME: dict[str, str] = {
     planet: f"{planet} Access" for planet in PLANET_NAMES[1:]
 }
 
-# Case.name -> the Case File item that grants access to that specific
-# case -- SAC's own in-game term for these (not "Infobot", which is the
-# other RaC worlds' naming). Finer-grained than PLANET_ACCESS_ITEM_NAME
-# above -- used by rules.py to gate individual per-case locations (e.g.
-# skill points, see locations.py's SKILL_POINT_LOCATION_TO_CASE) on top of
-# the coarser planet-entrance gate. Includes the starting case (case_id 1,
-# Boltaire Museum) too -- world.py's create_items() precollects its Case
-# File unconditionally rather than special-casing it as "always true" in
-# the rules, so it's a real starting-inventory item like any other.
+# Case -> its Case File item (SAC's name for the other RaC worlds' infobots).
+# Every case has one, including whichever case the seed starts in: the
+# starting case's file is precollected rather than special-cased in the rules.
 CASE_NAME_TO_INFOBOT: dict[str, str] = {
     case.name: case.name for case in ALL_CASES
 }

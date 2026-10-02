@@ -2,13 +2,13 @@
 from ..constants.native_modules import CASE_MODULES
 from ..constants.vendor import vendor_location_name
 from ..constants.weapons import EQUIPMENT_INTERNAL_TO_DISPLAY
-from .main_menu import is_main_menu
 from .address_maps import CURRENT_CASE_ADDRESS, FORCE_CASE_ADDRESS
+from .main_menu import is_main_menu
 from .patches import PICKUP_LOCATIONS, VENDOR_LOCATIONS
+from .patches.connection_warning import ConnectionWarning
 from .patches.loader_gate import LoaderGate
 from .patches.mission_travel import MissionTravel
 from .patches.starting_case import StartingCase
-from .patches.connection_warning import ConnectionWarning
 from .patches.titan_vendor import TitanOffers, TitanVendor
 from .patches.vendor_catalog import VendorCatalog
 from .symbols import RuntimeSymbols

@@ -1,4 +1,4 @@
-"""String constants for cutscene-trigger locations (see options.py's AllCutscenes)."""
+"""Cutscene locations, enabled by the All Cutscenes option."""
 
 from dataclasses import dataclass
 
@@ -8,7 +8,7 @@ from .types import CaseStructure, with_display_names
 
 @dataclass(frozen=True)
 class SACCutscenes:
-    """String constants for cutscene-trigger event titles (short form only -- see CUTSCENES below for which case/address/flag each belongs to)."""
+    """Short cutscene titles; CUTSCENES below assigns each a case, address and flag."""
 
     ENTER_CUTSCENE = "Enter Cutscene"
     COMPLETE_CASE_CUTSCENE = "Complete Case Cutscene"
@@ -26,9 +26,7 @@ class SACCutscenes:
     HIGH_IMPACT_GAMES_CUTSCENE_WITH_GIANT_CLANK = "High Impact Games Cutscene with Giant Clank"
 
 
-# One CaseStructure per cutscene -- pairs each short SACCutscenes title
-# with its case and its confirmed address/flag in the shared
-# 0x206BE0-0x206BF4 bitmask region.
+# Each cutscene's flag lives in the shared 0x206BE0-0x206BF4 bitmask region.
 _RAW_CUTSCENES: tuple[CaseStructure, ...] = (
     CaseStructure(SACCases.BOLTAIRE_MUSEUM, SACCutscenes.ENTER_CUTSCENE, event_flag=0b00000001, event_address=0x206BE0),
     CaseStructure(
@@ -157,7 +155,5 @@ class SACCutsceneLocations:
 
 CUTSCENES: tuple[CaseStructure, ...] = with_display_names(_RAW_CUTSCENES, SACCutsceneLocations)
 
-# Cutscene full display name -> the case it belongs to, derived from
-# CUTSCENES above -- kept for callers that want a flat name->case lookup
-# instead of iterating CUTSCENES (locations.py, notably).
+# Cutscene location name -> its case.
 CUTSCENE_TO_CASE: dict[str, str] = {str(entry): entry.case_name for entry in CUTSCENES}

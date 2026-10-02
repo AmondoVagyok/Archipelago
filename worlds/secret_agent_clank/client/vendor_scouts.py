@@ -1,10 +1,10 @@
 """AP-scouted vendor presentation, independent of native price and purchase ID."""
 from dataclasses import dataclass
 
+from ..constants.vendor import vendor_location_name
 from ..constants.vendor_unlocks import VENDOR_ROW_CASES
 from ..constants.weapon_mods import WEAPON_MODS
 from ..constants.weapon_progression import TITAN_LOCATIONS
-from ..constants.vendor import vendor_location_name
 from ..constants.weapons import EQUIPMENT_INTERNAL_TO_DISPLAY
 from ..core.inventories.weapons import WEAPON_ORDER
 from ..core.patches.locations import VENDOR_LOCATIONS

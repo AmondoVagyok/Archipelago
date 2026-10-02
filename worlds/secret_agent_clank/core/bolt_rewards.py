@@ -24,7 +24,7 @@ class BoltRewards:
         self.pending = None
 
     def configure(self, *, starting_bolts=0, delivered=0, starting_delivered=False, pending=None):
-        """Called once the AP data-storage read for this slot's "delivered_bolts"/"pending_bolts" keys has actually come back (see client/context.py) -- delivered/starting_delivered are "delivered_bolts"'s two fields, pending is "pending_bolts" as-is."""
+        """Load the server-stored delivery state and enable delivery."""
         if type(starting_bolts) is not int or not 0 <= starting_bolts <= 100_000:
             raise ValueError("Starting bolts must be between 0 and 100000")
         if type(delivered) is not int or delivered < 0:

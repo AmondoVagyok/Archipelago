@@ -1,6 +1,4 @@
-"""Location rules live on each SACLocation record in its case file (locations/<case>.py); this package keeps the
-shared rule builders (rule_helpers.py), case access (entrances.py) and the vendor routes (vendor_access.py) --
-mirrors worlds/rac_size_matters/rules' layout."""
+"""Applies access rules. Per-location rules live on the records in locations/<case>.py."""
 from typing import TYPE_CHECKING
 
 from rule_builder.rules import Has
@@ -16,6 +14,7 @@ __all__ = ["HasCase", "HasCharacter", "HasPlanet", "set_rules"]
 
 
 def set_rules(world: "SecretAgentClankWorld") -> None:
+    # Imported here: the per-case location files import this package for their rules.
     from ..locations import CASE_LOCATIONS
 
     world.set_completion_rule(Has("Victory"))

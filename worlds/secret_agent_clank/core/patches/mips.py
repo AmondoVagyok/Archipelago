@@ -1,4 +1,4 @@
-"""Minimal MIPS I/R-type encoders and register names for the small, fixed instruction set the patch routine classes actually emits -- not a general assembler (no labels, no text parsing), just named mnemonics instead of hand-packed hex so a routine reads like "lbu(T3, 0, T0)" rather than "0x910B0000"."""
+"""Encoders for the few MIPS instructions the patches emit, so routines read as lbu(T3, 0, T0) rather than hex."""
 
 ZERO, AT, V0, V1, A0, A1, A2, A3 = range(8)
 T0, T1, T2, T3, T4, T5, T6, T7 = range(8, 16)
@@ -168,5 +168,5 @@ def daddu(rd, rs, rt):
 
 
 def dmove(rd, rs):
-    """Pseudo-op: DADDU rd, rs, ZERO -- the EE toolchain's 64-bit register move, seen instead of plain move()/OR in some compiled functions."""
+    """Pseudo-op: DADDU rd, rs, ZERO -- the EE toolchain's 64-bit register move."""
     return daddu(rd, rs, ZERO)

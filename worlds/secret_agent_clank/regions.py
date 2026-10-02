@@ -1,4 +1,4 @@
-"""Regions are one per CASE now (not per Operative -- see git history for the old grouping), each connected from Menu by a "To <Case>" entrance whose rule is that case's access gate."""
+"""One region per case, each entered from Menu through a "To <Case>" entrance gated by that case's access rule."""
 from typing import TYPE_CHECKING
 
 from BaseClasses import Region
@@ -21,6 +21,9 @@ from .constants.weapon_progression import TITAN_LOCATIONS
 from .constants.weapons import EQUIPMENT_INTERNAL_TO_DISPLAY
 from .entities import SACLocation
 from .locations import BASE_VENDOR_LOCATIONS, CASE_LOCATIONS, MOD_VENDOR_LOCATIONS, TITAN_VENDOR_LOCATIONS
+from .locations.nanotech import create_nanotech_locations
+from .locations.stealth import create_stealth_locations
+from .locations.weapon_levels import create_weapon_level_locations
 from .options import Goal
 from .rules.rule_helpers import case_access_rule, disabled_operatives
 from .rules.vendor_access import VENDOR_REQUIREMENTS
@@ -38,9 +41,8 @@ def create_regions(world: "SecretAgentClankWorld") -> None:
     disabled = disabled_operatives(world)
 
     menu_region = Region("Menu", player, multiworld)
-    # The vendor is only ever reachable from Clank's pause-menu screen (see
-    # rules/vendor_access.py's VENDOR_REQUIREMENTS) -- Clank disabled means
-    # no vendor at all, regardless of what any individual case's entry says.
+    # The vendor is opened from Clank's pause menu, so it needs Clank and at least
+    # one enabled case with a vendor route.
     has_vendor = SACOperatives.CLANK not in disabled and any(
         case.operative not in disabled and
         not isinstance(VENDOR_REQUIREMENTS.get(case.name, False_()), False_)
@@ -78,9 +80,6 @@ def create_regions(world: "SecretAgentClankWorld") -> None:
         for case in ALL_CASES if case.operative not in disabled
     }
 
-    # Each record's own type decides whether its option category is on (see
-    # locations/model.py's SACLocation.available()); rules are applied later
-    # from the same records by rules/__init__.py's set_rules().
     for definition in REGION_LOCATIONS:
         if not definition.available(world.options):
             continue
@@ -95,18 +94,15 @@ def create_regions(world: "SecretAgentClankWorld") -> None:
         menu_region.connect(region, f"To {case_name}")
 
     multiworld.regions += [menu_region, *case_regions.values()]
-    from .locations.weapon_levels import create_weapon_level_locations
     create_weapon_level_locations(world, menu_region)
-    from .locations.nanotech import create_nanotech_locations
     create_nanotech_locations(world, menu_region)
-    from .locations.stealth import create_stealth_locations
     create_stealth_locations(world, menu_region)
 
 
 def _create_victory(
     world: "SecretAgentClankWorld", case_regions: dict[str, Region], disabled_operatives: set[str],
 ) -> None:
-    """Places a locked "Victory" event per active goal condition (see options.py's Goal) -- reaching ANY of them satisfies multiworld.completion_condition (see rules.py's set_rules()), so Goal=any naturally becomes an OR by placing both."""
+    """Place a locked Victory event for each condition of the chosen goal; reaching any one completes the game."""
     player = world.player
     player_name = world.multiworld.get_player_name(player)
     goal = world.options.goal.value

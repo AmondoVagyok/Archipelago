@@ -1,4 +1,5 @@
-"""Rule builders, matching worlds/rac_size_matters/rules/_helpers.py's HasWeapon/HasGadget/HasInfobot pattern (rule_builder.rules objects applied via world.set_rule(), not plain lambdas)."""
+"""Shared rule builders, returning rule_builder rule objects."""
+from collections.abc import Iterable
 from typing import TYPE_CHECKING
 
 from rule_builder.rules import CanReachRegion, False_, Has, Rule, True_
@@ -21,8 +22,25 @@ if TYPE_CHECKING:
     from ..world import SecretAgentClankWorld
 
 
+def region_names(world: "SecretAgentClankWorld") -> set[str]:
+    """Names of every region created so far for this world's player."""
+    return {region.name for region in world.multiworld.get_regions(world.player)}
+
+
+def can_reach_all_cases(world: "SecretAgentClankWorld", case_names: Iterable[str]) -> Rule:
+    """Reach every listed case that exists in this world; never satisfiable when none of them exist."""
+    existing = region_names(world)
+    cases = [case for case in case_names if case in existing]
+    if not cases:
+        return False_()
+    rule = True_()
+    for case in cases:
+        rule = rule & CanReachRegion(case)
+    return rule
+
+
 def HasPlanet(world: "SecretAgentClankWorld", planet: str) -> Has | True_:
-    if (world.options.infobots == Infobots.option_progressive_planet):
+    if world.options.infobots == Infobots.option_progressive_planet:
         planets = world.progressive_planets
         return Has(PROGRESSIVE_PLANET_ITEM_NAME, planets.index(planet) + 1) if planet in planets else True_()
     if world.options.infobots in (Infobots.option_cases, Infobots.option_character_unlocks):
@@ -32,7 +50,7 @@ def HasPlanet(world: "SecretAgentClankWorld", planet: str) -> Has | True_:
 
 
 def HasCase(world: "SecretAgentClankWorld", case_name: str) -> Has | True_:
-    if (world.options.infobots == Infobots.option_progressive_planet) or world.options.infobots != Infobots.option_cases:
+    if world.options.infobots != Infobots.option_cases:
         return True_()
     item = CASE_NAME_TO_INFOBOT.get(case_name)
     return Has(item) if item else True_()
@@ -60,7 +78,7 @@ def _has_unlock(world: "SecretAgentClankWorld", name: str) -> Has:
 
 def HasEnemyAccess(world: "SecretAgentClankWorld") -> Rule:
     """Clank can reach enemies in at least one case (see CLANK_ENEMY_CASES)."""
-    existing = {region.name for region in world.multiworld.get_regions(world.player)}
+    existing = region_names(world)
     rule = False_()
     for case, items in CLANK_ENEMY_CASES.items():
         if case not in existing:
@@ -77,7 +95,7 @@ def HasProjectileWeapon() -> Has:
 
 
 def HasCharacter(world: "SecretAgentClankWorld", character: str) -> Has | True_:
-    if not (world.options.infobots == Infobots.option_character_unlocks):
+    if world.options.infobots != Infobots.option_character_unlocks:
         return True_()
     if character in CHARACTER_ITEM_NAME:
         return Has(CHARACTER_ITEM_NAME[character])
@@ -85,7 +103,7 @@ def HasCharacter(world: "SecretAgentClankWorld", character: str) -> Has | True_:
 
 
 def disabled_operatives(world: "SecretAgentClankWorld") -> set[str]:
-    """Operatives removed entirely via options.py's Operatives option -- shared by regions.py's create_regions() (to skip their cases' regions/locations outright) and entrances.py's set_entrance_rules() (to skip setting a rule on an entrance that was never created)."""
+    """Operatives turned off in the Operatives option; their cases get no regions."""
     return {
         operative for operative in ALL_OPERATIVES
         if operative not in world.options.operatives.value

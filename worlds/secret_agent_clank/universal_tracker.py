@@ -1,5 +1,7 @@
-"""Universal Tracker integration for Secret Agent Clank -- mirrors worlds/rac_size_matters/universal_tracker.py's pattern: UT regenerates this world from a finished multiworld's slot_data (via multiworld.re_gen_passthrough), without the player's original YAML, so its options must be restored from fill_slot_data()'s payload (world.py) rather than re-rolled."""
+"""Universal Tracker support: restore options from slot_data when UT regenerates the world without a YAML."""
 from typing import TYPE_CHECKING, Any
+
+from .options import ProgressiveWeapons, SkillPoints
 
 if TYPE_CHECKING:
     from .world import SecretAgentClankWorld
@@ -14,23 +16,19 @@ def setup_options_from_slot_data(world: "SecretAgentClankWorld") -> None:
     passthrough: dict[str, Any] = world.multiworld.re_gen_passthrough[world.game]
     world.passthrough = passthrough
 
-    # Region/location existence -- must match exactly, or UT's regenerated
-    # region graph disagrees with the real one's location IDs.
+    # Options that decide which regions and locations exist.
     world.options.infobots.value = passthrough["infobots"]
     world.options.operatives.value = dict(passthrough["operatives"])
     world.options.all_missions.value = passthrough["all_missions"]
     world.options.all_cutscenes.value = bool(passthrough["all_cutscenes"])
-    from .options import SkillPoints
     world.options.skill_points.value = SkillPoints.from_any(passthrough["skill_points"]).value
     world.options.all_keycards.value = bool(passthrough["all_keycards"])
     world.options.all_alien_codes.value = bool(passthrough["all_alien_codes"])
     world.options.goal.value = passthrough["goal"]
 
-    # Item pool composition -- affects create_items()'s pool exactly like
-    # the real generation, so a re_gen'd world's item IDs/counts still match.
+    # Options that shape the item pool.
     world.options.ng_plus.value = passthrough["ng_plus"]
     world.options.progressive_challenge_mode.value = bool(passthrough.get("progressive_challenge_mode", False))
-    from .options import ProgressiveWeapons
     world.options.progressive_weapons.value = ProgressiveWeapons.from_any(passthrough["progressive_weapons"]).value
     world.options.weapon_level_checks.value = passthrough.get("weapon_level_checks", 0)
     world.options.nanotech_checks.value = passthrough.get("nanotech_checks", False)
@@ -47,9 +45,7 @@ def setup_options_from_slot_data(world: "SecretAgentClankWorld") -> None:
         passthrough.get("trap_duration", world.options.trap_duration.default)
     )
 
-    # Gameplay-only multipliers -- don't affect regions/items/logic, but
-    # round-tripped anyway so a re_gen'd world's slot_data matches the real
-    # one exactly (some tracker/tooling code diffs the two).
+    # Gameplay-only options, restored so the regenerated slot_data matches.
     world.options.death_link.value = bool(passthrough["death_link"])
     world.options.weapon_xp_multiplier.value = passthrough["weapon_xp_multiplier"]
     world.options.health_xp_multiplier.value = passthrough["health_xp_multiplier"]

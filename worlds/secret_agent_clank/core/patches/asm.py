@@ -1,4 +1,4 @@
-"""Shared low-level MIPS/patch-plan primitives -- word packing, jump/branch encoding, and the Patch record every patches/*.py plan builder produces."""
+"""Word packing, jump/branch encoding, and the Patch record used by every patch plan."""
 import struct
 from dataclasses import dataclass
 

@@ -3,13 +3,11 @@ from rule_builder.rules import True_
 
 from ..constants import (
     SACCases,
-    SACClankGadgets,
     SACCutsceneLocations,
     SACGadgetbotChallengeLocations,
     SACKeycardLocations,
     SACMissionLocations,
     SACPlanets,
-    SACRatchetWeapons,
     SACSkillPointLocations,
 )
 from .model import SACLocation, SACLocationType

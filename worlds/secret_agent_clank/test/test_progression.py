@@ -5,13 +5,13 @@ from types import SimpleNamespace
 from ..constants.weapon_progression import PROGRESSIVE_TO_INTERNAL
 from ..core.inventories.weapons import WEAPON_ORDER
 from ..core.patches.progression import Progression
+from .mips_cpu import CPU
+from .test_native_capture_plans import CaptureMemory
 from .test_runtime import Memory
 
 
 class ProgressionTests(unittest.TestCase):
     def test_compact_gain_wrapper_replays_prologue_in_jump_delay_slot(self):
-        from .mips_cpu import CPU
-        from .test_native_capture_plans import CaptureMemory
         for register in (4, 5):
             for value in (-100, 0, 1, 12345):
                 for second in (0xFFB00000, 0x3C020050):

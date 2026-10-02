@@ -30,14 +30,19 @@ from .patches.weapon_mods import WeaponMods
 from .patches.wrench import PROGRESSIVE_WRENCH, WrenchProgression
 from .quick_select import QuickSelectState
 from .skill_points import SkillPointState
-from .stealth import StealthState
 from .skins import Skins
+from .stealth import StealthState
 from .titanium_bolts import TitaniumBoltState
 from .traps import Traps
 from .vendor_rewards import VendorRewards
 
 logger = logging.getLogger("CommonClient")
 
+_BLACK_OUT_PEN_PICKUP = f"{SACClankGadgets.BLACK_OUT_PEN} (Pickup)"
+# Native WEAPON_ORDER names of the pickups the installed location hooks report themselves.
+_HOOKED_PICKUP_NAMES = frozenset(
+    "fountainpen" if name == _BLACK_OUT_PEN_PICKUP else name for name in PICKUP_LOCATIONS.values()
+)
 
 
 class Core:
@@ -57,12 +62,7 @@ class Core:
 
         self.case_unlocks  = CaseUnlockInventory(pine)
         self.case_struct   = CaseStructInventory(pine)
-        # Owned by self.case (CaseInventory) -- its address is derived from
-        # weapon_array and rebound every case transition alongside
-        # ratchet_items/clank_items, see core/planets.py's set_case() and
-        # core/address_maps/ps2.py's VENDOR_SCREEN_STATE_OFFSET. Aliased
-        # here so existing call sites (e.g. client/command_processor.py's
-        # `w.vendor`) don't need to change.
+        # Owned and rebound by self.case on every case transition.
         self.vendor        = self.case.vendor
         self.location_hooks = LocationHooks(pine)
         self.native_runtime = NativeRuntime(pine, self.location_hooks, self._log)
@@ -78,7 +78,6 @@ class Core:
         self.native_runtime.progression = self.progression
         self.weapon_mods = WeaponMods(pine)
         self.native_runtime.weapon_mods = self.weapon_mods
-        self._native_locations_enabled = True
         self._native_pause_notice = False
         self.missions      = MissionInventory(pine)
         self.cutscenes      = CutsceneInventory(pine)
@@ -95,26 +94,15 @@ class Core:
         self._goal_sent = False
         self.quick_select   = QuickSelectState(pine)
 
-        # True AP ownership per character, as of the last apply_inventory()
-        # call -- kept so _reapply_all_inventories() (fired from
-        # on_respawn/became_ready) always has an up-to-date answer without
-        # needing its own copy passed in each time.
+        # AP ownership per character from the last apply_inventory(), re-applied on respawn.
         self._ap_owned: dict[str, dict[str, bool]] = {"ratchet": {}, "clank": {}}
-        # Case names owned via AP, as of the last apply_inventory() call --
-        # same reasoning as _ap_owned above, kept so tick() can pass it to
-        # missions.enforce_owned_first_missions() every tick without
-        # needing its own copy of received_names.
+        # Cases owned via AP, from the last apply_inventory().
         self._owned_cases: set[str] = set()
         self._inventory_initialized = False
         self._checked_items: set[str] = set()
 
-        # Returns whether `name` was actually a location in this seed and
-        # got queued -- tick() below only confirm()s a detector's find
-        # (stopping it from being re-reported) when this returns True, so
-        # a rejected name (wrong options, or server_locations not
-        # populated yet right after connecting) is retried next tick
-        # instead of silently dropped forever. Defaults to "nothing sent"
-        # rather than "always accepted" for the same reason.
+        # Returns whether the check was queued. A rejected check is retried next
+        # tick, so the default rejects everything until the client is wired up.
         self.send_location:      Callable[[str], bool] = lambda _: False
         self.send_deathlink:     Callable[[int], None]  = lambda _: None
         self.death_amnesty:      Callable[[], int]      = lambda: 1
@@ -122,9 +110,7 @@ class Core:
         self.on_goal:            Callable[[], None]     = lambda: None
         # Fired once, the tick a case transition completes.
         self.on_case_ready:      Callable[[], None]     = lambda: None
-        # options.py's Missions -- False (the option's own default) means
-        # level_completion granularity, True means all. Read by
-        # missions.check() every tick (see below).
+        # True when the Missions option is "all" rather than level_completion.
         self.missions_all:       Callable[[], bool]     = lambda: False
         self._death_count: int = 0
 
@@ -167,10 +153,6 @@ class Core:
         self.wrench.count = min(5, list(received_names).count(PROGRESSIVE_WRENCH))
         self.bolt_rewards.received = list(received_names).count("Bolts")
         self._ap_owned = {"ratchet": dict(ratchet), "clank": dict(clank)}
-        # Pure function of received_names alone -- no pine/game-state
-        # dependency, so compute (and cache for tick()'s
-        # enforce_owned_first_missions() call) regardless of is_ready,
-        # same as _ap_owned above.
         self._owned_cases = resolve_owned_cases(list(received_names), character_unlocks=self.character_unlocks,
                                                 progressive_planets=self.progressive_planets)
         self.native_runtime.owned_cases = frozenset(self._owned_cases)
@@ -194,7 +176,6 @@ class Core:
         """Compatibility command: an AP session may not disable interception."""
         if not enabled:
             raise RuntimeError("Native pickup/vendor interception is mandatory; it cannot be disabled")
-        self._native_locations_enabled = True
 
     def _owned_equipment(self) -> dict[str, bool]:
         """Resolve AP ownership once for both native hooks and inventory writes."""
@@ -249,12 +230,21 @@ class Core:
         self._log("[SAC] Native vendor/pickup checks active for this level.")
         return True
 
+    def _send_once(self, name: str) -> None:
+        """Send a location check unless already sent; a rejected send is retried on a later tick."""
+        if name not in self._checked_items and self.send_location(name):
+            self._checked_items.add(name)
+
+    def _report_checks(self, inventory, names) -> None:
+        """Send each newly found name, confirming it with its inventory only once AP accepts it."""
+        for name in names:
+            if self.send_location(name):
+                inventory.confirm(name)
+
     def _read_native_locations(self) -> None:
         for name in self.location_hooks.poll():
             # Native slot names become AP location names; named pickups pass through.
-            name = EQUIPMENT_INTERNAL_TO_DISPLAY.get(name, name)
-            if name not in self._checked_items and self.send_location(name):
-                self._checked_items.add(name)
+            self._send_once(EQUIPMENT_INTERNAL_TO_DISPLAY.get(name, name))
 
     def _strip_all_inventories(self) -> None:
         self.case.ratchet_items.strip_all()
@@ -305,11 +295,6 @@ class Core:
     def challenge_mode(self, value: int) -> None:
         self.pine.write_int8(CHALLENGE_MODE_ADDRESS, value)
 
-    # -- Notifications ---------------------------------------------------------
-
-    def notify(self, text: str) -> None:
-        logger.info(f"[SAC] {text}")
-
     # -- Tick --------------------------------------------------------------
 
     def tick(self) -> None:
@@ -357,13 +342,7 @@ class Core:
         if became_ready:
             case_label = current_case.name if current_case else f"unknown case 0x{self.case.case_id:X}"
             logger.info(f"[SAC] Case changed -> {case_label} (id={self.case.case_id})")
-            # g_pMissionLevelList's resolved address (and everything
-            # derived from it) is only valid for the level it was
-            # resolved on -- see MissionInventory.invalidate_resolved_
-            # addresses(). Without this, missions.check()/
-            # enforce_owned_first_missions() below would keep reusing the
-            # previous level's now-stale addresses instead of re-scanning
-            # for this one.
+            # Mission table addresses are per level; re-resolve them for this one.
             self.missions.invalidate_resolved_addresses()
             self.missions.table_base = table_base
             self.case.ratchet_items.sync()
@@ -387,68 +366,35 @@ class Core:
                       + ". Fully close and reopen Case Files to refresh the list.")
         self.case.case_menu.apply_access(self._owned_cases)
 
-        for name in self.missions.check_all(all_missions=self.missions_all()):
-            if self.send_location(name):
-                self.missions.confirm(name)
-        for name in self.cutscenes.check():
-            if self.send_location(name):
-                self.cutscenes.confirm(name)
-        for name in self.gadgetbot_challenges.check():
-            if self.send_location(name):
-                self.gadgetbot_challenges.confirm(name)
-        for name in self.special_challenges.check():
-            if self.send_location(name):
-                self.special_challenges.confirm(name)
-        for name in self.ratchet_challenges.check():
-            if self.send_location(name):
-                self.ratchet_challenges.confirm(name)
-        for name in self.skill_points.check():
-            if self.send_location(name):
-                self.skill_points.confirm(name)
-        for name in self.alien_codes.check():
-            if self.send_location(name):
-                self.alien_codes.confirm(name)
-        for name in self.keycards.check():
-            if self.send_location(name):
-                self.keycards.confirm(name)
+        self._report_checks(self.missions, self.missions.check_all(all_missions=self.missions_all()))
+        for inventory in (self.cutscenes, self.gadgetbot_challenges, self.special_challenges,
+                          self.ratchet_challenges, self.skill_points, self.alien_codes, self.keycards):
+            self._report_checks(inventory, inventory.check())
         if len(self.keycards.found) == 3:
             self._owned_cases.add(SACCases.HIGH_TREEHOUSE)
         self._check_goal()
 
-        for name in self.titanium_bolts.check():
-            if self.send_location(name):
-                self.titanium_bolts.confirm(name)
+        self._report_checks(self.titanium_bolts, self.titanium_bolts.check())
 
         for name in self.vendor.poll_purchases():
-            name = vendor_location_name(EQUIPMENT_INTERNAL_TO_DISPLAY.get(name, name))
-            if name not in self._checked_items and self.send_location(name):
-                self._checked_items.add(name)
+            self._send_once(vendor_location_name(EQUIPMENT_INTERNAL_TO_DISPLAY.get(name, name)))
 
         for name in self.case.ratchet_items.check():
             if name in VENDOR_LOCATIONS.values():
                 continue
-            if self.location_hooks.installed and name in {
-                    "fountainpen" if n == f"{SACClankGadgets.BLACK_OUT_PEN} (Pickup)" else n
-                    for n in PICKUP_LOCATIONS.values()}:
+            if self.location_hooks.installed and name in _HOOKED_PICKUP_NAMES:
                 continue
             if name == "fountainpen":
-                name = f"{SACClankGadgets.BLACK_OUT_PEN} (Pickup)"
-            elif name not in self._ap_owned["ratchet"]:
-                continue
-            else:
-                name = EQUIPMENT_INTERNAL_TO_DISPLAY.get(name, name)
-            if name not in self._checked_items and self.send_location(name):
-                self._checked_items.add(name)
+                self._send_once(_BLACK_OUT_PEN_PICKUP)
+            elif name in self._ap_owned["ratchet"]:
+                self._send_once(EQUIPMENT_INTERNAL_TO_DISPLAY.get(name, name))
         for name in self.case.clank_items.check():
-            name = f"{name} (Pickup)"
-            if name not in self._checked_items and self.send_location(name):
-                self._checked_items.add(name)
+            self._send_once(f"{name} (Pickup)")
         self._reapply_all_inventories()
 
         self.progression.sync()
         for name in (*self.progression.level_checks(), *self.progression.nanotech_checks(), *self.stealth.checks()):
-            if name not in self._checked_items and self.send_location(name):
-                self._checked_items.add(name)
+            self._send_once(name)
         self.weapon_mods.sync()
         self.wrench.sync()
         self.bolt_rewards.deliver()

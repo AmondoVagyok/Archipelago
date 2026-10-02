@@ -4,13 +4,16 @@ from unittest.mock import Mock
 
 from ..constants.clank_gadgets import SACClankGadgets, SACGadgetPickupLocations
 from ..constants.planets import CASE_ID_TO_CASE
+from ..constants.weapons import CLANK_PICKUP_TO_INTERNAL, EQUIPMENT_DISPLAY_TO_INTERNAL
 from ..core.address_maps import CURRENT_CASE_ADDRESS, FORCE_CASE_ADDRESS
 from ..core.core import Core
 from ..core.inventories.missions import MissionInventory
 from ..core.inventories.planets import CaseInventory
-from ..core.inventories.weapons import WeaponInventory
+from ..core.inventories.weapons import WEAPON_ORDER, WeaponInventory
 from ..core.symbols import RuntimeSymbols
 from ..core.vendor import VendorState
+from ..items import ALL_ITEMS, GADGET_ITEM_TABLE, WEAPON_ITEM_TABLE
+from ..locations import ALL_LOCATIONS
 
 
 class Memory:
@@ -49,8 +52,6 @@ class Memory:
 
 class RuntimeTests(unittest.TestCase):
     def test_blackout_pen_is_one_item_and_one_location(self):
-        from ..items import ALL_ITEMS
-        from ..locations import ALL_LOCATIONS
         self.assertIn(SACClankGadgets.BLACK_OUT_PEN, ALL_ITEMS)
         self.assertNotIn("fountainpen", ALL_ITEMS)
         self.assertIn(SACGadgetPickupLocations.BOLTAIRE_MUSEUM_BLACK_OUT_PEN, ALL_LOCATIONS)
@@ -66,9 +67,6 @@ class RuntimeTests(unittest.TestCase):
         self.assertEqual(core.case.ratchet_items.check(), [])
 
     def test_all_equipment_names_write_matching_native_slots(self):
-        from ..constants.weapons import CLANK_PICKUP_TO_INTERNAL, EQUIPMENT_DISPLAY_TO_INTERNAL
-        from ..core.inventories.weapons import WEAPON_ORDER
-        from ..items import GADGET_ITEM_TABLE, WEAPON_ITEM_TABLE
         self.assertEqual(set(EQUIPMENT_DISPLAY_TO_INTERNAL), set(WEAPON_ITEM_TABLE))
         self.assertEqual(set(CLANK_PICKUP_TO_INTERNAL), set(GADGET_ITEM_TABLE))
         for display, internal in {**EQUIPMENT_DISPLAY_TO_INTERNAL, **CLANK_PICKUP_TO_INTERNAL}.items():

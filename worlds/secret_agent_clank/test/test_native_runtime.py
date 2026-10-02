@@ -5,11 +5,15 @@ from unittest.mock import Mock, patch
 from ..constants.alien_codes import ALIEN_CODE_MODULES
 from ..constants.clank_gadgets import SACClankGadgets
 from ..constants.missions import MISSION_COMPLETE_NAME
+from ..constants.planets import SACCases
 from ..core.case_menu import CASE_LABELS
 from ..core.core import Core
 from ..core.inventories.alien_codes import AlienCodeInventory
+from ..core.inventories.keycards import KeycardInventory
 from ..core.inventories.missions import MissionInventory
 from ..core.native_runtime import NativeRuntime
+from ..core.patches import MARKER, LocationHooks
+from ..locations import ALIEN_CODE_LOCATIONS, KEYCARD_LOCATIONS
 from .test_runtime import Memory
 
 
@@ -74,7 +78,6 @@ class NativeRuntimeTests(unittest.TestCase):
         self.runtime.connection_warning.refresh.assert_not_called()
 
     def test_active_runtime_updates_vendor_case_gates(self):
-        from ..constants.planets import SACCases
         self.hooks.installed = True
         self.hooks.is_current.return_value = True
         self.runtime.vendor_catalog = Mock()
@@ -112,7 +115,6 @@ class NativeRuntimeTests(unittest.TestCase):
         self.runtime.gate.arm.assert_called_once()
 
     def test_vendor_selection_uses_native_modules_and_shared_cases(self):
-        from ..constants.planets import SACCases
         runtime = NativeRuntime(Memory(), Mock(), Mock())
         runtime.configure_vendors([SACCases.ASYANICA_ROOFTOPS, SACCases.GONDOLA_ASCENT])
         self.assertEqual(runtime.vendor_modules, {4, 11})
@@ -127,8 +129,8 @@ class NativeRuntimeTests(unittest.TestCase):
         with patch("worlds.secret_agent_clank.core.native_runtime.RuntimeSymbols"), \
                 patch("worlds.secret_agent_clank.core.native_runtime.VendorCatalog") as catalog:
             catalog.return_value.prepare.return_value = []
-            catalog.return_value.sync_cases.side_effect = lambda cases: calls.append("case gates")
             self.assertFalse(self.runtime.service(set(), {}))
+            catalog.return_value.sync_cases.assert_not_called()
         self.assertEqual(self.hooks.prepare.call_args.kwargs["vendor_locations"], {})
         self.assertFalse(self.runtime.progression.prepare.call_args.kwargs["vendor_enabled"])
         self.hooks.install_at_loader_gate.assert_called_once()
@@ -148,7 +150,6 @@ class NativeRuntimeTests(unittest.TestCase):
                                  (0x206338, 3), (0x100, 5)])
 
     def test_incoming_hooks_survive_outgoing_module_during_startup(self):
-        from ..core.patches import MARKER, LocationHooks
         hooks = LocationHooks(self.p)
         hooks.installed = True
         hooks.module = 16
@@ -267,13 +268,11 @@ class MissionLabelTests(unittest.TestCase):
 
 class AlienFlagTests(unittest.TestCase):
     def test_goal_catalog_has_every_code_and_card(self):
-        from ..locations import ALIEN_CODE_LOCATIONS, KEYCARD_LOCATIONS
         self.assertEqual(len(ALIEN_CODE_LOCATIONS), 27)
         self.assertEqual(len(KEYCARD_LOCATIONS), 3)
         self.assertEqual(len({entry.code for entry in ALIEN_CODE_LOCATIONS.values()}), 27)
 
     def test_chalice_collection_not_cards_or_door_completes_goal(self):
-        from ..core.inventories.keycards import KeycardInventory
         p = Memory()
         cards = KeycardInventory(p)
         values = {0xAA: bytes([7]), 0xCB: bytes([0])}

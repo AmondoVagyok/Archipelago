@@ -1,8 +1,6 @@
 """Persistent Alien Code bits, independently read from native save flags."""
-import struct
-
 from ...constants.alien_codes import ALIEN_CODE_MODULES, ALIEN_CODES_BY_CASE
-from ..global_flags import GlobalFlags
+from ..global_flags import GlobalFlags, read_module_counts
 
 
 class AlienCodeInventory:
@@ -20,15 +18,7 @@ class AlienCodeInventory:
         get_count = symbols.get("GLOBALVARS_GetTotalAlienCodeCount__FUi")
         if get_count is None:
             return False
-        w = struct.unpack("<7I", self.pine.read_bytes(get_count, 28))
-        if (w[0] != 0x2484FFFF or w[1] & 0xFFFF0000 != 0x3C020000
-                or w[2] & 0xFFFF0000 != 0x24420000
-                or w[3:] != (0x00042080, 0x00822021, 0x03E00008, 0x8C820000)):
-            return False
-        low = w[2] & 0xFFFF
-        table = ((w[1] & 0xFFFF) << 16) + (low - 0x10000 if low & 0x8000 else low)
-        counts = struct.unpack("<30I", self.pine.read_bytes(table, 120))
-        if {i + 1: n for i, n in enumerate(counts) if n} != dict.fromkeys(ALIEN_CODE_MODULES.values(), 3):
+        if read_module_counts(self.pine, get_count) != dict.fromkeys(ALIEN_CODE_MODULES.values(), 3):
             return False
         self.valid = True
         return True
@@ -54,7 +44,7 @@ class AlienCodeInventory:
         return sorted(self.found - self.reported)
 
     def confirm(self, name: str) -> None:
-        """Mark a name check() returned as successfully delivered to AP -- see core/case_events.py's CaseEventInventory.confirm() for why this must wait for Core.send_location(name) to return True rather than happening unconditionally inside check()."""
+        """Stop reporting `name`; call only once AP has accepted the check."""
         self.reported.add(name)
 
     @property

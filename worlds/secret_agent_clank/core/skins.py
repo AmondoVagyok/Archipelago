@@ -1,9 +1,16 @@
 """Unlock cosmetic menu entries and feed the game's native skin loader."""
 import struct
 
-from ..constants.skins import (ALL_SKINS_MASK, DEFAULT_RATCHET_SKIN, UNSUPPORTED_RATCHET_SKIN,
-                               QWARK_GIANT_SKINS, SKINS_BY_CHARACTER,
-                               SKIN_CHARACTER_STRIDE, SKIN_OWNED_OFFSET, SKIN_SAVE_OFFSET)
+from ..constants.skins import (
+    ALL_SKINS_MASK,
+    DEFAULT_RATCHET_SKIN,
+    QWARK_GIANT_SKINS,
+    SKIN_CHARACTER_STRIDE,
+    SKIN_OWNED_OFFSET,
+    SKIN_SAVE_OFFSET,
+    SKINS_BY_CHARACTER,
+    UNSUPPORTED_RATCHET_SKIN,
+)
 from .global_flags import GlobalFlags
 from .patches import mips as m
 from .patches.asm import Patch, jump, packed

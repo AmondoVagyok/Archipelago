@@ -1,4 +1,5 @@
 """Captured vendor insertion and restoration checks; no live PINE writes."""
+import struct
 import unittest
 from pathlib import Path
 
@@ -32,7 +33,6 @@ class VendorOfferPreviewTests(unittest.TestCase):
         self.assertEqual(bytes(self.pine.data), before)
 
     def test_unknown_row_type_rejected_without_writing(self):
-        import struct
         self.preview.vendor.bind_runtime(self.symbols)
         pointer, _, _ = self.preview.vendor._native_header()
         struct.pack_into("<I", self.pine.data, pointer + 12, 99)
@@ -43,7 +43,6 @@ class VendorOfferPreviewTests(unittest.TestCase):
         self.assertEqual(self.preview.patches, [])
 
     def test_changed_module_rejects_apply(self):
-        import struct
         self.preview.prepare(self.symbols, source_index=0)
         struct.pack_into("<I", self.pine.data, 0x206328, 22)
         before = bytes(self.pine.data)

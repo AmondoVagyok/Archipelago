@@ -7,7 +7,7 @@ from .types import CaseStructure, SACTags, group_by_case, with_display_names
 
 @dataclass(frozen=True)
 class SACAlienCodes:
-    """String constants for each Alien Code's title (short form only -- see ALIEN_CODES below for which case/address each belongs to)."""
+    """Short Alien Code titles; ALIEN_CODES below assigns each to its case."""
 
     THE_LEGENDS = "The Legends"
     RONNS_SECRET = "Ronn's secret"
@@ -39,12 +39,12 @@ class SACAlienCodes:
 
 
 _RAW_ALIEN_CODES: tuple[CaseStructure, ...] = (
-    # Boltaire Museum -- confirmed case (exact name match).
+    # Boltaire Museum -- confirmed.
     CaseStructure(SACCases.BOLTAIRE_MUSEUM, SACAlienCodes.THE_LEGENDS, SACTags.ALIEN_CODE),
     CaseStructure(SACCases.BOLTAIRE_MUSEUM, SACAlienCodes.RONNS_SECRET, SACTags.ALIEN_CODE),
     CaseStructure(SACCases.BOLTAIRE_MUSEUM, SACAlienCodes.BENS_SECRET, SACTags.ALIEN_CODE),
 
-    # Asyanica Rooftops, case_id 5, but the name doesn't match cleanly).
+    # Asyanica Rooftops (case_id 5) -- source name doesn't match cleanly.
     CaseStructure(SACCases.ASYANICA_ROOFTOPS, SACAlienCodes.JHAIROS_SECRET, SACTags.ALIEN_CODE),
     CaseStructure(SACCases.ASYANICA_ROOFTOPS, SACAlienCodes.GILBERTS_SECRET, SACTags.ALIEN_CODE),
     CaseStructure(SACCases.ASYANICA_ROOFTOPS, SACAlienCodes.RICARDOS_SECRET, SACTags.ALIEN_CODE),
@@ -53,9 +53,8 @@ _RAW_ALIEN_CODES: tuple[CaseStructure, ...] = (
     CaseStructure(SACCases.GONDOLA_ASCENT, SACAlienCodes.CARLS_SECRET, SACTags.ALIEN_CODE),
     CaseStructure(SACCases.GONDOLA_ASCENT, SACAlienCodes.JESS_SECRET, SACTags.ALIEN_CODE),
 
-    # Rionosis, Azcotal Alley -- case exists (Azcotal Alley), but
-    # planets.py currently files it under Glaciara (LOW CONFIDENCE); this
-    # data implies Rionosis instead. Used as-is -- see module docstring.
+    # Listed under Rionosis, but planets.py files Azcotal Alley under Glaciara
+    # (LOW CONFIDENCE there). The case assignment is used as-is.
     CaseStructure(SACCases.AZCOTAL_ALLEY, SACAlienCodes.JONS_SECRET, SACTags.ALIEN_CODE),
     CaseStructure(SACCases.AZCOTAL_ALLEY, SACAlienCodes.THE_3_JASONS_SECRET, SACTags.ALIEN_CODE),
     CaseStructure(SACCases.AZCOTAL_ALLEY, SACAlienCodes.TRAVIS_SECRET, SACTags.ALIEN_CODE),
@@ -65,15 +64,13 @@ _RAW_ALIEN_CODES: tuple[CaseStructure, ...] = (
     CaseStructure(SACCases.HIGH_ROLLERS_CASINO, SACAlienCodes.SHANES_SECRET, SACTags.ALIEN_CODE),
     CaseStructure(SACCases.HIGH_ROLLERS_CASINO, SACAlienCodes.THE_PING_PONG_SECRET, SACTags.ALIEN_CODE),
 
-    # Labos de Venantonio (= Venantonio Labs) -- confirmed case.
+    # Labos de Venantonio (= Venantonio Labs) -- confirmed.
     CaseStructure(SACCases.VENANTONIO_LABS, SACAlienCodes.GERARDS_SECRET, SACTags.ALIEN_CODE),
     CaseStructure(SACCases.VENANTONIO_LABS, SACAlienCodes.ALEXS_SECRET, SACTags.ALIEN_CODE),
     CaseStructure(SACCases.VENANTONIO_LABS, SACAlienCodes.HAROONS_SECRET, SACTags.ALIEN_CODE),
 
-    # Fort Sprocket, Galactic Bolt Reserve -- case exists (exact name
-    # match), but planets.py currently files it under Venantonio (LOW
-    # CONFIDENCE); this data implies Fort Sprocket instead. Used as-is --
-    # see module docstring.
+    # Listed under Fort Sprocket, but planets.py files Galactic Bolt Reserve under
+    # Venantonio (LOW CONFIDENCE there). The case assignment is used as-is.
     CaseStructure(SACCases.GALACTIC_BOLT_RESERVE, SACAlienCodes.AVERYS_SECRET, SACTags.ALIEN_CODE),
     CaseStructure(SACCases.GALACTIC_BOLT_RESERVE, SACAlienCodes.LESLEYS_SECRET, SACTags.ALIEN_CODE),
     CaseStructure(SACCases.GALACTIC_BOLT_RESERVE, SACAlienCodes.DAVES_SECRET, SACTags.ALIEN_CODE),
@@ -82,7 +79,7 @@ _RAW_ALIEN_CODES: tuple[CaseStructure, ...] = (
     CaseStructure(SACCases.SPACESHIP_GRAVEYARD, SACAlienCodes.KENS_SECRET, SACTags.ALIEN_CODE),
     CaseStructure(SACCases.SPACESHIP_GRAVEYARD, SACAlienCodes.JAREDS_SECRET, SACTags.ALIEN_CODE),
 
-    # (case_id 29), but the name doesn't match cleanly.
+    # Underwater Bunker (case_id 29) -- source name doesn't match cleanly.
     CaseStructure(SACCases.UNDERWATER_BUNKER, SACAlienCodes.VESSUPS_SECRET, SACTags.ALIEN_CODE),
     CaseStructure(SACCases.UNDERWATER_BUNKER, SACAlienCodes.ADAMS_SECRET, SACTags.ALIEN_CODE),
     CaseStructure(SACCases.UNDERWATER_BUNKER, SACAlienCodes.JEFFS_SECRET, SACTags.ALIEN_CODE),
@@ -132,9 +129,8 @@ class SACAlienCodeLocations:
 
 ALIEN_CODES: tuple[CaseStructure, ...] = with_display_names(_RAW_ALIEN_CODES, SACAlienCodeLocations)
 
-# Every Alien Code confirmed to a real case, grouped by case name -- feeds
-# locations.py's ALIEN_CODE_LOCATIONS. Excludes the still-TODO entries
-# above (see module docstring).
+# Case name -> its Alien Code location names. Entries with an unassigned
+# ("TODO") case are skipped.
 ALIEN_CODES_BY_CASE: dict[str, tuple[str, ...]] = group_by_case(
     tuple(entry for entry in ALIEN_CODES if entry.case_name != "TODO")
 )

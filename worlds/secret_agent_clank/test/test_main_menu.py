@@ -1,9 +1,9 @@
 import unittest
 from unittest.mock import Mock
 
-from .test_runtime import Memory
 from ..core.core import Core
 from ..core.main_menu import MainMenuNotice, is_main_menu
+from .test_runtime import Memory
 
 
 class MainMenuTests(unittest.TestCase):

@@ -2,18 +2,19 @@
 import unittest
 from pathlib import Path
 
+from ..core.main_menu import is_main_menu
 from ..core.patches import PICKUP_LOCATIONS, VENDOR_LOCATIONS, LocationHooks
+from ..core.patches.connection_warning import ConnectionWarning
 from ..core.patches.gain_storage import GainStorage
 from ..core.patches.mission_travel import MissionTravel
 from ..core.patches.progression import Progression
-from ..core.patches.vendor_presentation import VendorPresentation
-from ..core.patches.vendor_catalog import VendorCatalog
-from ..core.patches.connection_warning import ConnectionWarning
 from ..core.patches.titan_vendor import TitanOffers, TitanVendor
+from ..core.patches.vendor_catalog import VendorCatalog
+from ..core.patches.vendor_presentation import VendorPresentation
 from ..core.patches.weapon_mods import WeaponMods
 from ..core.patches.wrench import WrenchProgression
-from ..core.symbols import RuntimeSymbols
 from ..core.stealth import StealthState
+from ..core.symbols import RuntimeSymbols
 from .test_runtime import Memory
 
 
@@ -30,7 +31,7 @@ class NativeCapturePlansTests(unittest.TestCase):
         p = CaptureMemory()
         p.data[:] = capture.read_bytes()
         symbols = RuntimeSymbols.parse(p.data[:0x1000000], 0)
-        guards, ranges = GainStorage(p).prepare(symbols)
+        _guards, ranges = GainStorage(p).prepare(symbols)
         self.assertEqual(len(ranges), 4)
         self.assertTrue(all(end - start >= 32 for start, end in ranges))
         # A changed body, even with the original entry still intact, must
@@ -49,7 +50,6 @@ class NativeCapturePlansTests(unittest.TestCase):
             self.skipTest("Local research RAM captures not present")
         for capture in captures:
             raw = capture.read_bytes()
-            from ..core.main_menu import is_main_menu
             captured = CaptureMemory()
             captured.data[:] = raw
             if is_main_menu(captured):

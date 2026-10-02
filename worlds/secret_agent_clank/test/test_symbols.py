@@ -1,6 +1,6 @@
 import unittest
 
-from ..core.symbols import forbid, require
+from ..core.symbols import RuntimeSymbols, forbid, require
 
 
 class RequireForbidTests(unittest.TestCase):
@@ -21,7 +21,6 @@ class RequireForbidTests(unittest.TestCase):
         self.assertNotIn("'a'", str(ctx.exception))
 
     def test_require_works_with_a_real_runtime_symbols_instance(self):
-        from ..core.symbols import RuntimeSymbols
         symbols = RuntimeSymbols(pine=None)
         symbols.values = dict(self.symbols)
         self.assertEqual(require(symbols, "a"), 0x100000)

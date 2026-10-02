@@ -13,6 +13,7 @@ from worlds.secret_agent_clank.world import (
 
 def run_client(_url: str | None = None):
     """Launch the Secret Agent Clank Archipelago client."""
+    # Imported here so generation never loads the client's PINE/GUI dependencies.
     from worlds.secret_agent_clank.client import run_client as _run
     launch_subprocess(_run, name="SACClient")
 

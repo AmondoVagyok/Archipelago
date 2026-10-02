@@ -1,4 +1,4 @@
-"""Cutscene-trigger tracking -- see constants/cutscenes.py's CUTSCENES for the per-cutscene case/address/flag data (CONFIRMED live for every entry)."""
+"""Cutscene location tracking; flags are in constants/cutscenes.py."""
 from typing import TYPE_CHECKING
 
 from ...constants.cutscenes import CUTSCENES

@@ -1,8 +1,8 @@
 import struct
 import unittest
 
+from ..core.vendor import VendorItem, VendorSnapshot, VendorState, purchased_base_item
 from .test_runtime import Memory
-from ..core.vendor import VendorState, VendorItem, VendorSnapshot, purchased_base_item
 
 
 class NativeVendorTests(unittest.TestCase):

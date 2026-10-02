@@ -14,9 +14,10 @@ from .constants import (
     SACCases,
     SACOperatives,
 )
-from .constants.planets import ALL_CASES, PLANET_ACCESS_ITEM_NAME
 from .constants.challenge_mode import PROGRESSIVE_CHALLENGE_MODE
+from .constants.planets import ALL_CASES, PLANET_ACCESS_ITEM_NAME
 from .constants.vendor import NG_PLUS_VENDOR_ITEMS
+from .constants.weapon_mods import WeaponMod
 from .constants.weapon_progression import (
     LEVELLED_INTERNALS,
     PROGRESSIVE_TO_INTERNAL,
@@ -24,7 +25,7 @@ from .constants.weapon_progression import (
     UNLOCK_TO_PROGRESSIVE,
     max_level,
 )
-from .constants.weapons import EQUIPMENT_DISPLAY_TO_INTERNAL, GADGETS_FROM_WEAPON_TABLE, RATCHET_WEAPONS
+from .constants.weapons import EQUIPMENT_DISPLAY_TO_INTERNAL, RATCHET_WEAPONS
 from .entities import SACItem
 from .items import (
     ALL_ITEMS,
@@ -39,6 +40,7 @@ from .locations import ALL_LOCATIONS
 from .options import Infobots, SecretAgentClankOptions, sac_option_groups
 from .regions import create_regions
 from .rules import set_rules
+from .rules.rule_helpers import region_names
 from .rules.vendor_access import VENDOR_ONLY_ITEM_NAMES
 from .universal_tracker import setup_options_from_slot_data
 
@@ -80,13 +82,18 @@ class SecretAgentClankWorld(World):
     location_name_to_id: dict[str, int] = {name: data.code for name, data in ALL_LOCATIONS.items()}
     dynamic_pine = _DYNAMIC_PINE_SPEC
 
-    # Universal Tracker integration (see universal_tracker.py) -- using_ut/
-    # passthrough are read by UT itself once set; ut_can_gen_without_yaml
-    # tells UT this world can regenerate purely from a finished multiworld's
-    # slot_data, without needing the player's original YAML.
+    # Universal Tracker support (see universal_tracker.py). ut_can_gen_without_yaml
+    # lets UT regenerate this world from slot_data alone.
     using_ut: bool = False
     passthrough: dict[str, Any]
     ut_can_gen_without_yaml: bool = True
+
+    # Set by regions.py's create_regions().
+    has_vendor: bool
+    weapon_mod_catalog: tuple[WeaponMod, ...]
+    # Set by create_items().
+    starting_case: str
+    second_starting_case: str | None
 
     def create_item(self, name: str) -> SACItem:
         data = ALL_ITEMS[name]
@@ -98,8 +105,7 @@ class SecretAgentClankWorld(World):
     def collect(self, state, item):
         changed = super().collect(state, item)
         if changed and item.name in PROGRESSIVE_TO_UNLOCK:
-            # Existing case rules name the base weapon. Keep its ownership in
-            # logic as well as the progressive count used by level checks.
+            # Case rules check the base weapon, so a progressive copy also grants it in logic.
             state.add_item(PROGRESSIVE_TO_UNLOCK[item.name], self.player)
         return changed
 
@@ -124,7 +130,7 @@ class SecretAgentClankWorld(World):
     def progressive_planets(self) -> list[str]:
         if self.using_ut:
             return list(self.passthrough.get("progressive_planets", PLANET_NAMES[1:]))
-        regions = {region.name for region in self.multiworld.get_regions(self.player)}
+        regions = region_names(self)
         active = {case.planet for case in ALL_CASES if case.name in regions}
         return [planet for planet in PLANET_NAMES if planet in active]
 
@@ -132,8 +138,8 @@ class SecretAgentClankWorld(World):
         set_rules(self)
 
     def create_items(self) -> None:
-        region_names = {r.name for r in self.multiworld.get_regions(self.player)}
-        active_cases = [case for case in ALL_CASES if case.name in region_names]
+        existing = region_names(self)
+        active_cases = [case for case in ALL_CASES if case.name in existing]
         candidates = [case for case in active_cases
                       if self.options.operatives.value.get(case.operative, 0)]
         if not candidates:
@@ -146,16 +152,13 @@ class SecretAgentClankWorld(World):
         else:
             starting_case = self.random.choice(candidates)
         self.starting_case = starting_case.name
-        # A real AP starting item opens this exact case in every access mode.
+        # The starting case's Case File opens it under every Infobots mode.
         self.multiworld.push_precollected(
             self.create_item(CASE_NAME_TO_INFOBOT[starting_case.name])
         )
 
-        # Infobots=cases has no planet/progressive fallback access tier --
-        # a lone starting Case File can leave the player with only that
-        # one case's own locations to find the rest from, so give a second
-        # one too. Only meaningful with >1 enabled candidate; otherwise
-        # there's nothing else to grant.
+        # With Infobots=cases a single starting case can leave too few early
+        # locations, so grant a second case when one is available.
         second_starting_case = None
         if self.options.infobots == Infobots.option_cases:
             second_candidates = [case for case in candidates if case.name != starting_case.name]
@@ -182,12 +185,8 @@ class SecretAgentClankWorld(World):
         if ratchet_enabled and self.options.progressive_wrench:
             pool += ["Progressive Wrench"] * 5
 
-        # WEAPON_ITEM_TABLE mixes Ratchet's own weapons with the WEAPON_ORDER-
-        # struct half of Clank's gadgets (see items/__init__.py's docstring) --
-        # a disabled character's entries are excluded from the pool entirely,
-        # same as their cases/locations already are (see regions.py's
-        # disabled_operatives()), so their weapons/gadgets can never be
-        # received or function in-game.
+        # WEAPON_ITEM_TABLE holds both Ratchet's weapons and Clank's WEAPON_ORDER
+        # equipment; skip whichever character is disabled.
         for name in WEAPON_ITEM_TABLE:
             owned_by_clank = name.endswith("(Clank)")
             if owned_by_clank and not clank_enabled:
@@ -206,8 +205,7 @@ class SecretAgentClankWorld(World):
         if clank_enabled:
             pool += list(GADGET_ITEM_TABLE)
 
-        # Planet access -- mutually exclusive tiers, see rules.py's
-        # HasPlanet/HasCase docstring.
+        # Access items for the chosen Infobots mode (see rules/rule_helpers.py).
         if self.options.infobots == Infobots.option_progressive_planet:
             planets = self.progressive_planets
             starting_count = planets.index(starting_case.planet) + 1 if starting_case.planet in planets else 0
@@ -227,12 +225,8 @@ class SecretAgentClankWorld(World):
             if clank_enabled and starting_case.name != SACCases.BOLTAIRE_MUSEUM:
                 pool.append(CASE_NAME_TO_INFOBOT[SACCases.BOLTAIRE_MUSEUM])
 
-        # Character unlocks -- only for characters actually enabled (see
-        # options.py's Operatives); a disabled operative has no cases
-        # generated at all (see regions.py), so it'd be a wasted item.
-        # ItemDict culls 0-valued entries in its own __init__, so a
-        # disabled operative is simply absent from .value -- see
-        # regions.py's disabled_operatives for the same check.
+        # Character items, only for enabled operatives (disabled ones are absent from
+        # operatives.value).
         if self.options.infobots == Infobots.option_character_unlocks:
             for character, item_name in CHARACTER_ITEM_NAME.items():
                 if character in self.options.operatives.value:
@@ -289,17 +283,10 @@ class SecretAgentClankWorld(World):
             "infobots": self.options.infobots.value,
             "weapon_mods": self.passthrough.get("weapon_mods", False) if self.using_ut else True,
             "weapon_mod_ids": [mod.mod_id for mod in self.weapon_mod_catalog],
-            # Which operatives are enabled (see options.py's Operatives) --
-            # determines which cases/locations exist and which weapons/
-            # gadgets are pooled at all (see create_items() above). Required
-            # for Universal Tracker's regenerated world to match the real
-            # one (see universal_tracker.py).
             "operatives": dict(self.options.operatives.value),
             "death_link": bool(self.options.death_link.value),
             "death_amnesty": self.options.death_amnesty.value,
-            # Missions.option_level_completion (0) or .option_all (1) --
-            # tells the client which per-case location set it should be
-            # sending completions for (see client/context.py).
+            # 0 = level_completion, 1 = all
             "all_missions": self.options.all_missions.value,
             "all_cutscenes": bool(self.options.all_cutscenes.value),
             "skill_points": self.options.skill_points.value,

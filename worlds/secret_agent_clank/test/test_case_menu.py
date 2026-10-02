@@ -1,8 +1,8 @@
 import struct
 import unittest
 
+from ..core.case_menu import CASE_LABELS, CaseMenu
 from .test_runtime import Memory
-from ..core.case_menu import CaseMenu, CASE_LABELS
 
 
 class CaseMenuTests(unittest.TestCase):

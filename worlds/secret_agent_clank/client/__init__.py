@@ -3,7 +3,10 @@ import asyncio
 import sys
 from argparse import Namespace
 
+import colorama
+
 from CommonClient import get_base_parser, gui_enabled, handle_url_arg, server_loop
+from Utils import async_start, init_logging
 
 from .command_processor import SACCommandProcessor
 from .context import SACContext, tracker_loaded
@@ -23,7 +26,7 @@ async def main(args: Namespace) -> None:
         ctx.run_gui()
     ctx.run_cli()
 
-    asyncio.create_task(ctx.game_watcher(), name="SAC game watcher")
+    async_start(ctx.game_watcher(), name="SAC game watcher")
 
     await ctx.exit_event.wait()
     async with ctx._pine_lock:
@@ -32,8 +35,6 @@ async def main(args: Namespace) -> None:
 
 
 def run_client(*args: str) -> None:
-    from Utils import init_logging
-
     init_logging("SACClient")
     parser = get_base_parser(description="Secret Agent Clank Archipelago Client")
     parser.add_argument("--name", default=None, help="Slot Name to connect as.")
@@ -48,8 +49,6 @@ def run_client(*args: str) -> None:
         if not parsed_args.password and sys.stdin and sys.stdin.isatty():
             password = input("Password (leave blank if none): ").strip()
             parsed_args.password = password or None
-
-    import colorama
 
     colorama.just_fix_windows_console()
     asyncio.run(main(parsed_args))

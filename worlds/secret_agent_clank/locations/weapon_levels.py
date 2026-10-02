@@ -1,6 +1,20 @@
 """Weapon level checks use a separate ID range; existing locations never move."""
+from BaseClasses import Region
+from rule_builder.rules import CanReachRegion, False_, Has
+
+from ..constants import CASES_BY_OPERATIVE, SACOperatives
 from ..constants.challenge_mode import PROGRESSIVE_CHALLENGE_MODE
-from ..constants.weapon_progression import LEVELLED_INTERNALS, checked_levels, level_location_name
+from ..constants.vendor import NG_PLUS_VENDOR_ITEMS
+from ..constants.weapon_progression import (
+    LEVELLED_INTERNALS,
+    UNLOCK_TO_PROGRESSIVE,
+    checked_levels,
+    level_location_name,
+)
+from ..constants.weapons import EQUIPMENT_INTERNAL_TO_DISPLAY
+from ..entities import SACLocation as Location
+from ..rules.rule_helpers import HasEnemyAccess, region_names
+from ..rules.vendor_access import VENDOR_ONLY_ITEM_NAMES
 from .model import BASE_ID, SACLocation, SACLocationType
 
 WEAPON_LEVEL_LOCATIONS = {
@@ -23,22 +37,11 @@ CLANK_WEAPON_LEVEL_CASES: dict[str, tuple[str, ...]] = {
 
 
 def create_weapon_level_locations(world, menu_region):
-    from BaseClasses import Region
-    from rule_builder.rules import CanReachRegion, False_, Has
-
-    from ..constants import CASES_BY_OPERATIVE, SACOperatives
-    from ..constants.vendor import NG_PLUS_VENDOR_ITEMS
-    from ..constants.weapon_progression import UNLOCK_TO_PROGRESSIVE
-    from ..constants.weapons import EQUIPMENT_INTERNAL_TO_DISPLAY
-    from ..entities import SACLocation as Location
-    from ..rules.rule_helpers import HasEnemyAccess
-    from ..rules.vendor_access import VENDOR_ONLY_ITEM_NAMES
-
     mode = world.options.weapon_level_checks.value
     if not mode:
         return
     region = Region("Weapon Levels", world.player, world.multiworld)
-    existing = {r.name for r in world.multiworld.get_regions(world.player)}
+    existing = region_names(world)
     for internal in LEVELLED_INTERNALS:
         name = EQUIPMENT_INTERNAL_TO_DISPLAY[internal]
         operative = SACOperatives.CLANK if name.endswith("(Clank)") else SACOperatives.RATCHET

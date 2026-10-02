@@ -9,7 +9,8 @@ from ..constants.nanotech import nanotech_location_name
 from ..constants.weapon_progression import level_location_name
 from ..core.patches.progression import Progression
 from ..core.patches.vendor_catalog import VendorCatalog
-from ..options import NgPlus, WeaponXPMultiplier, HealthXPMultiplier, BoltMultiplier
+from ..options import BoltMultiplier, HealthXPMultiplier, NgPlus, WeaponXPMultiplier
+from ..universal_tracker import setup_options_from_slot_data
 from ..world import SecretAgentClankWorld
 from .test_runtime import Memory
 
@@ -98,7 +99,6 @@ class ChallengeModeTests(unittest.TestCase):
             self.assertEqual(mem.read_int8(0x100008), expected)
 
     def test_tracker_restores_progression_and_legacy_defaults(self):
-        from ..universal_tracker import setup_options_from_slot_data
 
         mw = setup_multiworld(SecretAgentClankWorld, options={
             "ng_plus": 2, "progressive_challenge_mode": True})

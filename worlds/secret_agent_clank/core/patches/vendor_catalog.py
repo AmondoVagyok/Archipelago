@@ -2,8 +2,8 @@
 import struct
 
 from ...constants.challenge_mode import CHALLENGE_VENDOR_LOCATIONS
-from ...constants.vendor_unlocks import VENDOR_CASES
 from ...constants.native_functions import NativeFunctions
+from ...constants.vendor_unlocks import VENDOR_CASES
 from ...constants.weapon_mods import WEAPON_MODS
 from ...constants.weapons import EQUIPMENT_DISPLAY_TO_INTERNAL
 from ..inventories.weapons import WEAPON_ORDER

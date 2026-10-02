@@ -52,7 +52,7 @@ class VendorRewards:
             header = self.vendor._native_header()
             if header is None:
                 return
-            pointer, count, selected = header
+            pointer, _count, selected = header
             rows = self.vendor.read_items()
             rewards = [(row, self.scouts.for_row(row)) for row in rows]
             ap_rows = any(row.node_type in (0, 3, 4) for row in rows)

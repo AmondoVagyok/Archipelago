@@ -1,6 +1,6 @@
 """Vendor reward text hooks installed with the other native patches."""
-import struct
 import hashlib
+import struct
 
 from ..notifications import ItemNotifications
 from ..symbols import require

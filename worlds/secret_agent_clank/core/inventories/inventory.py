@@ -43,7 +43,7 @@ class ItemInventory:
             self.owned[name] = owned
 
     def check(self) -> list[str]:
-        """Diff current raw memory against the last-known owned state, returning item names that flipped 0 -> 1 since the last call (i.e."""
+        """Item names that became owned since the last call."""
         changed: list[str] = []
         for name in self.item_addrs:
             now = self.get(name)

@@ -1,4 +1,4 @@
-"""Ratchet's weapons/tools, sourced from the single 40-slot WeaponData struct array core/weapons.py's WEAPON_ORDER documents."""
+"""Equipment display names, their native WEAPON_ORDER names, and the case each is found in."""
 from dataclasses import dataclass
 
 from .clank_gadgets import SACClankGadgets, SACClankWeapons
@@ -54,7 +54,7 @@ class SACTitanWeapons:
 
 @dataclass(frozen=True)
 class SACQwarkWeapons:
-    """We are not including Qwarks weapons in AP tool just for noting"""
+    """Qwark's weapons. Not randomized; listed for reference only."""
     QWARKBLASTER      = "Blaster (Qwark)"
     GIANTQWARKBLASTER = "Giant Blaster (Qwark)"
 
@@ -109,10 +109,8 @@ CLANK_PICKUP_TO_INTERNAL = {
 }
 
 
-# Mapping of each SACRatchetWeapons entry to the SACCases case its AP
-# location lives in.
-# STATUS: LOW CONFIDENCE -- expect individual entries to move once verified
-# live (e.g. via /force_case + checking what that case's vendor/level offers).
+# Case -> the Ratchet weapons found there.
+# LOW CONFIDENCE: entries may move once each case is verified in-game.
 WEAPONS_BY_CASE: dict[str, tuple[str, ...]] = {
     SACCases.BOLTAIRE_MUSEUM: (
         SACRatchetWeapons.BLASTER,
@@ -140,10 +138,8 @@ WEAPONS_BY_CASE: dict[str, tuple[str, ...]] = {
     ),
 }
 
-# Same shape/confidence caveat as WEAPONS_BY_CASE above, for the Clank
-# items that live in this same WEAPON_ORDER struct -- case placements
-# carried over unchanged from when these were (mis)classified as Ratchet
-# weapons in WEAPONS_BY_CASE, not re-derived.
+# Case -> the Clank equipment from the WEAPON_ORDER array found there.
+# LOW CONFIDENCE, like WEAPONS_BY_CASE.
 GADGETS_BY_CASE: dict[str, tuple[str, ...]] = {
     SACCases.BOLTAIRE_MUSEUM: (
         SACClankWeapons.THROWTIE, SACClankGadgets.JETBOOTS,
@@ -168,14 +164,4 @@ GADGETS_BY_CASE: dict[str, tuple[str, ...]] = {
     SACCases.KLUNKS_LAIR: (
         SACClankWeapons.KICKSPLOSION,
     ),
-}
-
-# Reverse of WEAPONS_BY_CASE/GADGETS_BY_CASE -- display name -> the case its
-# AP location lives in, so a caller (regions.py's Titan Vendor filtering)
-# can tell which case must be active for a given weapon's location to exist.
-CASE_BY_WEAPON_NAME: dict[str, str] = {
-    name: case_name
-    for table in (WEAPONS_BY_CASE, GADGETS_BY_CASE)
-    for case_name, names in table.items()
-    for name in names
 }

@@ -8,7 +8,7 @@ from .test_runtime import Memory
 
 
 class FakeServerStorage:
-    """Stands in for AP's data-storage "delivered_bolts"/"pending_bolts" keys -- a real client persists these via Set (see client/context.py); tests just need something a fresh BoltRewards can be configure()'d from to simulate a restart/reconnect."""
+    """In-memory stand-in for the server's delivered/pending bolt storage keys."""
     def __init__(self):
         self.delivered = {"count": 0, "starting_delivered": False}
         self.pending = None
@@ -100,8 +100,7 @@ class BoltRewardTests(unittest.TestCase):
         core.tick()
         self.assertEqual(self.r.received, 2)
         self.assertEqual(self.p.read_int32(BOLTS_ADDRESS), 1000)
-        # Nothing was ever reported as an AP state change -- readiness gates
-        # deliver() before it ever calls self._save().
+        # deliver() must not save anything before the runtime is ready.
         self.assertEqual(self.server.delivered, {"count": 0, "starting_delivered": False})
         self.assertIsNone(self.server.pending)
 
@@ -120,9 +119,7 @@ class BoltRewardTests(unittest.TestCase):
         self.assertEqual(self.server.delivered["count"], 1)
 
     def test_reconfigure_replaces_in_memory_state(self):
-        # Simulates switching to a different slot's already-fetched AP
-        # state -- configure() fully replaces delivered/pending, never
-        # mixing in the previous slot's counters.
+        # Switching slots: configure() replaces the old slot's state entirely.
         self.r.received = 1
         self.r.deliver()
         other = FakeServerStorage()

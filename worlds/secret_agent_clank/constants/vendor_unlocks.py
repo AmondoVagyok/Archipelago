@@ -9,15 +9,15 @@ Titan/Proto upgrades and Clank NG+ mods use the base weapon's source case.
 RYNO and Hot Foot 2.1 use Museum, the first vendor; the wiki gives only
 "Challenge mode" for these. Seed NG+ filtering still applies separately.
 """
-from .clank_gadgets import SACClankGadgets as G, SACClankWeapons as W
-from .weapons import SACRatchetWeapons as R
+from .clank_gadgets import SACClankGadgets as G
+from .clank_gadgets import SACClankWeapons as W
 from .planets import SACCases as C
 from .vendor import VENDOR_WEAPONS, vendor_location_name
 from .weapon_mods import VENDOR_MODS
+from .weapon_order import WEAPON_ORDER
 from .weapon_progression import TITAN_LOCATIONS
 from .weapons import EQUIPMENT_DISPLAY_TO_INTERNAL
-from .weapon_order import WEAPON_ORDER
-
+from .weapons import SACRatchetWeapons as R
 
 WEAPON_CASES = {
     "blaster": C.BOLTAIRE_MUSEUM, "shardgun": C.MAX_SECURITY_CELLS,

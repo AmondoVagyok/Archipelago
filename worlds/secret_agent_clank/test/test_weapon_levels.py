@@ -1,16 +1,26 @@
 import struct
 import unittest
+from unittest.mock import patch
 
 from BaseClasses import CollectionState
+from Fill import distribute_items_restrictive
 from test.general import setup_multiworld
 
 from ..constants import CASE_NAME_TO_INFOBOT, SACCases
 from ..constants.weapon_order import WEAPON_ORDER
 from ..constants.weapon_progression import (
-    LEVELLED_INTERNALS, PROGRESSIVE_TO_INTERNAL, checked_levels, level_location_name, max_level,
+    LEVELLED_INTERNALS,
+    PROGRESSIVE_TO_INTERNAL,
+    checked_levels,
+    level_location_name,
+    max_level,
 )
+from ..constants.weapons import EQUIPMENT_INTERNAL_TO_DISPLAY
+from ..core.patches.asm import jump, packed
 from ..core.patches.progression import Progression
+from ..locations.weapon_levels import CLANK_WEAPON_LEVEL_CASES
 from ..options import ProgressiveWeapons
+from ..universal_tracker import setup_options_from_slot_data
 from ..world import SecretAgentClankWorld
 from .mips_cpu import CPU
 from .test_runtime import Memory as ByteMemory
@@ -46,7 +56,6 @@ class WeaponLevelTests(unittest.TestCase):
             self.assertEqual(p.manual, manual)
 
     def test_generated_modes_and_counts(self):
-        from Fill import distribute_items_restrictive
         for mode in ("off", "manual", "automatic"):
             for ng in (0, 1, 2):
                 m = setup_multiworld(SecretAgentClankWorld, options={
@@ -63,7 +72,6 @@ class WeaponLevelTests(unittest.TestCase):
                 self.assertTrue(m.fulfills_accessibility())
 
     def test_tracker_round_trip_and_old_slot_defaults(self):
-        from ..universal_tracker import setup_options_from_slot_data
         m = setup_multiworld(SecretAgentClankWorld, options={
             "progressive_weapons": "manual", "weapon_level_checks": "level_4"})
         world = m.worlds[1]
@@ -89,8 +97,7 @@ class WeaponLevelTests(unittest.TestCase):
             self.assertTrue(all("(Clank)" in loc.name for loc in checks))
 
     def test_clank_case_mapping_can_be_filled_in(self):
-        from unittest.mock import patch
-        from ..locations.weapon_levels import CLANK_WEAPON_LEVEL_CASES
+
         with patch.dict(CLANK_WEAPON_LEVEL_CASES, {"throwTie": (SACCases.VENANTONIO_LABS,)}):
             m = setup_multiworld(SecretAgentClankWorld, options={"weapon_level_checks": "all"})
         world = m.worlds[1]
@@ -124,7 +131,6 @@ class WeaponLevelTests(unittest.TestCase):
                 "starting_weapons": 0, "starting_gadgets": 0,
             })
             world = m.worlds[1]
-            from ..constants.weapons import EQUIPMENT_INTERNAL_TO_DISPLAY
             for internal, case, wrong_case in (
                 ("blaster", SACCases.MAX_SECURITY_CELLS, SACCases.ASYANICA_ROOFTOPS),
                 ("throwTie", SACCases.ASYANICA_ROOFTOPS, SACCases.MAX_SECURITY_CELLS),
@@ -199,7 +205,6 @@ class WeaponLevelTests(unittest.TestCase):
                 memory.batch_write_int32([(base + slot * 0x74 + 0x5C, native_level)])
                 original = struct.pack("<2I", 0x27BDFFB0, 0xFFB30028)
                 tail, continuation = 0x150000, 0x160000
-                from ..core.patches.asm import jump, packed
                 memory.write_bytes(tail, original + packed([jump(xp + 8), 0]))
                 def allocate(code):
                     memory.write_bytes(continuation, code)

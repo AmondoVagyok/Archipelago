@@ -2,7 +2,7 @@
 import struct
 import time
 
-from ..constants.cheats import SACTraps, TRAP_DURATIONS
+from ..constants.cheats import TRAP_DURATIONS, SACTraps
 from .case_menu import ee_pointer
 
 # Verified CHEAT_IsActive callers: clip matrix, GrantBolts, head scaling,

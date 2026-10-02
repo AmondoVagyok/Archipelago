@@ -24,10 +24,10 @@ class Patch(ABC):
             self.pine.write_bytes(self.address, self.replacement)
             if self.pine.read_bytes(self.address, len(self.replacement)) != self.replacement:
                 raise RuntimeError("Patch readback failed")
-        except Exception:
+        except Exception as err:
             self.pine.write_bytes(self.address, self.original)
             if self.pine.read_bytes(self.address, len(self.original)) != self.original:
-                raise RuntimeError("Patch rollback readback failed")
+                raise RuntimeError("Patch rollback readback failed") from err
             raise
 
     @abstractmethod
@@ -58,11 +58,11 @@ class PatchSet(Patch):
             for patch in self.patches:
                 if self.pine.read_bytes(patch.address, len(patch.replacement)) != patch.replacement:
                     raise RuntimeError("Patch readback failed")
-        except Exception:
+        except Exception as err:
             for patch in reversed(attempted):
                 self.pine.write_bytes(patch.address, patch.original)
                 if self.pine.read_bytes(patch.address, len(patch.original)) != patch.original:
-                    raise RuntimeError("Patch rollback readback failed")
+                    raise RuntimeError("Patch rollback readback failed") from err
             raise
 
     def read(self):

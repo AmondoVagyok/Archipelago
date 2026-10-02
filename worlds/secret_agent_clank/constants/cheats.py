@@ -41,7 +41,7 @@ CHEAT_SKILL_POINT_THRESHOLD: dict[str, int] = {
 
 @dataclass(frozen=True)
 class SACTraps:
-    """String constants for trap items -- each forces one or more vanilla cheats on for the trap's duration (see TRAP_CHEATS)."""
+    """Trap item names; each forces the vanilla cheats in TRAP_CHEATS on for its duration."""
 
     WEAPON_SWITCHING = "Weapon Switching Trap"
     MIRRORED_LEVELS = "Mirrored Levels Trap"

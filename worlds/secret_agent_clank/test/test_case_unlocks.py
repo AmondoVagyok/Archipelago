@@ -1,7 +1,14 @@
 import unittest
 
-from ..constants.planets import CASE_ID_TO_CASE, CASE_NAME_TO_INFOBOT, PLANET_ACCESS_ITEM_NAME, PLANET_NAMES, SACCases
-from ..core.address_maps import CASE_UNLOCK_BASE_ADDRESSES, CASE_UNLOCK_TABLE_OFFSETS
+from ..constants.planets import (
+    CASE_ID_TO_CASE,
+    CASE_NAME_TO_INFOBOT,
+    CASES_BY_PLANET,
+    PLANET_ACCESS_ITEM_NAME,
+    PLANET_NAMES,
+    SACCases,
+)
+from ..core.address_maps import CASE_UNLOCK_BASE_ADDRESSES, CASE_UNLOCK_TABLE_OFFSETS, CASE_UNLOCK_TABLE_SLOT_TO_CASE
 from ..core.inventories.case_unlocks import CaseUnlockInventory, CaseUnlockState, resolve_owned_cases
 from ..items import PROGRESSIVE_PLANET_ITEM_NAME
 
@@ -15,12 +22,10 @@ class TestCaseUnlockState(unittest.TestCase):
 
 
 class TestCaseUnlockResolveTable(unittest.TestCase):
-    """_resolve_table() re-derives every case's address off whichever case_id is passed in, using CASE_UNLOCK_TABLE_OFFSETS -- these tests exercise that directly rather than the old guessed cumulative-offset model (removed; see case_unlocks.py's module docstring)."""
+    """_resolve_table() derives every case's address from the anchor case via CASE_UNLOCK_TABLE_OFFSETS."""
 
     def test_every_confirmed_case_resolves_to_its_own_anchor(self):
-        # Anchoring off case_id N and asking _resolve_table() for case_id
-        # N's own address must return exactly CASE_UNLOCK_BASE_ADDRESSES'
-        # entry for it -- the whole point of the anchor.
+        # A case resolved from its own anchor is exactly its base address.
         inventory = CaseUnlockInventory(pine=None)
         for case_id, case in CASE_ID_TO_CASE.items():
             anchor = CASE_UNLOCK_BASE_ADDRESSES.get(case.name)
@@ -42,21 +47,13 @@ class TestCaseUnlockResolveTable(unittest.TestCase):
         self.assertEqual(31, len(CASE_UNLOCK_TABLE_OFFSETS))
 
     def test_slot_is_case_id_plus_one_for_every_case(self):
-        # CONFIRMED live for 28 of 30 cases (see CASE_UNLOCK_BASE_
-        # ADDRESSES's module comment for the 2 exceptions, which still
-        # follow this same formula, just not self-force-confirmed).
-        from ..core.address_maps import CASE_UNLOCK_TABLE_SLOT_TO_CASE
+        # Confirmed live for 28 of 30 cases; the other two are assumed to follow suit.
         for case_id, case in CASE_ID_TO_CASE.items():
             self.assertEqual(case.name, CASE_UNLOCK_TABLE_SLOT_TO_CASE[case_id + 1])
 
     def test_resolving_a_case_not_the_current_anchor_does_not_reuse_its_own_stale_address(self):
-        # The table's absolute location relocates on every case transition
-        # (see module docstring) -- so resolving Larger Than Life's address
-        # while anchored on a DIFFERENT case must NOT just be handed back
-        # Larger Than Life's own (unrelated-epoch) CASE_UNLOCK_BASE_
-        # ADDRESSES entry; it must be computed relative to the CURRENT
-        # anchor instead. Boltaire Museum's own table copy is a different
-        # memory region entirely, so the two are expected to differ.
+        # The table moves on every case transition, so another case's address must
+        # come from the current anchor, not from that case's own base address.
         inventory = CaseUnlockInventory(pine=None)
         larger_than_life_own_anchor = CASE_UNLOCK_BASE_ADDRESSES[SACCases.LARGER_THAN_LIFE]
         resolved_from_boltaire = inventory._resolve_table(1)[SACCases.LARGER_THAN_LIFE]
@@ -70,7 +67,7 @@ class TestCaseUnlockResolveTable(unittest.TestCase):
 
 
 class _FakePine:
-    """Minimal batch_read_int8/batch_write_int8 stand-in for apply_all() tests -- per-address canned read values, and a log of what got written (address -> value) so writes-that-should-have-been-skipped can be asserted absent."""
+    """Fake PINE with canned int8 reads and a log of writes."""
 
     def __init__(self, values_by_address: dict[int, int]) -> None:
         self._values = dict(values_by_address)
@@ -85,7 +82,7 @@ class _FakePine:
 
 
 class TestCaseUnlockApplyAllSkipsGarbageReadback(unittest.TestCase):
-    """CONFIRMED live (see apply_all()'s own docstring): the OLD case's table memory can already read a non-enum garbage byte (observed: 192) on the very same tick CURRENT_CASE_ADDRESS still reports the OLD case id -- i.e."""
+    """During a transition the old table can read garbage (192 seen live); apply_all() must not write over it."""
 
     def _table_addresses(self, anchor_case_id: int) -> dict[str, int]:
         inventory = CaseUnlockInventory(pine=None)
@@ -145,9 +142,7 @@ class TestCaseUnlockApplyAllSkipsGarbageReadback(unittest.TestCase):
 class TestResolveOwnedCases(unittest.TestCase):
 
     def test_no_received_items_owns_nothing(self):
-        # Boltaire Museum is no longer a hardcoded exemption here -- it's a
-        # real precollected starting item (see world.py's create_items()),
-        # so an empty received_names owns nothing.
+        # The starting case is a precollected item, so receiving nothing owns nothing.
         owned = resolve_owned_cases([])
         self.assertEqual(set(), owned)
 
@@ -166,13 +161,11 @@ class TestResolveOwnedCases(unittest.TestCase):
         planet = PLANET_NAMES[1]
         item = PLANET_ACCESS_ITEM_NAME[planet]
         owned = resolve_owned_cases([item])
-        from ..constants.planets import CASES_BY_PLANET
         for case in CASES_BY_PLANET[planet]:
             self.assertIn(case.name, owned)
 
     def test_progressive_planet_unlocks_in_order(self):
         owned = resolve_owned_cases([PROGRESSIVE_PLANET_ITEM_NAME])
-        from ..constants.planets import CASES_BY_PLANET
         first_cases = {case.name for case in CASES_BY_PLANET[PLANET_NAMES[1]]}
         self.assertTrue(first_cases <= owned)
         second_cases = {case.name for case in CASES_BY_PLANET[PLANET_NAMES[2]]}

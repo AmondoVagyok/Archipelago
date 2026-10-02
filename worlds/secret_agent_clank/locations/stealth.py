@@ -1,5 +1,10 @@
 """Cumulative successful Clank stealth takedown checks."""
-from ..constants.stealth import stealth_thresholds, stealth_location_name
+from BaseClasses import Region
+
+from ..constants import SACOperatives
+from ..constants.stealth import stealth_location_name, stealth_thresholds
+from ..entities import SACLocation as Location
+from ..rules.stealth import stealth_access_rule
 from .model import BASE_ID, SACLocation, SACLocationType
 
 STEALTH_TAKEDOWN_LOCATIONS = {
@@ -11,11 +16,6 @@ STEALTH_TAKEDOWN_LOCATIONS = {
 
 
 def create_stealth_locations(world, menu_region):
-    from BaseClasses import Region
-    from ..constants import SACOperatives
-    from ..rules.stealth import stealth_access_rule
-    from ..entities import SACLocation as Location
-
     if not world.options.stealth_takedown_checks or SACOperatives.CLANK not in world.options.operatives.value:
         return
     region = Region("Clank Stealth Takedowns", world.player, world.multiworld)

@@ -2,7 +2,7 @@
 import struct
 
 from ..constants.titanium_bolts import TITANIUM_BOLT_CASES, TITANIUM_BOLT_ENTRIES
-from .global_flags import GlobalFlags
+from .global_flags import GlobalFlags, read_module_counts
 
 
 class TitaniumBoltState:
@@ -20,15 +20,7 @@ class TitaniumBoltState:
         found_fn = symbols.get("GLOBALVARS_HasTitaniumBoltBeenFound__FUiUi")
         if count_fn is None or found_fn is None:
             return False
-        w = struct.unpack("<7I", self.pine.read_bytes(count_fn, 28))
-        if (w[0] != 0x2484FFFF or w[1] & 0xFFFF0000 != 0x3C020000
-                or w[2] & 0xFFFF0000 != 0x24420000
-                or w[3:] != (0x00042080, 0x00822021, 0x03E00008, 0x8C820000)):
-            return False
-        low = w[2] & 0xFFFF
-        table = ((w[1] & 0xFFFF) << 16) + (low - 0x10000 if low & 0x8000 else low)
-        counts = struct.unpack("<30I", self.pine.read_bytes(table, 120))
-        if {i + 1: n for i, n in enumerate(counts) if n} != {
+        if read_module_counts(self.pine, count_fn) != {
                 module: count for module, (_, count) in TITANIUM_BOLT_CASES.items()}:
             return False
         # Validate the native nibble/one-based ID calculation. The JAL's
@@ -64,7 +56,7 @@ class TitaniumBoltState:
         return sorted(found - self.reported)
 
     def confirm(self, name: str) -> None:
-        """Mark a name check() returned as successfully delivered to AP -- see core/case_events.py's CaseEventInventory.confirm() for why this must wait for Core.send_location(name) to return True rather than happening unconditionally inside check()."""
+        """Stop reporting `name`; call only once AP has accepted the check."""
         self.reported.add(name)
 
     @property

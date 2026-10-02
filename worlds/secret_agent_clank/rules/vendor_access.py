@@ -1,14 +1,15 @@
 from rule_builder.rules import CanReachRegion, False_, Has, True_
 
+from ..constants import CHARACTER_ITEM_NAME, PROGRESSIVE_CHARACTER_ITEM_NAME
 from ..constants.challenge_mode import CHALLENGE_VENDOR_LOCATIONS, PROGRESSIVE_CHALLENGE_MODE
 from ..constants.clank_gadgets import SACClankGadgets
-from ..constants.planets import SACCases, CASE_NAME_TO_CASE, CASES_BY_OPERATIVE, PLANET_ACCESS_ITEM_NAME
-from ..constants import CHARACTER_ITEM_NAME, PROGRESSIVE_CHARACTER_ITEM_NAME
-from ..items import PROGRESSIVE_PLANET_ITEM_NAME
-from ..options import Infobots
+from ..constants.planets import CASE_NAME_TO_CASE, CASES_BY_OPERATIVE, PLANET_ACCESS_ITEM_NAME, SACCases
 from ..constants.vendor_unlocks import VENDOR_CASES
 from ..constants.weapons import EQUIPMENT_DISPLAY_TO_INTERNAL
 from ..core.patches import VENDOR_LOCATIONS
+from ..items import PROGRESSIVE_PLANET_ITEM_NAME
+from ..options import Infobots
+from .rule_helpers import region_names
 
 VENDOR_ONLY_ITEM_NAMES: frozenset[str] = frozenset(
     name for name, internal in EQUIPMENT_DISPLAY_TO_INTERNAL.items()
@@ -23,7 +24,8 @@ VENDOR_REQUIREMENTS = {
     SACCases.ROOFTOP_DEATHTRAP: False_(),
     SACCases.ASYANICA_ROOFTOPS: True_(),
     SACCases.LARGER_THAN_LIFE: False_(),
-    SACCases.COUNTESS_VILLA: False_(), # this is disabled until rules are fully sorted for planets it is possible to access if special missions are enabled
+    # Disabled until its rules are sorted out; reachable when Special Missions are enabled.
+    SACCases.COUNTESS_VILLA: False_(),
     SACCases.GLACIARA_SKI_SLOPES: False_(),
     SACCases.THE_MESS_HALL: False_(),
     SACCases.AZCOTAL_ALLEY: True_(),
@@ -52,8 +54,7 @@ VENDOR_REQUIREMENTS = {
 
 
 def vendor_access_rule(world, case_name):
-    existing = {r.name for r in world.multiworld.get_regions(world.player)}
-    if case_name not in existing:
+    if case_name not in region_names(world):
         return False_()
     return CanReachRegion(case_name) & VENDOR_REQUIREMENTS.get(case_name, False_())
 

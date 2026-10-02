@@ -1,6 +1,6 @@
 """Vendor transaction flags are independent of AP mod ownership."""
 from ...constants.native_functions import NativeFunctions
-from ...constants.weapon_mods import WEAPON_MODS, VENDOR_MODS, enabled_mods
+from ...constants.weapon_mods import VENDOR_MODS, WEAPON_MODS, enabled_mods
 from ...constants.weapons import EQUIPMENT_DISPLAY_TO_INTERNAL
 from ..inventories.weapons import WEAPON_ORDER
 from ..symbols import require

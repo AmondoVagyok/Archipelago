@@ -6,7 +6,6 @@ from ..constants import (
     SACCases,
     SACClankGadgets,
     SACClankWeapons,
-    SACCutsceneLocations,
     SACKeycardLocations,
     SACMissionLocations,
     SACPlanets,

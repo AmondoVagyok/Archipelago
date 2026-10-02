@@ -1,11 +1,11 @@
-import struct
 import unittest
 from pathlib import Path
 from unittest.mock import Mock
 
 from ..client.vendor_scouts import VendorReward
+from ..core.patches.vendor_presentation import VendorPresentation
 from ..core.symbols import RuntimeSymbols
-from ..core.vendor import VendorState, VendorItem
+from ..core.vendor import VendorItem, VendorState
 from ..core.vendor_rewards import VendorRewards
 from .test_native_capture_plans import CaptureMemory
 
@@ -68,7 +68,6 @@ class VendorRewardsTests(unittest.TestCase):
         self.assertEqual(p.read_int32(manager.text.mailbox), 0)
 
     def test_native_hint_keeps_its_text_buffer(self):
-        from ..core.patches.vendor_presentation import VendorPresentation
         p = CaptureMemory()
         text = VendorPresentation(p)
         text.mailbox, text.timer = 0x100000, 0x100100

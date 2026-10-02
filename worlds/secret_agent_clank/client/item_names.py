@@ -1,6 +1,6 @@
 """Translate historical AP equipment names at the client boundary only."""
-from ..constants.weapons import EQUIPMENT_INTERNAL_TO_DISPLAY
 from ..constants.weapon_progression import UNLOCK_TO_PROGRESSIVE
+from ..constants.weapons import EQUIPMENT_INTERNAL_TO_DISPLAY
 
 
 def _legacy_equipment_names() -> dict[str, str]:

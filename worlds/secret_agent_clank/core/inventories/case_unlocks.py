@@ -59,13 +59,13 @@ def resolve_owned_cases(received_names: list[str], *, character_unlocks: bool = 
 
 
 class CaseUnlockInventory:
-    """Reads/writes every case's locked/unlocked gate in one batch call, resolved off whichever case is currently loaded (see module docstring)."""
+    """Reads and writes every case's locked/unlocked gate, located from the currently loaded case."""
 
     def __init__(self, pine: "Pine") -> None:
         self.pine = pine
 
     def _resolve_table(self, current_case_id: "int | None") -> dict[str, int]:
-        """Every case's live address, re-derived fresh off whichever case is CURRENTLY loaded (see module docstring) -- never cached across calls, so a case transition since the last call is picked up automatically instead of reusing a now-stale table location."""
+        """Every case's gate address, recomputed each call from the currently loaded case."""
         current_case = CASE_ID_TO_CASE.get(current_case_id) if current_case_id is not None else None
         if current_case is None:
             return {}
@@ -100,7 +100,7 @@ class CaseUnlockInventory:
         return result
 
     def apply_all(self, owned_case_names: "set[str]", current_case_id: "int | None") -> None:
-        """Rebuild every case's unlock gate from AP truth in a single batch write -- UNLOCKED for every case in owned_case_names, LOCKED otherwise."""
+        """Unlock every owned case and lock the rest, in one batch write."""
         table = self._resolve_table(current_case_id)
         if not table:
             return
@@ -121,21 +121,3 @@ class CaseUnlockInventory:
         ]
         if writes:
             self.pine.batch_write_int8(writes)
-
-    def force_unlock(self, case_name: str, current_case_id: "int | None") -> bool:
-        """Debug/testing helper -- force a single case's gate UNLOCKED (writes 3, PERMANENTLY_UNLOCKED -- the real unlocked value, see module docstring) without touching any other case's byte."""
-        table = self._resolve_table(current_case_id)
-        address = table.get(case_name)
-        if address is None:
-            return False
-        self.pine.write_int8(address, CaseUnlockState.PERMANENTLY_UNLOCKED.value)
-        return True
-
-    def force_lock(self, case_name: str, current_case_id: "int | None") -> bool:
-        """Debug/testing helper -- force a single case's gate LOCKED without touching any other case's byte."""
-        table = self._resolve_table(current_case_id)
-        address = table.get(case_name)
-        if address is None:
-            return False
-        self.pine.write_int8(address, CaseUnlockState.LOCKED.value)
-        return True

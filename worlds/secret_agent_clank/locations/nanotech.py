@@ -1,5 +1,10 @@
 """Clank-only health progression checks, with stable IDs across NG modes."""
+from BaseClasses import Region
+
+from ..constants import SACOperatives
 from ..constants.nanotech import nanotech_levels, nanotech_location_name
+from ..entities import SACLocation as Location
+from ..rules.nanotech import nanotech_access_rule
 from .model import BASE_ID, SACLocation, SACLocationType
 
 NANOTECH_LOCATIONS = {
@@ -11,11 +16,6 @@ NANOTECH_LOCATIONS = {
 
 
 def create_nanotech_locations(world, menu_region):
-    from BaseClasses import Region
-    from ..constants import SACOperatives
-    from ..entities import SACLocation as Location
-    from ..rules.nanotech import nanotech_access_rule
-
     if not world.options.nanotech_checks or SACOperatives.CLANK not in world.options.operatives.value:
         return
     region = Region("Clank Nanotech", world.player, world.multiworld)

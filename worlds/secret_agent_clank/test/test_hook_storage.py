@@ -4,8 +4,11 @@ from unittest.mock import patch
 
 from ..constants.native_functions import NativeFunctions
 from ..core.patches.asm import Patch, jump
-from ..core.patches.storage import free_blocks, storage_address, plan_storage
+from ..core.patches.progression import Progression
+from ..core.patches.storage import free_blocks, plan_storage, storage_address
 from ..core.patches.vendor_catalog import VendorCatalog
+from .mips_cpu import CPU
+from .test_native_capture_plans import CaptureMemory
 from .test_runtime import Memory
 
 
@@ -29,9 +32,6 @@ class HookStorageTests(unittest.TestCase):
         self.assertIsNone(plan_storage([(0x1000, 0x1020)], [], [20, 16]))
 
     def test_split_manual_guard_rejects_invalid_slots_without_touching_stack(self):
-        from ..core.patches.progression import Progression
-        from .mips_cpu import CPU
-        from .test_native_capture_plans import CaptureMemory
         p = CaptureMemory()
         def allocate(code):
             p.write_bytes(0x160000, code)

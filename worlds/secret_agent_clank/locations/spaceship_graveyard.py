@@ -1,5 +1,5 @@
 """Every location in Spaceship Graveyard, each carrying its planet, case and access rule."""
-from rule_builder.rules import Has, HasAll, True_
+from rule_builder.rules import Has, HasAll
 
 from ..constants import (
     SACAlienCodeLocations,

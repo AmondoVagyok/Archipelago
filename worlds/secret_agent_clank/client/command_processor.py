@@ -1,7 +1,7 @@
-import asyncio
 from typing import TYPE_CHECKING
 
 from CommonClient import logger
+from Utils import async_start
 
 try:
     from worlds.tracker.TrackerClient import TrackerCommandProcessor as ClientCommandProcessor
@@ -28,9 +28,18 @@ class SACCommandProcessor(ClientCommandProcessor):
             return None
         return matches[0]
 
+    def _resolve_case_id(self, case: str, command: str) -> "int | None":
+        """The named case's id, or the current one when no name is given; warns and returns None if unknown."""
+        if case:
+            match = self._match_case(case)
+            return match.case_id if match is not None else None
+        if self.ctx._wiring.case.case_id is None:
+            logger.warning(f"[SAC] No current case known -- pass a case name to anchor off, e.g. /{command} museum.")
+        return self.ctx._wiring.case.case_id
+
     def _cmd_reconnect(self) -> bool:
         """Reconnect to PCSX2 and re-apply received Archipelago items."""
-        asyncio.create_task(self.ctx.reconnect_pine())
+        async_start(self.ctx.reconnect_pine())
         return True
 
     def _cmd_native_locations(self, mode: str = "on") -> bool:
@@ -45,11 +54,11 @@ class SACCommandProcessor(ClientCommandProcessor):
                     self.ctx._wiring.set_native_locations(mode.lower() == "on")
                 except Exception as exc:
                     logger.warning(f"[SAC] Native location mode: {exc}")
-        asyncio.create_task(change_mode())
+        async_start(change_mode())
         return True
 
     def _cmd_sac_info(self) -> bool:
-        """Print the current slot options, then every active state's repr -- read-only diagnostics only (user: "remove all the debug give items to player from the command processor and instead just have a print for the states"); no command here writes game memory."""
+        """Print the slot options and the state of every tracker (read-only)."""
         ctx = self.ctx
         options = "\n".join(f"{key}: {value}" for key, value in ctx.slot_data.items())
         logger.info(f"[SAC] Options:\n{options}")
@@ -81,7 +90,7 @@ class SACCommandProcessor(ClientCommandProcessor):
         return True
 
     def _cmd_mission_table(self) -> bool:
-        """Dump every resolved chapter-table slot (its live task count) next to whichever case CASE_ID_TO_CASE currently assumes lives in that slot (slot == case_id, only actually confirmed for Boltaire Museum's case_id 1 so far) and whether the task counts match."""
+        """Print each chapter-table slot's task count and whether it matches the cases found in it."""
         w = self.ctx._wiring
         rows = w.missions.dump_chapter_table()
         if not rows:
@@ -101,16 +110,8 @@ class SACCommandProcessor(ClientCommandProcessor):
     def _cmd_case_states(self, case: str = "") -> bool:
         """Batch-read and print every case's current locked/unlocked byte."""
         w = self.ctx._wiring
-
-        current_case_id = w.case.case_id
-        if case:
-            match = self._match_case(case)
-            if match is None:
-                return True
-            current_case_id = match.case_id
-
+        current_case_id = self._resolve_case_id(case, "case_states")
         if current_case_id is None:
-            logger.warning("[SAC] No current case known -- pass a case name to anchor off, e.g. /case_states museum.")
             return True
 
         states = w.case_unlocks.read_all(current_case_id)
@@ -128,18 +129,10 @@ class SACCommandProcessor(ClientCommandProcessor):
         return True
 
     def _cmd_case_struct(self, case: str = "") -> bool:
-        """Batch-read and print every slot of the case-unlock table's exact layout (see core/address_maps/ps2.py's CASE_UNLOCK_TABLE_OFFSETS / core/case_struct.py's CaseStructInventory) -- dumps each slot's raw value (typically 0 = LOCKED or 3 = UNLOCKED) plus its identified case name if CASE_UNLOCK_TABLE_SLOT_TO_CASE has one yet, so unidentified slots stand out."""
+        """Print every raw case-unlock table slot (0 = locked, 3 = unlocked) and its case, if identified."""
         w = self.ctx._wiring
-
-        current_case_id = w.case.case_id
-        if case:
-            match = self._match_case(case)
-            if match is None:
-                return True
-            current_case_id = match.case_id
-
+        current_case_id = self._resolve_case_id(case, "case_struct")
         if current_case_id is None:
-            logger.warning("[SAC] No current case known -- pass a case name to anchor off, e.g. /case_struct museum.")
             return True
 
         slots = w.case_struct.read_all(current_case_id)
@@ -157,10 +150,10 @@ class SACCommandProcessor(ClientCommandProcessor):
 
     def _cmd_enable_deathlink(self) -> bool:
         """Enable DeathLink for this session."""
-        asyncio.create_task(self.ctx._set_death_link_enabled(True))
+        async_start(self.ctx._set_death_link_enabled(True))
         return True
 
     def _cmd_disable_deathlink(self) -> bool:
         """Disable DeathLink for this session."""
-        asyncio.create_task(self.ctx._set_death_link_enabled(False))
+        async_start(self.ctx._set_death_link_enabled(False))
         return True

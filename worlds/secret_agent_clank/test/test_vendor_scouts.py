@@ -3,6 +3,7 @@ from types import SimpleNamespace
 
 from ..client.vendor_scouts import VendorScouts
 from ..constants.planets import SACCases
+from ..locations import BASE_VENDOR_LOCATIONS, MOD_VENDOR_LOCATIONS, TITAN_VENDOR_LOCATIONS
 
 
 class VendorScoutTests(unittest.TestCase):
@@ -50,7 +51,6 @@ class VendorScoutTests(unittest.TestCase):
         self.assertNotIn(999,self.scouts.rewards)
 
     def test_every_generated_vendor_location_has_a_native_scout_row(self):
-        from ..locations import BASE_VENDOR_LOCATIONS, MOD_VENDOR_LOCATIONS, TITAN_VENDOR_LOCATIONS
         definitions = {**BASE_VENDOR_LOCATIONS, **MOD_VENDOR_LOCATIONS, **TITAN_VENDOR_LOCATIONS}
         scouts = VendorScouts({name: location.code for name, location in definitions.items()})
         self.assertEqual(set(scouts.locations.values()), {loc.code for loc in definitions.values()})

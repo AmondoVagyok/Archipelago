@@ -1,4 +1,4 @@
-"""Runtime-facing API for native location interception on SCUS-97623 -- picks the applicable patch plan (patches/weapon_pickup.py's common case, or patches/vendor_only.py for modules like Treehouse with a vendor but no WeaponPickup code) and owns install/poll/sync/restore against a live PINE connection."""
+"""Native location interception: picks the patch plan for the loaded module and installs, polls and restores it."""
 from ...constants.native_functions import NativeFunctions
 from ...constants.vendor import vendor_location_name
 from ...constants.weapons import EQUIPMENT_INTERNAL_TO_DISPLAY
@@ -92,13 +92,13 @@ class LocationHooks:
                 for slot, name in self.locations[kind].items():
                     unchecked = 3 if kind == "titan" else 1
                     assert flags[slot] == (2 if name in self.reported else unchecked)
-        except Exception:
+        except Exception as err:
             # Caller keeps native execution parked throughout installation.
             # Undo even a partially transmitted write before releasing it.
             for patch in reversed(attempted):
                 p.write_bytes(patch.address, patch.original)
                 if p.read_bytes(patch.address, len(patch.original)) != patch.original:
-                    raise RuntimeError("Hook installation rollback readback failed")
+                    raise RuntimeError("Hook installation rollback readback failed") from err
             raise
         self.installed = True
 

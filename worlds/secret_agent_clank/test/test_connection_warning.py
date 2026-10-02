@@ -1,13 +1,13 @@
 import unittest
 from types import SimpleNamespace
-from unittest.mock import AsyncMock, Mock, patch
+from unittest.mock import AsyncMock, patch
 
-from ..core.patches.connection_warning import ConnectionWarning, HEARTBEAT_FRAMES
-from ..core.patches.asm import packed
+from ..client.context import CommonContext, SACContext
 from ..core.patches import mips as m
-from ..client.context import SACContext, CommonContext
-from .test_native_capture_plans import CaptureMemory
+from ..core.patches.asm import packed
+from ..core.patches.connection_warning import HEARTBEAT_FRAMES, ConnectionWarning
 from .mips_cpu import CPU
+from .test_native_capture_plans import CaptureMemory
 
 
 class ConnectionWarningTests(unittest.TestCase):

@@ -45,7 +45,7 @@ class RuntimeSymbols:
 
 
 def require(symbols, *names: str) -> "int | tuple[int, ...]":
-    """Resolve one or more exports off `symbols` (a RuntimeSymbols instance, or in tests a plain {name: address} dict -- either works, only .get() is used), raising ValueError naming exactly which are missing if any aren't found."""
+    """Resolve exports from `symbols` (anything with .get()); raise ValueError listing any that are missing."""
     values = tuple(symbols.get(name) for name in names)
     missing = [name for name, value in zip(names, values) if value is None]
     if missing:
@@ -54,7 +54,7 @@ def require(symbols, *names: str) -> "int | tuple[int, ...]":
 
 
 def forbid(symbols, *names: str) -> None:
-    """Raise ValueError naming exactly which of these exports ARE present off `symbols`, for a plan builder that needs to confirm a module lacks certain code (e.g."""
+    """Raise ValueError listing any of these exports that are present, for plans that need a module to lack them."""
     present = [name for name in names if symbols.get(name) is not None]
     if present:
         raise ValueError(f"Unexpected native export(s) present: {', '.join(present)}")

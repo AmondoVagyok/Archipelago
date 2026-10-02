@@ -1,4 +1,4 @@
-"""String constants for story mission names -- the real per-case mission title, as opposed to locations.py's "{case.name} Complete" placeholder used until every mission has a real case/address (see core/missions.py)."""
+"""Story missions per case, and the "<case> Complete" locations used when Missions is level_completion."""
 
 from dataclasses import dataclass
 from enum import IntFlag
@@ -8,7 +8,7 @@ from .planets import SACCases
 
 @dataclass(frozen=True)
 class SACMissions:
-    """String constants for real story mission titles (short form only -- see CHAPTER_ENTRIES below for which case/address/flag each belongs to)."""
+    """Short story mission titles; CHAPTER_ENTRIES below assigns each to its case."""
 
     ESCAPE_THE_RAVINE = "Escape The Ravine"
     GET_INSIDE_THE_MUSEUM = "Get Inside the Museum"
@@ -76,18 +76,12 @@ class SACMissionEntry:
     address: int
     flag: MissionFlag = MissionFlag.DISABLED
     title_id: int = 0
-    # The real AP location name (a SACMissionLocations constant) -- set below
-    # once SACMissionLocations exists (same declaration-order pattern as
-    # CaseStructure.display_name/with_display_names()).
+    # AP location name; filled in from SACMissionLocations at the end of this module.
     display_name: "str | None" = None
 
     def __post_init__(self) -> None:
-        # A property/setter pair here (instead of this) would collide with
-        # the dataclass-generated __init__: the property definition
-        # overwrites the field's default value in the class namespace
-        # before @dataclass ever reads it, so every no-flag-given
-        # construction (i.e. every CHAPTER_ENTRIES entry) would raise
-        # instead of defaulting to MissionFlag.DISABLED.
+        # Validated here rather than with a property: a property would replace
+        # the field's default before @dataclass reads it.
         if not isinstance(self.flag, MissionFlag):
             raise ValueError(f"Expected a MissionFlag, got {type(self.flag)}")
 
@@ -210,18 +204,14 @@ CHAPTER_ENTRIES = {
     ],
 }
 
-# Flat (case_name, SACMissionEntry) pairs from CHAPTER_ENTRIES, in
-# declaration order -- for core/missions.py's MissionInventory and client
-# debug commands that need to walk every mission regardless of case.
+# Every (case_name, SACMissionEntry) pair from CHAPTER_ENTRIES, in declaration order.
 ALL_CHAPTER_ENTRIES: tuple[tuple[str, SACMissionEntry], ...] = tuple(
     (case_name, entry) for case_name, entries in CHAPTER_ENTRIES.items() for entry in entries
 )
 
 MISSION_TO_CASE: dict[str, str] = {entry.name: case_name for case_name, entry in ALL_CHAPTER_ENTRIES}
 
-# Mission full name -> its SACMissionEntry (address + flag), for O(1)
-# lookup by name -- e.g. client debug commands that write a single
-# mission's flag byte directly rather than walking the whole table.
+# Mission name -> its SACMissionEntry.
 MISSION_NAME_TO_CHAPTER_ENTRY: dict[str, SACMissionEntry] = {
     entry.name: entry for _, entry in ALL_CHAPTER_ENTRIES
 }
@@ -313,21 +303,15 @@ class SACMissionLocations:
     HIGH_TREEHOUSE_COMPLETE = "High Impact Treehouse (Special Missions) - High Impact Treehouse: High Impact Treehouse Complete"
 
 
-# Case.name -> its SACMissionLocations "{case} Complete" constant, matched by
-# shared attribute name (SACCases.BOLTAIRE_MUSEUM <-> SACMissionLocations.
-# BOLTAIRE_MUSEUM_COMPLETE) -- the single source every locations/<case>.py
-# file's *_MISSION_LOCATIONS dict looks this up from, instead of each one
-# hand-building "Mission: {case.name} Complete" itself.
+# Case name -> its "<case> Complete" location, paired by attribute name
+# (SACCases.X <-> SACMissionLocations.X_COMPLETE).
 MISSION_COMPLETE_NAME: dict[str, str] = {
     case_name: getattr(SACMissionLocations, f"{attr}_COMPLETE")
     for attr, case_name in vars(SACCases).items() if not attr.startswith("_")
 }
 
-# Attach each mission's real AP location name to its SACMissionEntry, matched
-# by declaration order against SACMissionLocations' non-"_COMPLETE" attributes
-# (both hand-authored separately in the same case_id/mission order). Mutates
-# in place -- SACMissionEntry isn't frozen -- so CHAPTER_ENTRIES/
-# ALL_CHAPTER_ENTRIES see it too without rebuilding.
+# Give each mission its AP location name. SACMissionLocations' non-"_COMPLETE"
+# attributes are declared in the same order as CHAPTER_ENTRIES.
 _MISSION_DISPLAY_NAMES = [
     value for name, value in vars(SACMissionLocations).items()
     if not name.startswith("_") and not name.endswith("_COMPLETE")
@@ -339,11 +323,7 @@ if len(_MISSION_DISPLAY_NAMES) != len(ALL_CHAPTER_ENTRIES):
 for (_, _entry), _name in zip(ALL_CHAPTER_ENTRIES, _MISSION_DISPLAY_NAMES):
     _entry.display_name = _name
 
-# Reverse lookups for core/inventories/missions.py's AP boundary (check()'s
-# return value, confirm()'s input) -- internal bookkeeping there stays keyed
-# by the raw case name / entry.name (matches core/core.py's own raw
-# entry.name lookups); only the string actually sent to/received from AP
-# needs translating, via these two maps.
+# AP location name -> internal key, for MissionInventory's confirm() and sync_from_ap().
 COMPLETE_NAME_TO_CASE: dict[str, str] = {name: case for case, name in MISSION_COMPLETE_NAME.items()}
 DISPLAY_NAME_TO_CHAPTER_ENTRY: dict[str, SACMissionEntry] = {
     entry.display_name: entry for _, entry in ALL_CHAPTER_ENTRIES

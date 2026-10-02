@@ -9,7 +9,6 @@ from ..constants import (
     SACCutsceneLocations,
     SACMissionLocations,
     SACPlanets,
-    SACRatchetWeapons,
     SACSkillPointLocations,
     SACTitaniumBoltLocations,
 )

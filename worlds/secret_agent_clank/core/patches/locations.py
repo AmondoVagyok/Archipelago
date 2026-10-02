@@ -1,7 +1,7 @@
 from ...constants.clank_gadgets import SACClankGadgets
 from ...constants.vendor import VENDOR_WEAPONS
+from ...constants.weapon_order import WEAPON_ORDER, WeaponSlot
 from ...constants.weapons import EQUIPMENT_DISPLAY_TO_INTERNAL
-from ..inventories.weapons import WEAPON_ORDER, WeaponSlot
 
 VENDOR_LOCATIONS = {
     WeaponSlot(WEAPON_ORDER.index(EQUIPMENT_DISPLAY_TO_INTERNAL[name])): EQUIPMENT_DISPLAY_TO_INTERNAL[name]

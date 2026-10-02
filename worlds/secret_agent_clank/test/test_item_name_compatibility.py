@@ -1,8 +1,8 @@
 import unittest
 
 from ..client.item_names import canonical_item_name
-from ..constants.weapons import EQUIPMENT_DISPLAY_TO_INTERNAL, SACRatchetWeapons
 from ..constants.weapon_progression import PROGRESSIVE_TO_INTERNAL
+from ..constants.weapons import EQUIPMENT_DISPLAY_TO_INTERNAL, SACRatchetWeapons
 from ..core.core import Core
 from ..core.inventories.weapons import WEAPON_ORDER
 from .test_runtime import Memory

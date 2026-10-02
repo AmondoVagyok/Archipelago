@@ -1,9 +1,16 @@
 import unittest
+from pathlib import Path
+from types import SimpleNamespace
 
+from BaseClasses import CollectionState
 from test.general import setup_multiworld
-from ..world import SecretAgentClankWorld
+
+from ..constants import CASE_NAME_TO_INFOBOT, CASES_BY_OPERATIVE, SACOperatives
 from ..constants.nanotech import CLANK_XP_SAVE_OFFSET
 from ..core.patches.progression import Progression
+from ..core.symbols import RuntimeSymbols
+from ..rules.rule_helpers import CLANK_ENEMY_CASES
+from ..world import SecretAgentClankWorld
 from .test_runtime import Memory
 
 
@@ -43,7 +50,6 @@ class NanotechTests(unittest.TestCase):
         self.assertFalse(any(l.name.startswith("Clank Nanotech Level") for l in mw.get_locations(1)))
 
     def test_clank_access_required_and_disabled_operative(self):
-        from BaseClasses import CollectionState
         mw = setup_multiworld(SecretAgentClankWorld, options={"infobots": "cases"})
         state = CollectionState(mw)
         for item in mw.precollected_items[1]:
@@ -55,9 +61,7 @@ class NanotechTests(unittest.TestCase):
         self.assertFalse(any(l.name.startswith("Clank Nanotech Level") for l in mw.get_locations(1)))
 
     def test_case_count_tiers(self):
-        from BaseClasses import CollectionState
-        from ..constants import CASE_NAME_TO_INFOBOT, CASES_BY_OPERATIVE, SACOperatives
-        from ..rules.rule_helpers import CLANK_ENEMY_CASES
+
         mw = setup_multiworld(SecretAgentClankWorld, options={"infobots": "cases", "ng_plus": 1})
         world = mw.worlds[1]
         infobots = [CASE_NAME_TO_INFOBOT[case.name] for case in CASES_BY_OPERATIVE[SACOperatives.CLANK]]
@@ -88,9 +92,7 @@ class NanotechTests(unittest.TestCase):
         self.assertTrue(reachable(85))
 
     def test_native_capture_layout(self):
-        from pathlib import Path
-        from types import SimpleNamespace
-        from ..core.symbols import RuntimeSymbols
+
         path = Path(__file__).parents[1] / ".research/vendor_audit_live.ram"
         if not path.exists():
             self.skipTest("Local capture unavailable")

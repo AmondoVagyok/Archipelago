@@ -1,26 +1,35 @@
 """Native AP weapon tiers and gain multipliers, installed at the loader gate."""
 import struct
 from bisect import bisect_right
-
-from ...constants.nanotech import (CLANK_START_NANOTECH, CLANK_XP_SAVE_OFFSET,
-    CLANK_XP_THRESHOLDS, nanotech_levels, nanotech_location_name)
 from collections import Counter
 
+from ...constants import CASES_BY_OPERATIVE, SACOperatives
 from ...constants.challenge_mode import PROGRESSIVE_CHALLENGE_MODE
+from ...constants.nanotech import (
+    CLANK_START_NANOTECH,
+    CLANK_XP_SAVE_OFFSET,
+    CLANK_XP_THRESHOLDS,
+    nanotech_levels,
+    nanotech_location_name,
+)
 from ...constants.native_functions import NativeFunctions
+from ...constants.native_modules import CASE_MODULES
 from ...constants.weapon_progression import (
-    LEVELLED_INTERNALS, PROGRESSIVE_TO_INTERNAL, TITAN_LOCATIONS,
-    checked_levels, level_location_name, max_level,
+    LEVELLED_INTERNALS,
+    PROGRESSIVE_TO_INTERNAL,
+    TITAN_LOCATIONS,
+    checked_levels,
+    level_location_name,
+    max_level,
 )
 from ..inventories.weapons import WEAPON_ORDER
 from ..symbols import require
 from .asm import Patch, jump, packed
 from .gain_storage import GainStorage
-from .storage import free_blocks, plan_storage
+from .mips import A0, RA, T0, T1, T2, V0, ZERO, addiu, addu, beq, jr, lbu, li32, lui, lw, sll, sltiu, sltu
 from .patch import PatchSet
+from .storage import free_blocks, plan_storage
 from .titan_vendor import TitanPrice
-from .mips import (A0, T0, T1, T2, V0, ZERO, RA, addiu, addu, beq, jr,
-                   lbu, li32, lui, lw, sll, sltiu, sltu)
 
 
 class Progression(PatchSet):
@@ -227,8 +236,6 @@ class Progression(PatchSet):
                 address = allocate(self.gain_wrapper(target, original, register, multiplier))
                 edits.append(Patch(target, original, packed([jump(address), 0])))
             if self.stealth is not None:
-                from ...constants.native_modules import CASE_MODULES
-                from ...constants import CASES_BY_OPERATIVE, SACOperatives
                 # Shared DLLs can contain Clank code even on another operative's
                 # route. Only the Clank success call is intercepted, never generic kills.
                 clank_modules = {CASE_MODULES[case.name] for case in CASES_BY_OPERATIVE[SACOperatives.CLANK]}

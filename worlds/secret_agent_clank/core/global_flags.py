@@ -2,6 +2,23 @@
 import struct
 
 
+def read_module_counts(pine, function_address):
+    """Decode a GLOBALVARS_GetTotal*Count routine's per-module count table.
+
+    Returns {module: count} for every module with a non-zero count, or None if the
+    routine's instructions don't match the expected native layout.
+    """
+    w = struct.unpack("<7I", pine.read_bytes(function_address, 28))
+    if (w[0] != 0x2484FFFF or w[1] & 0xFFFF0000 != 0x3C020000
+            or w[2] & 0xFFFF0000 != 0x24420000
+            or w[3:] != (0x00042080, 0x00822021, 0x03E00008, 0x8C820000)):
+        return None
+    low = w[2] & 0xFFFF
+    table = ((w[1] & 0xFFFF) << 16) + (low - 0x10000 if low & 0x8000 else low)
+    counts = struct.unpack("<30I", pine.read_bytes(table, 120))
+    return {i + 1: n for i, n in enumerate(counts) if n}
+
+
 class GlobalFlags:
     def __init__(self, pine):
         self.pine = pine

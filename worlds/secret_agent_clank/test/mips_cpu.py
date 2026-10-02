@@ -1,6 +1,7 @@
 """Small instruction interpreter for native watchdog regression tests."""
 import struct
 
+
 class CPU:
     STOP = 0x1FFF00
 

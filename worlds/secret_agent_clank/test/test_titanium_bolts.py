@@ -1,8 +1,9 @@
 import unittest
 from unittest.mock import Mock
-from ..core.titanium_bolts import TitaniumBoltState
+
 from ..constants.titanium_bolts import TITANIUM_BOLT_ENTRIES
-from ..locations import TITANIUM_BOLT_LOCATIONS, ALL_LOCATIONS
+from ..core.titanium_bolts import TitaniumBoltState
+from ..locations import ALL_LOCATIONS, TITANIUM_BOLT_LOCATIONS
 from .test_runtime import Memory
 
 
@@ -27,8 +28,7 @@ class TitaniumBoltTests(unittest.TestCase):
         first = str(TITANIUM_BOLT_ENTRIES[1, 1])
         self.data[0] = 1
         self.assertEqual(self.reader.check(), [first])
-        # Not confirmed -- e.g. the AP client rejected it -- so it must
-        # come back on the next check() instead of being dropped forever.
+        # Not confirmed (the send was rejected), so check() reports it again.
         self.assertEqual(self.reader.check(), [first])
         self.reader.confirm(first)
         self.assertEqual(self.reader.check(), [])

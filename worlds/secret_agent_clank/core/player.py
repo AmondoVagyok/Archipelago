@@ -1,4 +1,4 @@
-"""Movement/health accessor for one of SAC's three playable characters (Ratchet, Clank, Qwark)."""
+"""Movement and health state for a playable character."""
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:

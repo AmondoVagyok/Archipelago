@@ -8,7 +8,7 @@ from .types import CaseStructure, SACTags, group_by_case, with_display_names
 
 @dataclass(frozen=True)
 class SACSkillPoints:
-    """String constants for skill point event titles (short form only -- see SKILL_POINTS below for which case/address each belongs to)."""
+    """Short skill point titles; SKILL_POINTS below assigns each a case and flag."""
 
     FURIOUS_FISTS = "Furious Fists of Fury"
     SILENT_NIGHT = "Silent Night"
@@ -77,10 +77,7 @@ class SACSkillPoints:
     PRETTY_GOOD_LIKENESS = "A Pretty Good Likeness"
 
 
-# One CaseStructure per skill point -- order matches the case_id (1-30)
-# order in constants/planets.py, which cross-confirms that flat list's
-# ordering (does NOT confirm the planet groupings, still best-guess).
-# address/flag walk 0x206BF8-0x206C00 one bit at a time, in this same order.
+# In case_id order. Flags walk 0x206BF8-0x206C00 one bit at a time in this order.
 _RAW_SKILL_POINTS: tuple[CaseStructure, ...] = (
     CaseStructure(SACCases.BOLTAIRE_MUSEUM, SACSkillPoints.FURIOUS_FISTS, SACTags.SKILL_POINT, event_flag=0b00000001, event_address=0x206BF8),
     CaseStructure(SACCases.BOLTAIRE_MUSEUM, SACSkillPoints.SILENT_NIGHT, SACTags.SKILL_POINT, event_flag=0b00000010, event_address=0x206BF8),
@@ -123,8 +120,7 @@ _RAW_SKILL_POINTS: tuple[CaseStructure, ...] = (
     CaseStructure(SACCases.MADAM_BUTTERQWARK, SACSkillPoints.SOLD_OUT, SACTags.SKILL_POINT, event_flag=0b01000000, event_address=0x206BFC),
     CaseStructure(SACCases.GALACTIC_BOLT_RESERVE, SACSkillPoints.WITH_INTEREST, SACTags.SKILL_POINT, event_flag=0b10000000, event_address=0x206BFC),
     CaseStructure(SACCases.GALACTIC_BOLT_RESERVE, SACSkillPoints.ANDROIDS_IN_DISGUISE, SACTags.SKILL_POINT, event_flag=0b00000001, event_address=0x206BFD),
-    # Vault Vault confirmed here (Galactic Bolt Reserve), not Inside the
-    # A-Eye -- corrects the earlier best-guess grouping.
+    # Vault Vault is in Galactic Bolt Reserve (confirmed), not Inside the A-Eye.
     CaseStructure(SACCases.GALACTIC_BOLT_RESERVE, SACSkillPoints.VAULT_VAULT, SACTags.SKILL_POINT, event_flag=0b00000010, event_address=0x206BFD),
     CaseStructure(SACCases.INSIDE_THE_A_EYE, SACSkillPoints.DIA_DE_LOS_MUERTOS, SACTags.SKILL_POINT, event_flag=0b00000100, event_address=0x206BFD),
     CaseStructure(SACCases.THE_SHOWERS, SACSkillPoints.RUBA_DUB_CLUB, SACTags.SKILL_POINT, event_flag=0b00001000, event_address=0x206BFD),
@@ -223,7 +219,5 @@ class SACSkillPointLocations:
 
 SKILL_POINTS: tuple[CaseStructure, ...] = with_display_names(_RAW_SKILL_POINTS, SACSkillPointLocations)
 
-# Case.name -> its skill points' full display names, derived from
-# SKILL_POINTS above. Order matches case_id (1-30) order, same caveat as
-# the tuple itself.
+# Case name -> its skill point location names.
 SKILL_POINTS_BY_CASE: dict[str, tuple[str, ...]] = group_by_case(SKILL_POINTS)

@@ -1,4 +1,9 @@
-"""Item tables."""
+"""Item tables.
+
+IDs are handed out sequentially in the order the tables below are built, so new
+tables must only ever be appended at the end to keep every existing item ID stable.
+"""
+from itertools import count
 from typing import NamedTuple
 
 from BaseClasses import ItemClassification
@@ -14,6 +19,9 @@ from ..constants import (
     SACCheats,
     SACTraps,
 )
+from ..constants.challenge_mode import PROGRESSIVE_CHALLENGE_MODE
+from ..constants.weapon_mods import WEAPON_MODS
+from ..constants.weapon_progression import PROGRESSIVE_TO_INTERNAL, TITAN_ITEMS
 
 BASE_ID = 77_800_000
 
@@ -25,42 +33,24 @@ class SACItemData(NamedTuple):
     classification: ItemClassification
 
 
-_next_id = BASE_ID
+_next_id = count(BASE_ID)
+
 
 def _table(names: tuple[str, ...], classification: ItemClassification) -> dict[str, SACItemData]:
-    global _next_id
-    table: dict[str, SACItemData] = {}
-    for name in names:
-        table[name] = SACItemData(_next_id, classification)
-        _next_id += 1
-    return table
+    return {name: SACItemData(next(_next_id), classification) for name in names}
 
 
 WEAPON_ITEM_TABLE: dict[str, SACItemData] = _table(RATCHET_WEAPONS, ItemClassification.progression)
-# constants/clank_gadgets.py's SACClankGadgets holds two mechanically
-# different groups (see that class's docstring): 8 items (clankpda/throwTie/
-# CuffLink/TangleVine/FlamethrowerPen/jetboots/HoloKnuckles/superkick) that
-# are thematically Clank's, but mechanically live in the SAME WEAPON_ORDER
-# struct Ratchet's own weapons live in -- core/core.py's case.ratchet_items
-# tracks them, and client/context.py's `ratchet` ownership dict is what
-# core/core.py's apply_inventory() expects them in, so they belong in
-# WEAPON_ITEM_TABLE, NOT GADGET_ITEM_TABLE below (that table feeds the
-# separate `clank` dict, for SACClankGadgets' other 2 items -- BLACK_OUT_PEN/
-# THERM_OPTIC_SHADES -- an unrelated, positional Clank inventory system).
+# Clank equipment stored in the WEAPON_ORDER array is tracked alongside Ratchet's
+# weapons, so it belongs in WEAPON_ITEM_TABLE. GADGET_ITEM_TABLE is only for the
+# Blackout Pen and Therm-Optic Shades, which use a separate inventory.
 WEAPON_ITEM_TABLE.update(_table(GADGETS_FROM_WEAPON_TABLE, ItemClassification.progression))
-# constants/weapons.py's RATCHET_WEAPONS no longer includes fountainpen/sunglasses at
-# all (they're documented there as the same physical unlock as Black Out Pen/
-# Therm-Optic Shades below) -- no popping needed here anymore.
 GADGET_ITEM_TABLE: dict[str, SACItemData] = _table(CLANK_GADGETS, ItemClassification.progression)
 
-# Planet access -- two alternative granularities, selected by options.py's
-# Infobots choice (world.py's create_items() only ever pools ONE of these
-# three tables, never more than one):
-#   planets:    PLANET_ACCESS_ITEM_TABLE, one item per planet (coarse).
-#   cases:      INFOBOT_ITEM_TABLE, one item per case (fine).
-# Progressive Planet option additionally replaces PLANET_ACCESS_ITEM_TABLE
-# with repeated copies of a single PROGRESSIVE_PLANET_ITEM_NAME item, each
-# copy unlocking the next planet in PLANET_NAMES order -- see world.py.
+# Access items; the Infobots option picks which kind is pooled:
+#   planets:            one item per planet
+#   cases:              one Case File per case
+#   progressive_planet: copies of Progressive Planet, each opening the next planet
 PLANET_ACCESS_ITEM_TABLE: dict[str, SACItemData] = _table(
     tuple(PLANET_ACCESS_ITEM_NAME.values()), ItemClassification.progression,
 )
@@ -71,11 +61,8 @@ PROGRESSIVE_PLANET_ITEM_TABLE: dict[str, SACItemData] = _table(
     (PROGRESSIVE_PLANET_ITEM_NAME,), ItemClassification.progression,
 )
 
-# Character Items option: Ratchet/Clank get one flat unlock item each;
-# Qwark/Gadgetbots are progressive (user: "progressive characters
-# specifically for qwark and gadgetbots") -- world.py pools multiple copies
-# of each, one per case that character operates (see
-# constants/planets.py's CASES_BY_OPERATIVE).
+# Infobots=character_unlocks: one item each for Ratchet and Clank, and one
+# progressive copy per case for Qwark and the Gadgetbots.
 CHARACTER_ITEM_TABLE: dict[str, SACItemData] = _table(
     tuple(CHARACTER_ITEM_NAME.values()), ItemClassification.progression,
 )
@@ -83,14 +70,10 @@ PROGRESSIVE_CHARACTER_ITEM_TABLE: dict[str, SACItemData] = _table(
     tuple(PROGRESSIVE_CHARACTER_ITEM_NAME.values()), ItemClassification.progression,
 )
 
-# Directly grants the "Ratchet Pack" vanilla cheat -- useful, not required
-# for anything, so it's not progression.
+# Grants the vanilla "Ratchet Pack" cheat; never required.
 RATCHET_PACK_ITEM_TABLE: dict[str, SACItemData] = _table((SACCheats.RATCHET_PACK,), ItemClassification.useful)
 
-# Trap items -- force a vanilla cheat on for a duration when received (see
-# constants/cheats.py's TRAP_CHEATS/TRAP_DURATIONS). Actual cheat-toggling
-# in game memory is still a TODO (CHEATS_ADDRESS layout unconfirmed, see
-# core/traps.py).
+# Each trap forces vanilla cheats on for a while (see core/traps.py).
 TRAP_ITEM_TABLE: dict[str, SACItemData] = _table(
     (SACTraps.WEAPON_SWITCHING, SACTraps.MIRRORED_LEVELS, SACTraps.BOLT_CONFUSION, SACTraps.BIG_HEADED),
     ItemClassification.trap,
@@ -105,10 +88,7 @@ PROGRESSIVE_WRENCH_ITEM_TABLE = _table((PROGRESSIVE_WRENCH_ITEM_NAME,), ItemClas
 for _mod in ("wrenchpower_firebomb", "wrenchpower_triplewave", "wrenchpower_crystallix", "wrenchpower_wildburst"):
     WEAPON_ITEM_TABLE.pop(_mod, None)
 
-from ..constants.weapon_progression import PROGRESSIVE_TO_INTERNAL
-
 PROGRESSIVE_WEAPON_ITEM_TABLE = _table(tuple(PROGRESSIVE_TO_INTERNAL), ItemClassification.progression)
-from ..constants.weapon_progression import TITAN_ITEMS
 
 # Retain IDs for compatibility with experimental seeds; new seeds use the
 # automatic V4-to-V5 bridge and never pool separate Titan Upgrade items.
@@ -130,12 +110,9 @@ ALL_ITEMS: dict[str, SACItemData] = {
     **FILLER_ITEM_TABLE,
 }
 
-from ..constants.weapon_mods import WEAPON_MODS
-
 WEAPON_MOD_ITEM_TABLE = _table(tuple(mod.name for mod in WEAPON_MODS), ItemClassification.useful)
 ALL_ITEMS.update(WEAPON_MOD_ITEM_TABLE)
 
 # Append so all existing item IDs remain stable.
-from ..constants.challenge_mode import PROGRESSIVE_CHALLENGE_MODE
 CHALLENGE_MODE_ITEM_TABLE = _table((PROGRESSIVE_CHALLENGE_MODE,), ItemClassification.progression)
 ALL_ITEMS.update(CHALLENGE_MODE_ITEM_TABLE)

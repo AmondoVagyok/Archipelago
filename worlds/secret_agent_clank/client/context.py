@@ -1,8 +1,23 @@
 import asyncio
 from typing import Any
 
+from CommonClient import logger
 from NetUtils import ClientStatus
 from rule_builder.rules import False_
+from Utils import async_start
+
+from ..constants.weapons import EQUIPMENT_DISPLAY_TO_INTERNAL
+from ..core.core import Core
+from ..items import GADGET_ITEM_TABLE, TRAP_ITEM_TABLE, WEAPON_ITEM_TABLE
+from ..locations import ALL_LOCATIONS
+from ..pypine import Pine
+from ..rules.vendor_access import VENDOR_REQUIREMENTS
+from .command_processor import SACCommandProcessor
+from .constants import GAME_NAME
+from .deathlink import DeathLinkMixin
+from .item_names import canonical_item_name
+from .pine_mixin import PineMixin
+from .vendor_scouts import VendorScouts
 
 tracker_loaded = False
 try:
@@ -11,7 +26,6 @@ try:
     tracker_loaded = True
 except ImportError:
     from CommonClient import CommonContext
-from CommonClient import logger
 
 dynamicpine_loaded = False
 try:
@@ -20,30 +34,13 @@ try:
 except ImportError:
     DYNAMIC_PINE_VERSION = None
 
-from ..constants.weapons import EQUIPMENT_DISPLAY_TO_INTERNAL
-from ..core.core import Core
-from ..items import GADGET_ITEM_TABLE, TRAP_ITEM_TABLE, WEAPON_ITEM_TABLE
-
-from ..locations import ALL_LOCATIONS
-from ..pypine import Pine
-from ..rules.vendor_access import VENDOR_REQUIREMENTS
-from .command_processor import SACCommandProcessor
-from .constants import GAME_NAME
-from .deathlink import DeathLinkMixin
-from .pine_mixin import PineMixin
-from .vendor_scouts import VendorScouts
-from .item_names import canonical_item_name
-
 
 class SACContext(PineMixin, DeathLinkMixin, CommonContext):
     game = GAME_NAME
     command_processor = SACCommandProcessor
     items_handling = 0b111
     current_planet: str = "Galaxy"
-    # This is a real game client (syncs live PCSX2 memory), not the passive
-    # "Tracker" connection UT's own headless client uses -- dropping this
-    # tag keeps the server from treating this connection as tracker-only
-    # when worlds.tracker's TrackerGameContext is the resolved base above.
+    # A real game client, so drop the "Tracker" tag UT's context would otherwise add.
     tags = CommonContext.tags - {"Tracker"}
 
     def __init__(self, server_address: str | None, password: str | None) -> None:
@@ -56,27 +53,15 @@ class SACContext(PineMixin, DeathLinkMixin, CommonContext):
 
         self._location_name_to_id = {name: data.code for name, data in ALL_LOCATIONS.items()}
         self.vendor_scouts = VendorScouts(self._location_name_to_id)
-        # Location ids already sent in a LocationScouts request this
-        # connection -- see _maybe_scout_vendor() (pine_mixin.py's poll
-        # loop): scouting is withheld until the native vendor screen is
-        # actually open, and even then only for cases already unlocked, so
-        # this tracks what's gone out so far rather than re-sending the same
-        # ids every tick while the vendor stays open.
+        # Location ids already scouted this connection (see _maybe_scout_vendor()).
         self._scouted_location_ids: set[int] = set()
         self._locally_checked_locations: set[int] = set()
-        # Names already warned about via _append_location_by_name (pine_mixin.py)
-        # -- native detectors retry a rejected name every tick (see
-        # core/case_events.py's confirm() docstring for why that retry
-        # matters), but a name genuinely absent from this seed (e.g. a
-        # disabled character's case) will never stop being rejected, so
-        # only the first rejection is logged to avoid spamming the console.
+        # Rejected location names already logged; detectors retry them every tick.
         self._warned_missing_locations: set[str] = set()
 
         self._death_link_enabled = False
         self._last_death_link = 0.0
-        # None (not just 0) until _load_trap_state() actually hears back
-        # from AP -- see that method's docstring for why a fresh client
-        # process can't just assume 0 without asking the server first.
+        # None until _load_trap_state() has read the count from the server.
         self._processed_trap_count: int | None = None
         self._notification_count = None
         self._notification_slot = None
@@ -107,7 +92,7 @@ class SACContext(PineMixin, DeathLinkMixin, CommonContext):
         self._stealth_identity = identity
         key = f"secret_agent_clank_stealth_{self.team}_{self.slot}"
         def save(count):
-            asyncio.create_task(self.send_msgs([
+            async_start(self.send_msgs([
                 {"cmd": "Set", "key": key,
                  "operations": [{"operation": "max", "value": count}]}]))
         state.on_count = save
@@ -115,16 +100,14 @@ class SACContext(PineMixin, DeathLinkMixin, CommonContext):
             self._stealth_load_task = asyncio.create_task(self._load_stealth_state(key, state))
 
     def _bolt_storage_keys(self) -> tuple[str, str]:
-        """AP data-storage keys for this connection's bolt-reward delivery state -- never a local file (see core/bolt_rewards.py's docstring): an external file can't follow the player across machines or survive a wipe, and AP already provides durable per-slot server storage built for exactly this."""
+        """Server data-storage keys for this slot's delivered and pending bolt rewards."""
         return (f"secret_agent_clank_delivered_bolts_{self.team}_{self.slot}",
                 f"secret_agent_clank_pending_bolts_{self.team}_{self.slot}")
 
     async def _load_bolt_state(self) -> None:
-        """Fetch this slot's delivered/pending bolt state from the AP server (initializing it server-side via "default" if this is the first connection ever) and only then let BoltRewards.deliver() start running -- it stays disabled (see its `enabled` flag) until configure() below actually has real, authoritative values instead of assuming zero and potentially re-granting an already-delivered reward."""
+        """Load bolt-reward state from the server, then enable delivery so rewards are never granted twice."""
         delivered_key, pending_key = self._bolt_storage_keys()
-        # Discard any stale cache from a previous connection this session
-        # (e.g. a different slot) so the wait below can't be satisfied by
-        # values that were never actually confirmed for THIS connection.
+        # Drop cached values from an earlier connection so the wait below sees fresh ones.
         self.stored_data.pop(delivered_key, None)
         self.stored_data.pop(pending_key, None)
         await self.send_msgs([
@@ -137,9 +120,7 @@ class SACContext(PineMixin, DeathLinkMixin, CommonContext):
             await asyncio.sleep(0.1)
         delivered = self.stored_data[delivered_key]
         if not isinstance(delivered, dict):
-            # Pre-dict-schema leftover from an older client version stored a bare
-            # count at this key -- treat it as that count with nothing yet marked
-            # as the starting-bolts grant, rather than crashing this task forever.
+            # Older clients stored a bare count here.
             delivered = {"count": int(delivered), "starting_delivered": False}
         self._wiring.bolt_rewards.configure(
             starting_bolts=int(self.slot_data.get("starting_bolts", 0)),
@@ -149,19 +130,19 @@ class SACContext(PineMixin, DeathLinkMixin, CommonContext):
         )
 
     def _save_bolt_state(self, delivered: dict, pending: "dict | None") -> None:
-        """BoltRewards.on_state_changed -- persists to AP's server-side data storage, never a local file."""
+        """Persist bolt-reward state to server data storage."""
         delivered_key, pending_key = self._bolt_storage_keys()
-        asyncio.create_task(self.send_msgs([
+        async_start(self.send_msgs([
             {"cmd": "Set", "key": delivered_key, "operations": [{"operation": "replace", "value": delivered}]},
             {"cmd": "Set", "key": pending_key, "operations": [{"operation": "replace", "value": pending}]},
         ]))
 
     def _trap_storage_key(self) -> str:
-        """AP data-storage key for how many of items_received's entries have already had activate_trap() fired for them -- never a local file, same reasoning as _bolt_storage_keys()."""
+        """Server data-storage key for how many received items have been processed for traps."""
         return f"secret_agent_clank_processed_traps_{self.team}_{self.slot}"
 
     async def _load_trap_state(self) -> None:
-        """Fetch this slot's processed-trap-count from the AP server before _apply_new_traps() is allowed to run -- items_received is the full historical list every time a client (re)connects, so without this a fresh client process would start counting from 0 again and replay activate_trap() for every trap item ever received this seed."""
+        """Load the processed-trap count, so reconnecting doesn't replay every trap ever received."""
         key = self._trap_storage_key()
         self.stored_data.pop(key, None)
         await self.send_msgs([
@@ -170,20 +151,16 @@ class SACContext(PineMixin, DeathLinkMixin, CommonContext):
         while key not in self.stored_data:
             await asyncio.sleep(0.1)
         self._processed_trap_count = self.stored_data[key]
-        # _apply_new_traps() is event-driven (ReceivedItems/RoomUpdate/pine
-        # reconnect -- see its call sites), not polled every tick like
-        # BoltRewards.deliver(), so if nothing else triggers it before this
-        # load finishes, any trap already sitting in items_received would
-        # otherwise never get activated. Re-run it now that the count is real.
-        asyncio.create_task(self._apply_received_items())
+        # Traps are only applied on item events, so apply any that arrived while loading.
+        async_start(self._apply_received_items())
 
     def _save_trap_state(self, count: int) -> None:
-        asyncio.create_task(self.send_msgs(
+        async_start(self.send_msgs(
             [{"cmd": "Set", "key": self._trap_storage_key(), "operations": [{"operation": "replace", "value": count}]}]
         ))
 
     async def _apply_received_items(self) -> None:
-        """Rebuild the per-character AP-ownership snapshot from items_received and hand it to Core.apply_inventory(), which writes it into game memory (gated on the current case being ready)."""
+        """Pass every received item to Core, queue receipt notifications, then fire new traps."""
         if self.slot is None or not self.pine_connected:
             return
         received_names = [
@@ -213,7 +190,7 @@ class SACContext(PineMixin, DeathLinkMixin, CommonContext):
         await self._apply_new_traps(received_names)
 
     async def _apply_new_traps(self, received_names: list[str]) -> None:
-        """Fires activate_trap() once per trap item beyond what's already been processed -- received_names is index-ordered, so slicing from _processed_trap_count only sees genuinely new items."""
+        """Activate each trap received since the last processed index, stopping at one that can't fire yet."""
         if self._processed_trap_count is None:
             return
         async with self._pine_lock:
@@ -250,10 +227,10 @@ class SACContext(PineMixin, DeathLinkMixin, CommonContext):
         if not new_ids:
             return
         self._scouted_location_ids.update(new_ids)
-        asyncio.create_task(self.send_msgs([{**request, "locations": new_ids}]))
+        async_start(self.send_msgs([{**request, "locations": new_ids}]))
 
     def _dynamic_pine_auth(self) -> None:
-        """Pre-fills auth from whatever slot name the hub's /launch command was given, so the player isn't asked to retype it -- and so it can't drift from what _dynamic_pine_port() later looks the PCSX2 instance's port up under."""
+        """Use the slot name the Dynamic Pine hub launched us with."""
         if self.auth or not dynamicpine_loaded:
             return
         if not launched_via_hub():
@@ -263,7 +240,7 @@ class SACContext(PineMixin, DeathLinkMixin, CommonContext):
             self.auth = pending
 
     def _dynamic_pine_port(self) -> None:
-        """This world uses launcher_options="simple" -- the hub's Launch button always starts PCSX2 itself before spawning this client, so this only ever resolves the already-assigned port, never launches anything."""
+        """Connect to the PCSX2 instance the Dynamic Pine hub started for this slot."""
         if not self.auth or not dynamicpine_loaded:
             return
         if not launched_via_hub():
@@ -304,8 +281,8 @@ class SACContext(PineMixin, DeathLinkMixin, CommonContext):
             self.vendor_scouts.rewards.clear()
             self._scouted_location_ids.clear()
             self._wiring.native_runtime.starting_case.configure(self.slot_data)
-            asyncio.create_task(self._load_bolt_state())
-            asyncio.create_task(self._load_trap_state())
+            async_start(self._load_bolt_state())
+            async_start(self._load_trap_state())
             self._wiring.progression.configure(self.slot_data)
             self._wiring.skins.configure(self.slot_data)
             self._wiring.weapon_mods.configure(self.slot_data)
@@ -318,18 +295,15 @@ class SACContext(PineMixin, DeathLinkMixin, CommonContext):
             self._death_link_enabled = bool(self.slot_data.get("death_link", False))
             if self._death_link_enabled:
                 self.tags |= {"DeathLink"}
-                asyncio.create_task(self.send_msgs([{"cmd": "ConnectUpdate", "tags": list(self.tags)}]))
+                async_start(self.send_msgs([{"cmd": "ConnectUpdate", "tags": list(self.tags)}]))
 
             self._wiring.wire(
                 send_location      = self._append_location_by_name,
                 send_deathlink     = self._send_death_link_from_sync,
                 death_amnesty      = lambda: int(self.slot_data.get("death_amnesty", 1)),
                 death_link_enabled = lambda: self._death_link_enabled,
-                on_case_ready      = lambda: None,
                 on_goal            = self._send_goal,
-                # slot_data's "all_missions" is options.py's Missions
-                # value (0 = level_completion, 1 = all -- see world.py's
-                # fill_slot_data()).
+                # Missions option: 0 = level_completion, 1 = all.
                 missions_all       = lambda: self.slot_data.get("all_missions", 0) == 1,
                 on_bolt_state_changed = self._save_bolt_state,
             )
@@ -337,13 +311,11 @@ class SACContext(PineMixin, DeathLinkMixin, CommonContext):
                 name for name, location_id in self._location_name_to_id.items()
                 if location_id in self.server_locations
             }
-            checked = self._checked_location_names()
-            asyncio.create_task(self._pine_guarded(lambda: self._wiring.sync_from_ap(checked)))
-            asyncio.create_task(self._apply_received_items())
+            self._resync_from_ap()
 
             if not self.pine_connected:
                 self._dynamic_pine_port()
-                asyncio.create_task(self._attempt_pine_connect(), name="PCSX2 PINE connect")
+                async_start(self._attempt_pine_connect(), name="PCSX2 PINE connect")
             return
 
         if cmd in ("LocationInfo", "DataPackage", "RoomUpdate"):
@@ -356,15 +328,19 @@ class SACContext(PineMixin, DeathLinkMixin, CommonContext):
             self._notification_count = len(self.items_received)
 
         if cmd in ("ReceivedItems", "RoomUpdate"):
-            checked = self._checked_location_names()
-            asyncio.create_task(self._pine_guarded(lambda: self._wiring.sync_from_ap(checked)))
-            asyncio.create_task(self._apply_received_items())
+            self._resync_from_ap()
             return
 
         if cmd == "Bounced" and self._death_link_enabled and "DeathLink" in args.get("tags", []):
             data = args.get("data", {})
             if data.get("source") != self.auth:
-                asyncio.create_task(self._receive_death_link(data))
+                async_start(self._receive_death_link(data))
+
+    def _resync_from_ap(self) -> None:
+        """Push AP's checked locations into the game, then re-apply received items."""
+        checked = self._checked_location_names()
+        async_start(self._pine_guarded(lambda: self._wiring.sync_from_ap(checked)))
+        async_start(self._apply_received_items())
 
     async def _pine_guarded(self, fn) -> None:
         async with self._pine_lock:
@@ -377,7 +353,7 @@ class SACContext(PineMixin, DeathLinkMixin, CommonContext):
 
     def _send_goal(self):
         self.finished_game = True
-        asyncio.create_task(self.send_msgs([{"cmd": "StatusUpdate", "status": ClientStatus.CLIENT_GOAL}]))
+        async_start(self.send_msgs([{"cmd": "StatusUpdate", "status": ClientStatus.CLIENT_GOAL}]))
 
     def make_gui(self):
         ui = super().make_gui()

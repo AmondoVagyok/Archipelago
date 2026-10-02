@@ -89,5 +89,5 @@ class KeycardInventory:
         return sorted(self.found - self.reported)
 
     def confirm(self, name: str) -> None:
-        """Mark a name check() returned as successfully delivered to AP -- see core/case_events.py's CaseEventInventory.confirm() for why this must wait for Core.send_location(name) to return True rather than happening unconditionally inside check()."""
+        """Stop reporting `name`; call only once AP has accepted the check."""
         self.reported.add(name)

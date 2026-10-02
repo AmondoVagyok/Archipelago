@@ -1,8 +1,8 @@
-from ..constants.vendor import vendor_location_name
 import unittest
 from unittest.mock import patch
 
 from BaseClasses import CollectionState
+from Fill import distribute_items_restrictive
 from rule_builder.rules import False_, Has
 from test.general import gen_steps, setup_multiworld
 from worlds.AutoWorld import call_all
@@ -10,8 +10,12 @@ from worlds.AutoWorld import call_all
 from ..constants import CASE_NAME_TO_INFOBOT
 from ..constants.clank_gadgets import SACClankGadgets, SACClankWeapons
 from ..constants.planets import ALL_CASES, SACCases
+from ..constants.vendor import NG_PLUS_VENDOR_ITEMS, vendor_location_name
+from ..constants.vendor_unlocks import VENDOR_CASES
+from ..constants.weapon_mods import VENDOR_MODS
 from ..constants.weapon_progression import TITAN_LOCATIONS
 from ..constants.weapons import SACRatchetWeapons
+from ..core.inventories.case_unlocks import resolve_owned_cases
 from ..rules import vendor_access
 from ..world import SecretAgentClankWorld
 
@@ -29,8 +33,6 @@ def setup_vendor_world(world_type, options=None):
 
 class VendorAccessTests(unittest.TestCase):
     def test_seed_options_filter_shared_catalog(self):
-        from ..constants.vendor import NG_PLUS_VENDOR_ITEMS
-        from ..constants.weapon_mods import VENDOR_MODS
         for ng_plus in (0, 1, 2):
             for operatives in ({"Clank": 1}, {"Clank": 1, "Ratchet": 1}):
                 with self.subTest(ng_plus=ng_plus, operatives=operatives):
@@ -74,7 +76,6 @@ class VendorAccessTests(unittest.TestCase):
         self.assertTrue(location.can_reach(state))
 
     def test_purchase_types_require_their_specific_case(self):
-        from ..constants.weapon_mods import VENDOR_MODS
         requirements = {name: False_() for name in vendor_access.VENDOR_REQUIREMENTS}
         requirements[SACCases.ASYANICA_ROOFTOPS] = Has(SACClankGadgets.JETBOOTS)
         with patch.dict(vendor_access.VENDOR_REQUIREMENTS, requirements, clear=True):
@@ -102,8 +103,6 @@ class VendorAccessTests(unittest.TestCase):
         self.assertFalse(state.has(CASE_NAME_TO_INFOBOT[SACCases.INSIDE_THE_A_EYE], 1))
 
     def test_all_catalog_gates_match_client_case_ownership_in_every_access_mode(self):
-        from ..constants.vendor_unlocks import VENDOR_CASES
-        from ..core.inventories.case_unlocks import resolve_owned_cases
         for mode in range(4):
             m = setup_multiworld(SecretAgentClankWorld, seed=12345,
                                  options={"ng_plus": 1, "infobots": mode})
@@ -130,7 +129,6 @@ class VendorAccessTests(unittest.TestCase):
                                      (mode, loc.name, received))
 
     def test_planet_mode_can_unlock_museum_stock_from_another_start(self):
-        from Fill import distribute_items_restrictive
         m = setup_multiworld(SecretAgentClankWorld, seed=12345, options={
             "infobots": "planets", "ng_plus": 1, "operatives": {"Clank": 1}})
         self.assertNotEqual(m.worlds[1].starting_case, SACCases.BOLTAIRE_MUSEUM)

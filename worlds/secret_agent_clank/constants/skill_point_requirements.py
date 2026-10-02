@@ -8,7 +8,8 @@ from enum import IntEnum
 
 from .operatives import SACOperatives
 from .planets import CASE_NAME_TO_OPERATIVE, SACCases
-from .skillpoints import SKILL_POINTS, SACSkillPoints as SP
+from .skillpoints import SKILL_POINTS
+from .skillpoints import SACSkillPoints as SP
 
 
 class SkillPointDifficulty(IntEnum):

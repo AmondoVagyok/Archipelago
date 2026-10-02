@@ -1,4 +1,4 @@
-"""Case access -- mirrors worlds/rac_size_matters/rules/entrances.py's per-planet pattern, at SAC's per-case granularity: one "To <Case>" entrance per case (created in regions.py, empty of a rule until now), gated here by that case's real access requirement."""
+"""Gates each "To <Case>" entrance with that case's access rule."""
 from typing import TYPE_CHECKING
 
 from ..constants.planets import ALL_CASES

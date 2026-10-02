@@ -1,6 +1,5 @@
 """Native vendor rows and the pause-screen selector."""
 import struct
-from collections.abc import Sequence
 from typing import TYPE_CHECKING, NamedTuple
 
 from .address_maps.ps2 import (
@@ -17,30 +16,9 @@ from .inventories.weapons import WEAPON_ORDER
 if TYPE_CHECKING:
     from ..pypine import Pine
 
-# Node type for a base-weapon-for-sale offer, per FUN_003d2b28's other call
-# sites (0=weapon, 2=ammo bundle, 3=mod [CONFIRMED live, see write_item()'s
-# default], 4=titan weapon) -- 0's own icon/field conventions are NOT yet
-# live-verified (see module docstring point 3), this is a best-effort
-# placeholder pending confirmation.
-WEAPON_OFFER_NODE_TYPE = 0
-# Icon value for a forced weapon-for-sale row -- reuses write_item()'s
-# existing default (the one CONFIRMED icon value, seen on node_type=3 mod
-# rows) since node_type=0's real icon convention is unknown. Cosmetic only
-# (doesn't affect the purchase mechanism itself) -- update once a real
-# node_type=0 row has been captured live.
-DEFAULT_WEAPON_ICON = 51
-
-
-class VendorOffer(NamedTuple):
-    """One entry in a force_roster() call -- weapon_name must be a WEAPON_ORDER name (== a constants/weapons.py RATCHET_WEAPONS entry)."""
-    weapon_name: str
-    mod_id: int = 0
-    node_type: int = WEAPON_OFFER_NODE_TYPE
-    icon: int = DEFAULT_WEAPON_ICON
-
 
 class VendorItem(NamedTuple):
-    """One live row read out of the vendor's real item array (see read_items() below)."""
+    """One row of the native vendor's item array."""
     index: int
     node_type: int
     icon: int
@@ -81,7 +59,7 @@ class VendorState:
         self._previous_snapshot: VendorSnapshot | None = None
 
     def set_addr(self, menu_addr: int | None, items_addr: int | None = None) -> None:
-        """Rebind to the current case's derived addresses (CaseAddresses.menu and .vendor_items) -- called from core/planets.py's CaseInventory.set_case() the same way every other per-case accessor is rebound."""
+        """Rebind to the current case's vendor menu and item addresses."""
         self.menu_addr = menu_addr
         self.items_addr = items_addr
         self.header_addr = self.price_addr = self.purchase_flag_addr = None
@@ -166,9 +144,7 @@ class VendorState:
         """Whether the native weapon vendor is the active pause screen."""
         return self.state in (8, 16)
 
-    # Field order used to lay out both the batched read in read_items() and
-    # the batched write in write_item() -- keep these in sync with each
-    # other (index math below assumes this exact order/length).
+    # Field order shared by read_items() and write_item().
     _FIELDS = (
         _ITEM_OFFSET_ACTIVE, _ITEM_OFFSET_ICON, _ITEM_OFFSET_NODE_TYPE,
         _ITEM_OFFSET_WEAPON_ID, _ITEM_OFFSET_MOD_ID,
@@ -233,27 +209,6 @@ class VendorState:
         self.pine.batch_write_int32(list(zip(
             (base + off for off in self._FIELDS), values,
         )))
-
-    def force_roster(self, offers: Sequence["VendorOffer"]) -> None:
-        if self.items_addr is None or not offers:
-            return
-        current = self.read_items()
-        existing_ids = {item.weapon_id for item in current}
-        index = len(current)
-        for offer in offers:
-            if index >= VENDOR_ITEM_MAX_COUNT:
-                break
-            if offer.weapon_name not in WEAPON_ORDER:
-                continue
-            weapon_id = WEAPON_ORDER.index(offer.weapon_name)
-            if weapon_id in existing_ids:
-                continue
-            self.write_item(
-                index, weapon_id, mod_id=offer.mod_id,
-                node_type=offer.node_type, icon=offer.icon,
-            )
-            existing_ids.add(weapon_id)
-            index += 1
 
     def __repr__(self) -> str:
         return (

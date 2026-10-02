@@ -60,7 +60,7 @@ class VendorTextPreview(PatchSet):
         notifications = ItemNotifications(self.pine)
         if not notifications.bind(symbols):
             raise RuntimeError("Native text buffer signature changed")
-        mailbox, timer, cooldown, *_ = notifications.binding
+        mailbox, timer, _cooldown, *_ = notifications.binding
         if self.pine.read_int32(timer):
             raise RuntimeError("Wait for native HUD notifications to finish")
         render, title_draw, description_draw = require(
@@ -91,7 +91,7 @@ class VendorTextPreview(PatchSet):
                     raise RuntimeError("Vendor text call changed")
                 calls.append(Patch(site, packed([jump(target, True)]),
                                    packed([jump(region[0], True)])))
-        pointer, count, selected_index = header
+        pointer, _count, selected_index = header
         payload = struct.pack("<2I", pointer + selected_index * 0x1C, 0)
         payload += self._text(title, 96, color=2 if progression else 1) + self._text(description, 152)
         self.patches = guards + routines + [

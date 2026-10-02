@@ -9,6 +9,7 @@ from .clank_gadgets import SACClankWeapons, SACProgressiveClankWeapons, SACProto
 from .vendor import vendor_location_name
 from .weapons import (
     EQUIPMENT_DISPLAY_TO_INTERNAL,
+    EQUIPMENT_INTERNAL_TO_DISPLAY,
     SACProgressiveRatchetWeapons,
     SACRatchetWeapons,
     SACTitanWeapons,
@@ -41,6 +42,8 @@ PROGRESSIVE_TO_INTERNAL = {
     progressive: EQUIPMENT_DISPLAY_TO_INTERNAL[unlock] for unlock, progressive in UNLOCK_TO_PROGRESSIVE.items()
 }
 PROGRESSIVE_TO_UNLOCK = {progressive: unlock for unlock, progressive in UNLOCK_TO_PROGRESSIVE.items()}
+
+
 def max_level(internal, ng_plus):
     if internal not in LEVELLED_INTERNALS:
         return 1
@@ -55,8 +58,8 @@ def checked_levels(internal, mode, ng_plus):
 
 
 def level_location_name(internal, level):
-    from .weapons import EQUIPMENT_INTERNAL_TO_DISPLAY
     return f"{EQUIPMENT_INTERNAL_TO_DISPLAY[internal]} Level {level}"
+
 
 # Preserve Ratchet-then-Clank order: legacy Titan item IDs depend on it.
 _TITAN_EQUIPMENT = tuple(

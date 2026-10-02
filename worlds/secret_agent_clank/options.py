@@ -114,8 +114,7 @@ class AllAlienCodes(Toggle):
 
 class SendScoutedLocations(DefaultOnToggle):
     """Send vendor-scouted locations out as real AP hints (visible to trackers/other
-    players), not just shown locally in the vendor menu. Off keeps scouting local-only,
-    same as before this option existed."""
+    players), not just shown locally in the vendor menu. Off keeps scouting local-only."""
     display_name = "Send Scouted Locations"
 
 
@@ -138,9 +137,7 @@ class Operatives(OptionCounter):
     default = dict.fromkeys(ALL_OPERATIVES, 1)
 
     def __init__(self, value: dict[str, int]) -> None:
-        # Cull 0s so "set to 0" and "removed from the list" both collapse
-        # to "key absent from .value" -- matches ItemDict's convention,
-        # which regions.py's disabled_operatives relies on.
+        # Drop zeros so a disabled operative is simply absent from .value.
         value = {name: amount for name, amount in value.items() if amount != 0}
         super().__init__(value)
 

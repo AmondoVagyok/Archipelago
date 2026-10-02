@@ -41,7 +41,7 @@ class VendorOfferPreview(PatchSet):
         header = self.vendor._native_header()
         if header is None:
             raise RuntimeError("Invalid vendor header")
-        pointer, count, selected = header
+        pointer, count, _selected = header
         if type(source_index) is not int or not 0 <= source_index < count:
             raise ValueError("Choose an existing vendor row")
         give = symbols.get(NativeFunctions.WEAPON_PICKUP_GIVE_WEAPON)
@@ -68,7 +68,7 @@ class VendorOfferPreview(PatchSet):
         if len(rows) != count * self.ROW_SIZE:
             raise RuntimeError("Incomplete vendor row read")
         for i in range(count):
-            active, _, _, kind, weapon, _mod, _extra = struct.unpack_from(
+            active, _, _, kind, _weapon, _mod, _extra = struct.unpack_from(
                 "<7I", rows, i * self.ROW_SIZE)
             if active != 1 or kind not in (0, 1, 2, 3, 4):
                 raise RuntimeError("Vendor contains an unverified row type")

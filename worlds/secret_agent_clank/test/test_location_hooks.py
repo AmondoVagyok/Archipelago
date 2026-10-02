@@ -1,6 +1,9 @@
-from ..constants.vendor import vendor_location_name
 import unittest
+from unittest.mock import Mock
 
+from ..constants.vendor import vendor_location_name
+from ..constants.weapons import EQUIPMENT_INTERNAL_TO_DISPLAY
+from ..core.core import Core
 from ..core.patches import (
     MARKER,
     PICKUP_LOCATIONS,
@@ -8,9 +11,11 @@ from ..core.patches import (
     Entitlements,
     GameFlags,
     LocationHooks,
+    Patch,
     jump,
     words,
 )
+from ..locations import ALL_LOCATIONS
 from .test_runtime import Memory
 
 
@@ -59,7 +64,6 @@ def run_routine(code, gadget, flag):
 
 class LocationHookTests(unittest.TestCase):
     def test_partial_installation_rolls_back_before_returning_failure(self):
-        from ..core.patches import Patch
         mem = Memory()
         calls = []
 
@@ -135,14 +139,8 @@ class LocationHookTests(unittest.TestCase):
                              {0: 0, 11: 1, 39: 1}.get(slot, 7))
 
     def test_hook_locations_exist_and_sources_do_not_overlap(self):
-        from ..constants.weapons import EQUIPMENT_INTERNAL_TO_DISPLAY
-        from ..locations import ALL_LOCATIONS
-        # PICKUP_LOCATIONS/VENDOR_LOCATIONS are raw WEAPON_ORDER internal
-        # names (e.g. "throwTie"), not AP display names -- translate the
-        # same way core.py's _read_native_locations()/poll_purchases()
-        # loops do before comparing against real location names. Names
-        # already in display form (e.g. "Black Out Pen (Pickup)") aren't in
-        # the dict and pass through unchanged.
+        # Translate internal slot names to location names the way Core does;
+        # names already in display form pass through.
         self.assertFalse(set(PICKUP_LOCATIONS) & set(VENDOR_LOCATIONS))
         pickup_names = {EQUIPMENT_INTERNAL_TO_DISPLAY.get(n, n) for n in PICKUP_LOCATIONS.values()}
         vendor_names = {vendor_location_name(EQUIPMENT_INTERNAL_TO_DISPLAY.get(n, n)) for n in VENDOR_LOCATIONS.values()}
@@ -195,9 +193,7 @@ class LocationHookTests(unittest.TestCase):
         self.assertFalse(hooks.installed)
 
     def test_same_module_reload_requires_rebinding_before_inventory(self):
-        from unittest.mock import Mock
 
-        from ..core.core import Core
         memory = Memory()
         core = Core(memory)
         hooks = core.location_hooks
@@ -212,9 +208,7 @@ class LocationHookTests(unittest.TestCase):
         self.assertEqual(memory.writes, [])
 
     def test_core_sends_native_checks_once_without_granting_items(self):
-        from unittest.mock import Mock
 
-        from ..core.core import Core
         memory = Memory()
         core = Core(memory)
         core.location_hooks.poll = Mock(return_value=["clankpda", "throwTie"])

@@ -1,8 +1,9 @@
 """Count the successful End(StealthTakeDown) path, not the transient enemy list."""
 import struct
-from ..constants.stealth import stealth_thresholds, stealth_location_name
-from .patches.asm import Patch, jump, packed
+
+from ..constants.stealth import stealth_location_name, stealth_thresholds
 from .patches import mips as m
+from .patches.asm import Patch, jump, packed
 
 END = "End__15StealthTakeDown"
 KILL = "CLANKSTEALTH_GiveStealthKill__FP4Mobyf"

@@ -1,8 +1,10 @@
 import unittest
+from pathlib import Path
 from unittest.mock import Mock
 
 from ..constants.cheats import SACTraps
-from ..core.traps import Traps, TRAP_BITS
+from ..core.symbols import RuntimeSymbols
+from ..core.traps import TRAP_BITS, Traps
 from .test_runtime import Memory
 
 
@@ -38,7 +40,7 @@ class TrapTests(unittest.TestCase):
         self.assertEqual(self.traps.managed, 0)
 
     def test_menu_ticks_enforce_traps_without_spending_duration(self):
-        for name, bits in TRAP_BITS.items():
+        for name in TRAP_BITS:
             with self.subTest(trap=name):
                 self.traps.activate(name, {})
                 duration = dict(self.traps.remaining)
@@ -76,8 +78,7 @@ class TrapTests(unittest.TestCase):
         self.assertFalse(self.traps.remaining)
 
     def test_current_module_capture_layout(self):
-        from pathlib import Path
-        from ..core.symbols import RuntimeSymbols
+
         path = Path(__file__).resolve().parents[1] / ".research/showers_forced_graveyard.bin"
         if not path.exists():
             self.skipTest("Local research capture unavailable")

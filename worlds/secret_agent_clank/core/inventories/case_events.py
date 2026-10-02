@@ -1,4 +1,4 @@
-"""Generic bit-flag-tracked-location inventory, shared by every Inventory class whose locations are constants/types.py's CaseStructure entries with a per-location completion bit (missions, cutscenes, gadgetbot/special/ratchet challenges, skill points) -- they used to each hand-roll the same get/sync/check logic against their own name->address(+offset) dicts (see git history), which is now just this one class parameterized by which CaseStructure tuple it tracks."""
+"""Shared tracker for CaseStructure locations that each have a completion bit."""
 from typing import TYPE_CHECKING
 
 from ...constants.types import CaseStructure
@@ -8,7 +8,7 @@ if TYPE_CHECKING:
 
 
 def read_flag(pine: "Pine", entry: CaseStructure) -> bool:
-    """Read one CaseStructure's completion bit directly -- entry.event_address == 0 means "not confirmed live yet", so that always reads as incomplete rather than actually reading address 0."""
+    """Read an entry's completion bit; an unconfirmed entry (address 0) always reads as incomplete."""
     if not entry.event_address:
         return False
     return entry.check_flag(pine.read_int8(entry.event_address))
@@ -35,7 +35,7 @@ class CaseEventInventory:
                 self.completed[name] = True
 
     def check(self) -> list[str]:
-        """Returns full display names that flipped 0 -> 1 since the last call -- including ones already returned by an earlier check() but never confirm()ed, so a name AP's client rejected (see client/pine_mixin.py's _append_location_by_name) is retried instead of silently lost."""
+        """Location names that are complete but not yet confirmed, so rejected sends are retried."""
         newly: list[str] = []
         for entry in self.entries:
             name = str(entry)
@@ -48,7 +48,7 @@ class CaseEventInventory:
         return newly
 
     def confirm(self, name: str) -> None:
-        """Mark a name check() returned as successfully delivered to AP -- only after this does check() stop re-including it."""
+        """Stop reporting `name`; call only once AP has accepted the check."""
         self.completed[name] = True
 
     def __repr__(self) -> str:

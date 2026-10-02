@@ -2,10 +2,10 @@
 Numeric IDs are retained; corrected equipment names require regenerated seeds.
 """
 from ..constants.clank_gadgets import SACClankGadgets, SACClankWeapons
-from ..constants.weapons import SACRatchetWeapons
+from ..constants.vendor import vendor_location_name
 from ..constants.weapon_mods import VENDOR_MODS
 from ..constants.weapon_progression import TITAN_LOCATIONS
-from ..constants.vendor import vendor_location_name
+from ..constants.weapons import SACRatchetWeapons
 from .model import BASE_ID, SACLocation, SACLocationType
 
 TITAN_VENDOR_LOCATIONS: tuple[SACLocation, ...] = tuple(

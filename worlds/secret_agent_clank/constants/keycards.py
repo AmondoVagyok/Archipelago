@@ -25,9 +25,7 @@ KEYCARDS_BY_CASE: dict[str, tuple[str, ...]] = group_by_case(
 
 @dataclass(frozen=True)
 class SACKeycardLocations:
-    """Full display-name constants for keycard locations, for use in rules files
-    (mirrors SACSkillPointLocations/SACAlienCodeLocations -- get_location() needs
-    the full "{operative}: {case}: Keycard: {name}" string, not the bare event name)."""
+    """Keycard location names."""
 
     RED_KEYCARD = str(KEYCARDS[0])
     BLUE_KEYCARD = str(KEYCARDS[1])

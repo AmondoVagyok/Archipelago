@@ -1,4 +1,4 @@
-"""Case-transition detection plus every case-dependent accessor (Ratchet/ Clank/Qwark state+health, Ratchet/Clank item inventories), rebound via CaseInventory.set_case() whenever the current case changes."""
+"""Case-transition detection, plus the per-case accessors that set_case() rebinds on each transition."""
 import logging
 from collections.abc import Callable
 from typing import TYPE_CHECKING
@@ -107,12 +107,6 @@ class CaseInventory:
             if self.pine.read_bytes(pointer, len(name)) != name:
                 return False
         return True
-
-    def force_case(self, case_id: int) -> None:
-        """Write FORCE_CASE_ADDRESS to trigger a transition straight to case_id -- the same mechanism the game itself uses when moving between cases/planets."""
-        if case_id not in CASE_ID_TO_CASE or case_id in (6, 12):
-            raise ValueError(f"No independently loadable module is verified for case {case_id}")
-        self.pine.write_int32(FORCE_CASE_ADDRESS, case_id)
 
     def check_death(self) -> bool:
         if not self.is_ready:

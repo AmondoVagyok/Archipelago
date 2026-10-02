@@ -1,7 +1,7 @@
 """Exercise the real client receipt path without a server or emulator."""
 import asyncio
-from types import SimpleNamespace
 import unittest
+from types import SimpleNamespace
 from unittest.mock import AsyncMock, Mock
 
 from ..client.context import SACContext
