@@ -91,7 +91,10 @@ class PineMixin:
             try:
                 await self._poll_game()
             except Exception as exc:
-                logger.warning(f"[SAC] Lost PINE connection or poll failed: {exc}")
+                if isinstance(exc, (ConnectionError, OSError)):
+                    logger.warning(f"[SAC] Lost PINE connection: {exc}")
+                else:
+                    logger.exception("[SAC] Game polling or native hook setup failed; stopping game sync")
                 async with self._pine_lock:
                     await self._teardown_pine_connection()
 

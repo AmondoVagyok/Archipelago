@@ -44,18 +44,48 @@ class NanotechTests(unittest.TestCase):
 
     def test_clank_access_required_and_disabled_operative(self):
         from BaseClasses import CollectionState
-        from ..constants import CASE_NAME_TO_INFOBOT, SACCases
         mw = setup_multiworld(SecretAgentClankWorld, options={"infobots": "cases"})
         state = CollectionState(mw)
         for item in mw.precollected_items[1]:
             state.remove(item)
         location = mw.get_location("Clank Nanotech Level 16", 1)
         self.assertFalse(location.can_reach(state))
-        state.collect(mw.worlds[1].create_item(CASE_NAME_TO_INFOBOT[SACCases.BOLTAIRE_MUSEUM]))
-        self.assertTrue(location.can_reach(state))
         mw = setup_multiworld(SecretAgentClankWorld, options={
             "goal": "qwark_opera", "operatives": {"Ratchet": 1, "Qwark": 1}})
         self.assertFalse(any(l.name.startswith("Clank Nanotech Level") for l in mw.get_locations(1)))
+
+    def test_case_count_tiers(self):
+        from BaseClasses import CollectionState
+        from ..constants import CASE_NAME_TO_INFOBOT, CASES_BY_OPERATIVE, SACOperatives
+        from ..rules.rule_helpers import CLANK_ENEMY_CASES
+        mw = setup_multiworld(SecretAgentClankWorld, options={"infobots": "cases", "ng_plus": 1})
+        world = mw.worlds[1]
+        infobots = [CASE_NAME_TO_INFOBOT[case.name] for case in CASES_BY_OPERATIVE[SACOperatives.CLANK]]
+        state = CollectionState(mw)
+        for item in mw.precollected_items[1]:
+            if item.name in infobots:
+                state.remove(item)
+        for item in mw.itempool:
+            if item.name not in infobots:
+                state.collect(item, prevent_sweep=True)
+
+        def reachable(level):
+            return mw.get_location(f"Clank Nanotech Level {level}", 1).can_reach(state)
+
+        self.assertFalse(reachable(16))
+        enemy_case = next(case for case, items in CLANK_ENEMY_CASES.items() if not items)
+        infobots.remove(CASE_NAME_TO_INFOBOT[enemy_case])
+        infobots.insert(0, CASE_NAME_TO_INFOBOT[enemy_case])
+        state.collect(world.create_item(infobots[0]), prevent_sweep=True)
+        self.assertTrue(reachable(16))
+        self.assertTrue(reachable(30))
+        self.assertFalse(reachable(31))
+        for infobot in infobots[1:-1]:
+            state.collect(world.create_item(infobot), prevent_sweep=True)
+        self.assertFalse(reachable(60))
+        state.collect(world.create_item(infobots[-1]), prevent_sweep=True)
+        self.assertTrue(reachable(60))
+        self.assertTrue(reachable(85))
 
     def test_native_capture_layout(self):
         from pathlib import Path

@@ -100,6 +100,8 @@ class VendorCatalogTests(unittest.TestCase):
     def test_complete_catalog_fits_captured_vendor_and_restores(self):
         capture = Path(__file__).parents[1] / '.research/vendor_audit_live.ram'
         if not capture.exists():
+            capture = capture.with_name('sac_finished.p2s.ram')
+        if not capture.exists():
             self.skipTest('Local vendor audit capture unavailable')
         raw = capture.read_bytes()
         symbols = RuntimeSymbols.parse(raw[:0x1000000], 0)
@@ -114,8 +116,8 @@ class VendorCatalogTests(unittest.TestCase):
             hooks.patches.extend(TitanVendor(p).prepare(symbols, hooks, set()) if ng else TitanOffers(p).prepare(symbols))
             progression = Progression(p)
             progression.configure({'ng_plus': ng, 'progressive_weapons': True})
-            hooks.patches.extend(progression.prepare(symbols, hooks, 3))
             hooks.patches.extend(VendorCatalog(p).prepare(symbols, hooks))
+            hooks.patches.extend(progression.prepare(symbols, hooks, 3))
             spans = sorted((p.address, p.address + len(p.replacement)) for p in hooks.patches)
             self.assertTrue(all(b <= c for (_, b), (c, _) in zip(spans, spans[1:])))
             hooks._install_plan()

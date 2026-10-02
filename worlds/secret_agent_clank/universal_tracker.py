@@ -29,6 +29,7 @@ def setup_options_from_slot_data(world: "SecretAgentClankWorld") -> None:
     # Item pool composition -- affects create_items()'s pool exactly like
     # the real generation, so a re_gen'd world's item IDs/counts still match.
     world.options.ng_plus.value = passthrough["ng_plus"]
+    world.options.progressive_challenge_mode.value = bool(passthrough.get("progressive_challenge_mode", False))
     from .options import ProgressiveWeapons
     world.options.progressive_weapons.value = ProgressiveWeapons.from_any(passthrough["progressive_weapons"]).value
     world.options.weapon_level_checks.value = passthrough.get("weapon_level_checks", 0)

@@ -1,5 +1,6 @@
 """Runtime-facing API for native location interception on SCUS-97623 -- picks the applicable patch plan (patches/weapon_pickup.py's common case, or patches/vendor_only.py for modules like Treehouse with a vendor but no WeaponPickup code) and owns install/poll/sync/restore against a live PINE connection."""
 from ...constants.native_functions import NativeFunctions
+from ...constants.vendor import vendor_location_name
 from ...constants.weapons import EQUIPMENT_INTERNAL_TO_DISPLAY
 from .asm import MARKER
 from .vendor_only import VendorOnly
@@ -20,15 +21,20 @@ class LocationHooks:
         self.reported = set()
         self.installed = False
         self.entitlement_table = None
+        self.extra_ranges = []
+        self.gain_storage_prepared = False
+        self.catalog_only_ranges = []
 
     def prepare(self, symbols, *, pickup_locations, vendor_locations, checked=(), entitlements=None):
         """Build a complete, signature-checked patch plan without writing RAM."""
         self.extra_ranges = []
+        self.gain_storage_prepared = False
+        self.catalog_only_ranges = []
         if self.installed:
             raise RuntimeError("Restore installed hooks before preparing a new plan")
         pickup_locations = {slot: EQUIPMENT_INTERNAL_TO_DISPLAY.get(name, name)
                             for slot, name in pickup_locations.items()}
-        vendor_locations = {slot: EQUIPMENT_INTERNAL_TO_DISPLAY.get(name, name)
+        vendor_locations = {slot: vendor_location_name(EQUIPMENT_INTERNAL_TO_DISPLAY.get(name, name))
                             for slot, name in vendor_locations.items()}
         p = self.pine
         give = symbols.get(NativeFunctions.WEAPON_PICKUP_GIVE_WEAPON)

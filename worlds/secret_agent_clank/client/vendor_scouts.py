@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from ..constants.vendor_unlocks import VENDOR_ROW_CASES
 from ..constants.weapon_mods import WEAPON_MODS
 from ..constants.weapon_progression import TITAN_LOCATIONS
+from ..constants.vendor import vendor_location_name
 from ..constants.weapons import EQUIPMENT_INTERNAL_TO_DISPLAY
 from ..core.inventories.weapons import WEAPON_ORDER
 from ..core.patches.locations import VENDOR_LOCATIONS
@@ -35,9 +36,9 @@ class VendorScouts:
     def __init__(self, location_ids):
         display_names = EQUIPMENT_INTERNAL_TO_DISPLAY
         self.locations = {
-            (0, int(slot)): location_ids[display_names.get(internal, internal)]
+            (0, int(slot)): location_ids[vendor_location_name(display_names.get(internal, internal))]
             for slot, internal in VENDOR_LOCATIONS.items()
-            if display_names.get(internal, internal) in location_ids
+            if vendor_location_name(display_names.get(internal, internal)) in location_ids
         }
         self.locations.update({
             (3, mod.mod_id): location_ids[mod.location]

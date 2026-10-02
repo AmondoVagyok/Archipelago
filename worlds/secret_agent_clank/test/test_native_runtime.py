@@ -14,6 +14,53 @@ from .test_runtime import Memory
 
 
 class NativeRuntimeTests(unittest.TestCase):
+    def test_missing_hooks_reload_current_module_once(self):
+        self.p.writes.clear()
+        self.assertFalse(self.runtime.service(set(), {}))
+        self.assertEqual(self.p.read_int32(0x206324), 16)
+        self.runtime.gate.arm.assert_called_once()
+        self.assertTrue(self.runtime.reload_requested)
+        self.assertFalse(self.hooks.installed)
+        # Even if the request has been consumed, don't issue it again while
+        # waiting for the native loader to reach the installation barrier.
+        self.p.write_int32(0x206324, 0xFFFFFFFF)
+        self.p.writes.clear()
+        self.assertFalse(self.runtime.service(set(), {}))
+        self.assertEqual(self.p.writes, [])
+
+    def test_reload_waits_for_settled_game_and_preserves_pending_travel(self):
+        for address, value in ((0x206324, 22), (0x100, 4), (0x206338, 2), (0x206328, 0)):
+            with self.subTest(address=address):
+                original = self.p.read_int32(address)
+                self.p.write_int32(address, value)
+                self.p.writes.clear()
+                self.assertFalse(self.runtime.service(set(), {}))
+                self.assertEqual(self.p.writes, [])
+                self.assertFalse(self.runtime.reload_requested)
+                self.p.write_int32(address, original)
+
+    def test_current_hooks_resume_without_reloading(self):
+        self.hooks.installed = True
+        self.hooks.is_current.return_value = True
+        self.p.writes.clear()
+        self.assertTrue(self.runtime.service(set(), {}))
+        self.assertEqual(self.p.writes, [])
+
+    def test_reload_rechecks_state_before_writing(self):
+        self.p.batch_read_int32 = Mock(side_effect=[
+            [16, 0xFFFFFFFF, 5, 3], [16, 22, 5, 3]])
+        self.p.writes.clear()
+        self.runtime._reload_current_level()
+        self.assertEqual(self.p.writes, [])
+        self.assertFalse(self.runtime.reload_requested)
+
+    def test_reconnect_can_retry_reload_after_failure(self):
+        self.runtime.reload_requested = True
+        self.runtime.close()
+        self.assertFalse(self.runtime.reload_requested)
+        self.assertFalse(self.runtime.service(set(), {}))
+        self.assertEqual(self.p.read_int32(0x206324), 16)
+
     def test_watchdog_refreshes_current_module_with_server_status(self):
         self.hooks.installed = True
         self.hooks.is_current.return_value = True
@@ -139,10 +186,12 @@ class NativeRuntimeTests(unittest.TestCase):
         self.assertFalse(self.runtime.service(set(), {11: True}))
         self.hooks.sync_entitlements.assert_not_called()
 
-    def test_initial_connection_requires_reset_without_inventory_writes(self):
+    def test_initial_connection_reloads_without_inventory_writes(self):
+        self.p.writes.clear()
         self.assertFalse(self.runtime.service(set(), {11: True}))
         self.runtime.gate.arm.assert_called_once()
         self.hooks.prepare.assert_not_called()
+        self.assertEqual(self.p.writes, [(0x206324, 16)])
 
     def test_held_module_installs_before_release_then_rearms_after_start(self):
         gate = self.runtime.gate

@@ -1,7 +1,7 @@
 """Rule builders, matching worlds/rac_size_matters/rules/_helpers.py's HasWeapon/HasGadget/HasInfobot pattern (rule_builder.rules objects applied via world.set_rule(), not plain lambdas)."""
 from typing import TYPE_CHECKING
 
-from rule_builder.rules import Has, True_
+from rule_builder.rules import CanReachRegion, False_, Has, Rule, True_
 
 from ..constants import (
     CASE_NAME_TO_INFOBOT,
@@ -9,9 +9,10 @@ from ..constants import (
     PLANET_ACCESS_ITEM_NAME,
     PROGRESSIVE_CHARACTER_ITEM_NAME,
 )
-from ..constants.clank_gadgets import SACClankWeapons
+from ..constants.clank_gadgets import SACClankGadgets, SACClankWeapons
 from ..constants.operatives import ALL_OPERATIVES, SACOperatives
-from ..constants.planets import CASES_BY_OPERATIVE
+from ..constants.planets import CASES_BY_OPERATIVE, SACCases
+from ..constants.weapon_progression import UNLOCK_TO_PROGRESSIVE
 from ..items import PROGRESSIVE_PLANET_ITEM_NAME
 from ..options import Infobots
 
@@ -35,6 +36,40 @@ def HasCase(world: "SecretAgentClankWorld", case_name: str) -> Has | True_:
         return True_()
     item = CASE_NAME_TO_INFOBOT.get(case_name)
     return Has(item) if item else True_()
+
+
+# Clank case -> items needed (on top of reaching the case) to get at its enemies.
+CLANK_ENEMY_CASES: dict[str, tuple[str, ...]] = {
+    SACCases.BOLTAIRE_MUSEUM:       (),
+    SACCases.ASYANICA_ROOFTOPS:     (SACClankWeapons.THROWTIE,),
+    SACCases.AZCOTAL_ALLEY:         (),
+    SACCases.GONDOLA_ASCENT:        (SACClankGadgets.JETBOOTS,),
+    SACCases.HIGH_ROLLERS_CASINO:   (SACClankGadgets.HOLOMONOCLE,),
+    SACCases.VENANTONIO_LABS:       (),
+    SACCases.GALACTIC_BOLT_RESERVE: (SACClankWeapons.THROWTIE, SACClankWeapons.CUFFLINK),
+    SACCases.SPACESHIP_GRAVEYARD:   (),
+    SACCases.UNDERWATER_BUNKER:     (),
+}
+
+
+def _has_unlock(world: "SecretAgentClankWorld", name: str) -> Has:
+    if world.options.progressive_weapons and name in UNLOCK_TO_PROGRESSIVE:
+        return Has(UNLOCK_TO_PROGRESSIVE[name])
+    return Has(name)
+
+
+def HasEnemyAccess(world: "SecretAgentClankWorld") -> Rule:
+    """Clank can reach enemies in at least one case (see CLANK_ENEMY_CASES)."""
+    existing = {region.name for region in world.multiworld.get_regions(world.player)}
+    rule = False_()
+    for case, items in CLANK_ENEMY_CASES.items():
+        if case not in existing:
+            continue
+        case_rule = CanReachRegion(case)
+        for item in items:
+            case_rule = case_rule & _has_unlock(world, item)
+        rule = rule | case_rule
+    return rule
 
 
 def HasProjectileWeapon() -> Has:
@@ -62,20 +97,9 @@ def case_access_rule(world: "SecretAgentClankWorld", case: "Case") -> Has | True
     if case.operative != SACOperatives.SPECIAL_MISSIONS:
         if (world.options.infobots == Infobots.option_character_unlocks
                 and case.operative in PROGRESSIVE_CHARACTER_ITEM_NAME):
-            # 0-based index into that operative's own case list -- the Nth
-            # case needs N PRIOR copies already owned, same convention as
-            # HasPlanet's Progressive Planet count above. count = index + 1
-            # was self-referential: the last case's own Progressive copy is
-            # itself one of the exact number of copies that formula demanded
-            # to reach it, an unreachable location no fill could ever place
-            # that copy into (confirmed live via
-            # test_qwark_only_fills_with_an_accessible_native_start's
-            # Fill.FillError).
             count = list(CASES_BY_OPERATIVE[case.operative]).index(case)
             rule = rule & (Has(PROGRESSIVE_CHARACTER_ITEM_NAME[case.operative], count) if count else True_())
         else:
             rule = rule & HasCharacter(world, case.operative)
-    # The seed precollects its starting case file in every access mode.
-    # Explicit case files agree with resolve_owned_cases client-side.
     item = CASE_NAME_TO_INFOBOT.get(case.name)
     return rule | Has(item) if item else rule

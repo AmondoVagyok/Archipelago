@@ -23,14 +23,15 @@ class CaseMenuTests(unittest.TestCase):
         struct.pack_into('<4I', self.memory.data, 0x130030, 3, 1, 5601, 5606)
         self.memory.write_int8 = lambda address, value: self.memory.batch_write_int8([(address, value)])
 
-    def test_menu_lock_changes_only_selectable_byte(self):
+    def test_menu_hides_locked_cases_without_changing_completion(self):
         struct.pack_into('<I', self.memory.data, 0x13000C, 3)
         self.menu.apply_access(set())
-        self.assertEqual(self.memory.writes, [(0x1201CC, 0)])
-        self.assertEqual(self.memory.read_int8(0x1201CD), 1)
+        self.assertEqual(self.memory.writes, [(0x1201CC, 0), (0x1201CD, 0)])
+        self.assertEqual(self.memory.read_int8(0x1201CD), 0)
         self.assertEqual(self.memory.read_int32(0x13000C), 3)
         self.menu.apply_access({CASE_LABELS[5606]})
         self.assertEqual(self.memory.read_int8(0x1201CC), 1)
+        self.assertEqual(self.memory.read_int8(0x1201CD), 1)
 
     def test_shared_case_unlock_uses_menu_label_not_catalog_id(self):
         self.menu.mission_table = 0x140000
@@ -97,3 +98,19 @@ class CaseMenuTests(unittest.TestCase):
         self.assertEqual(self.menu.child_header, 0x6D0EF8)
         self.assertEqual(self.menu.parent_header, 0x6D0E50)
         self.assertEqual(self.menu.screen_address, 0x654A0C)
+
+    def test_hidden_selected_case_moves_cursor_to_owned_case(self):
+        struct.pack_into('<3I', self.memory.data, 0x100200, 0x110100, 2, 0)
+        struct.pack_into('<I', self.memory.data, 0x110104, 0x120200)
+        self.memory.data[0x1202CC:0x1202CE] = b'\x00\x00'
+        struct.pack_into('<I', self.memory.data, 0x1202D0, 0x130100)
+        struct.pack_into('<4I', self.memory.data, 0x130130, 9, 1, 5601, 5607)
+        self.menu.apply_access({CASE_LABELS[5607]})
+        self.assertEqual(self.memory.read_int32(0x100208), 1)
+        self.assertEqual(self.memory.read_bytes(0x1201CC, 2), b'\x00\x00')
+        self.assertEqual(self.memory.read_bytes(0x1202CC, 2), b'\x01\x01')
+
+    def test_already_disabled_locked_row_is_still_hidden(self):
+        self.memory.data[0x1201CC] = 0
+        self.menu.apply_access(set())
+        self.assertEqual(self.memory.read_int8(0x1201CD), 0)

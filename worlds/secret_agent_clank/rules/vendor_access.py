@@ -1,19 +1,17 @@
 from rule_builder.rules import CanReachRegion, False_, Has, True_
 
+from ..constants.challenge_mode import CHALLENGE_VENDOR_LOCATIONS, PROGRESSIVE_CHALLENGE_MODE
 from ..constants.clank_gadgets import SACClankGadgets
 from ..constants.planets import SACCases, CASE_NAME_TO_CASE, CASES_BY_OPERATIVE, PLANET_ACCESS_ITEM_NAME
 from ..constants import CHARACTER_ITEM_NAME, PROGRESSIVE_CHARACTER_ITEM_NAME
 from ..items import PROGRESSIVE_PLANET_ITEM_NAME
 from ..options import Infobots
 from ..constants.vendor_unlocks import VENDOR_CASES
-from ..constants.weapons import (
-    GADGET_DISPLAY_TO_INTERNAL,
-    RATCHET_WEAPON_DISPLAY_TO_INTERNAL,
-)
+from ..constants.weapons import EQUIPMENT_DISPLAY_TO_INTERNAL
 from ..core.patches import VENDOR_LOCATIONS
 
 VENDOR_ONLY_ITEM_NAMES: frozenset[str] = frozenset(
-    name for name, internal in {**RATCHET_WEAPON_DISPLAY_TO_INTERNAL, **GADGET_DISPLAY_TO_INTERNAL}.items()
+    name for name, internal in EQUIPMENT_DISPLAY_TO_INTERNAL.items()
     if internal in VENDOR_LOCATIONS.values()
 )
 
@@ -92,5 +90,7 @@ def set_vendor_rules(world):
     available_vendor = any_vendor_rule(world)
     for location in world.multiworld.get_locations(world.player):
         if location.parent_region.name == "Vendor":
-            world.set_rule(location, available_vendor & vendor_case_rule(
-                world, VENDOR_CASES[location.name]))
+            rule = available_vendor & vendor_case_rule(world, VENDOR_CASES[location.name])
+            if world.options.progressive_challenge_mode and location.name in CHALLENGE_VENDOR_LOCATIONS:
+                rule = rule & Has(PROGRESSIVE_CHALLENGE_MODE)
+            world.set_rule(location, rule)

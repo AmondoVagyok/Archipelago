@@ -46,6 +46,7 @@ class WeaponMods(PatchSet):
             raise RuntimeError("Native mod purchase layout changed")
         guards, ranges = GainStorage(p).prepare(symbols)
         hooks.extra_ranges = ranges
+        hooks.gain_storage_prepared = True
         recorder = ranges[0][0]
         table, reader = buy + 0x11C, buy + 0x13C
         flags = bytearray([2] * 32)

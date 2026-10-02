@@ -1,3 +1,4 @@
+import struct
 import unittest
 
 from ..core.patches import jump, packed
@@ -6,7 +7,7 @@ from .test_runtime import Memory
 
 
 class MissionTravelTests(unittest.TestCase):
-    def test_only_forced_travel_branch_is_changed(self):
+    def test_completion_reloads_current_module_for_both_arena_exits(self):
         p = Memory()
         f, ender = 0x110000, 0x120000
         p.data[f:f+12] = packed([0x27BDFFF0, 0xFFB00000, 0xFFBF0008])
@@ -35,11 +36,19 @@ class MissionTravelTests(unittest.TestCase):
                    "UPDATE_ChangeToLevel__Fib": change}
         changes = MissionTravel(p).prepare(symbols)
         self.assertEqual(len(changes), 3)
-        self.assertEqual(changes[0].address, f+0x18)
-        self.assertEqual(changes[0].replacement, packed([0]))
-        # The direct Continue path calls the map helper then skips the
+        self.assertEqual(changes[0].address, f)
+        self.assertEqual(changes[0].replacement, packed([
+            0x3C040020, 0x8C846328, jump(change), 0x24050001]))
+        # This loads a0 from CURRENT_CASE_ADDRESS, ignoring the caller's
+        # next-story-module argument. a1 requests a native reload, and the
+        # tail jump preserves the caller's return address and stack.
+        for module in (1, 3, 4, 11, 16, 31):
+            p.batch_write_int32([(0x206328, module), (0x206324, 29)])
+            words = struct.unpack('<4I', changes[0].replacement)
+            address = ((words[0] & 65535) << 16) + (words[1] & 65535)
+            self.assertEqual(p.read_int32(address), module)
+        # The direct Continue path calls the reload helper then skips the
         # challenge/quit handlers. The movie callback uses the same helper.
-        import struct
         direct = struct.unpack("<4I", changes[1].replacement)
         self.assertEqual(direct[:2], (jump(f, True), 0))
         self.assertEqual(update+0x194+(direct[2] & 65535)*4, update+0x228)

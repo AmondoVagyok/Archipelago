@@ -15,6 +15,7 @@ from .constants import (
     SACOperatives,
 )
 from .constants.planets import ALL_CASES, PLANET_ACCESS_ITEM_NAME
+from .constants.challenge_mode import PROGRESSIVE_CHALLENGE_MODE
 from .constants.vendor import NG_PLUS_VENDOR_ITEMS
 from .constants.weapon_progression import (
     LEVELLED_INTERNALS,
@@ -23,7 +24,7 @@ from .constants.weapon_progression import (
     UNLOCK_TO_PROGRESSIVE,
     max_level,
 )
-from .constants.weapons import GADGET_DISPLAY_TO_INTERNAL, RATCHET_WEAPON_DISPLAY_TO_INTERNAL
+from .constants.weapons import EQUIPMENT_DISPLAY_TO_INTERNAL, GADGETS_FROM_WEAPON_TABLE, RATCHET_WEAPONS
 from .entities import SACItem
 from .items import (
     ALL_ITEMS,
@@ -173,6 +174,8 @@ class SecretAgentClankWorld(World):
         self.second_starting_case = second_starting_case.name if second_starting_case else None
 
         pool: list[str] = []
+        if self.options.progressive_challenge_mode:
+            pool += [PROGRESSIVE_CHALLENGE_MODE] * self.options.ng_plus.value
         pool += [mod.name for mod in self.weapon_mod_catalog]
         ratchet_enabled = SACOperatives.RATCHET in self.options.operatives.value
         clank_enabled = SACOperatives.CLANK in self.options.operatives.value
@@ -246,10 +249,10 @@ class SecretAgentClankWorld(World):
         # duplicating it; filler below replaces the freed location slot.
         starting_groups = (
             (SACOperatives.RATCHET, self.options.starting_weapons.value,
-             [name for name, internal in RATCHET_WEAPON_DISPLAY_TO_INTERNAL.items()
-              if internal in LEVELLED_INTERNALS or internal == "hypnowatch"]),
+             [name for name in RATCHET_WEAPONS
+              if EQUIPMENT_DISPLAY_TO_INTERNAL[name] in LEVELLED_INTERNALS or EQUIPMENT_DISPLAY_TO_INTERNAL[name] == "hypnowatch"]),
             (SACOperatives.CLANK, self.options.starting_gadgets.value,
-             list(dict.fromkeys([*GADGET_DISPLAY_TO_INTERNAL, *GADGET_ITEM_TABLE]))),
+             list(dict.fromkeys([*GADGETS_FROM_WEAPON_TABLE, *GADGET_ITEM_TABLE]))),
         )
         for character, count, candidates in starting_groups:
             if character not in self.options.operatives.value:
@@ -313,6 +316,7 @@ class SecretAgentClankWorld(World):
             "health_xp_multiplier": self.options.health_xp_multiplier.value,
             "bolt_multiplier": self.options.bolt_multiplier.value,
             "ng_plus": self.options.ng_plus.value,
+            "progressive_challenge_mode": bool(self.options.progressive_challenge_mode),
             "starting_weapons": self.options.starting_weapons.value,
             "starting_gadgets": self.options.starting_gadgets.value,
             "starting_bolts": self.options.starting_bolts.value,

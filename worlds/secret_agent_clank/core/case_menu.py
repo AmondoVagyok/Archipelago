@@ -153,13 +153,15 @@ class CaseMenu:
         return entries
 
     def apply_access(self, owned_cases: set[str]) -> None:
-        """Reconcile visible case rows; never write mission state or visibility."""
-        for entry in self.read_entries():
+        """Show and enable only AP-owned cases, preserving mission completion."""
+        entries = self.read_entries()
+        header = self._header(self.child_header) if entries else None
+        for entry in entries:
             name = CASE_LABELS.get(entry.case_label)
             if name is None:
                 continue
             desired = int(name in owned_cases)
-            if entry.selectable == desired:
+            if entry.selectable == desired and entry.visible == desired:
                 continue
             # Check the row's identity again immediately before the write.
             # Header addresses are rebound by CaseInventory after transitions.
@@ -167,4 +169,14 @@ class CaseMenu:
                     or self.pine.read_int32(entry.node + 0xD0) != entry.mission
                     or self.pine.read_int32(entry.mission + 0x3C) != entry.case_label):
                 return
-            self.pine.write_int8(entry.node + 0xCC, desired)
+            self.pine.batch_write_int8([(entry.node + 0xCC, desired),
+                                        (entry.node + 0xCD, desired)])
+
+        # A row can become hidden while it is highlighted. Move the cursor to
+        # an owned row so confirmation cannot keep targeting the hidden case.
+        if header is not None and self._header(self.child_header) == header:
+            allowed = [entry.index for entry in entries
+                       if CASE_LABELS.get(entry.case_label) in owned_cases]
+            if allowed and header[2] not in allowed:
+                if self.pine.read_int32(self.screen_address) == 14:
+                    self.pine.batch_write_int32([(self.child_header + 8, allowed[0])])

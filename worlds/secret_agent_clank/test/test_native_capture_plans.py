@@ -13,6 +13,7 @@ from ..core.patches.titan_vendor import TitanOffers, TitanVendor
 from ..core.patches.weapon_mods import WeaponMods
 from ..core.patches.wrench import WrenchProgression
 from ..core.symbols import RuntimeSymbols
+from ..core.stealth import StealthState
 from .test_runtime import Memory
 
 
@@ -41,7 +42,8 @@ class NativeCapturePlansTests(unittest.TestCase):
         self.assertEqual(p.data, before)
 
     def test_complete_plans_fit_and_restore_every_captured_module(self):
-        captures = [p for p in (Path(__file__).parents[1] / ".research").glob("*.bin")
+        captures = [p for pattern in ("*.bin", "*.ram")
+                    for p in (Path(__file__).parents[1] / ".research").glob(pattern)
                     if p.stat().st_size == 0x2000000]
         if not captures:
             self.skipTest("Local research RAM captures not present")
@@ -73,20 +75,30 @@ class NativeCapturePlansTests(unittest.TestCase):
                         hooks.patches.extend(mods.prepare(symbols, hooks, module, set(), vendor))
                         progression = Progression(p)
                         progression.configure({"ng_plus": ng, "progressive_weapons": progressive,
-                            "weapon_xp_multiplier": 4, "health_xp_multiplier": 5, "bolt_multiplier": 8})
+                            "weapon_xp_multiplier": 4, "health_xp_multiplier": 4, "bolt_multiplier": 4})
+                        progression.stealth = StealthState(p)
+                        progression.stealth.configure(3)
+                        progression.stealth.load(0)
                         if ng and vendor:
                             hooks.patches.extend(TitanVendor(p).prepare(symbols, hooks, set()))
                         elif vendor:
                             hooks.patches.extend(TitanOffers(p).prepare(symbols))
-                        hooks.patches.extend(progression.prepare(symbols, hooks, module,
-                                                                 vendor_enabled=vendor))
                         if vendor:
                             hooks.patches.extend(VendorCatalog(p).prepare(symbols, hooks))
+                        if vendor:
                             hooks.patches.extend(VendorPresentation(p).prepare(symbols, hooks))
                         hooks.patches.extend(ConnectionWarning(p).prepare(symbols, hooks))
+                        hooks.patches.extend(progression.prepare(symbols, hooks, module,
+                                                                 vendor_enabled=vendor))
                         spans = sorted((x.address, x.address + len(x.replacement)) for x in hooks.patches)
                         self.assertTrue(all(b <= c for (a, b), (c, d) in zip(spans, spans[1:])))
+                        self.assertEqual(p.data, raw, "Planning must not write RAM")
                         hooks._install_plan()
+                        if progression.stealth.binding is not None:
+                            counter, site, replacement, address, code = progression.stealth.binding
+                            self.assertGreater(counter, 0)
+                            self.assertEqual(p.read_bytes(site, len(replacement)), replacement)
+                            self.assertEqual(p.read_bytes(address, len(code)), code)
                         if vendor:
                             flags = p.read_bytes(hooks.tables["vendor"], 40)
                             for slot in range(40):

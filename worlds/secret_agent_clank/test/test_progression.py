@@ -9,6 +9,26 @@ from .test_runtime import Memory
 
 
 class ProgressionTests(unittest.TestCase):
+    def test_compact_gain_wrapper_replays_prologue_in_jump_delay_slot(self):
+        from .mips_cpu import CPU
+        from .test_native_capture_plans import CaptureMemory
+        for register in (4, 5):
+            for value in (-100, 0, 1, 12345):
+                for second in (0xFFB00000, 0x3C020050):
+                    p = CaptureMemory()
+                    original = struct.pack("<2I", 0x27BDFFF0, second)
+                    p.write_bytes(0x110000, Progression.gain_wrapper(0x120000, original, register, 4))
+                    cpu = CPU(p)
+                    cpu.r[29], cpu.r[16], cpu.r[register] = 0x700000, 123, value & 0xFFFFFFFF
+                    cpu.run(0x110000, stop=0x120008)
+                    self.assertEqual(cpu.r[register], (value * 4 if value > 0 else value) & 0xFFFFFFFF)
+                    self.assertEqual(cpu.r[29], 0x6FFFF0)
+                    self.assertEqual(cpu.r[31], CPU.STOP)
+                    if second == 0xFFB00000:
+                        self.assertEqual(p.read_int32(0x6FFFF0), 123)
+                    else:
+                        self.assertEqual(cpu.r[2], 0x500000)
+
     def loader_fixture(self):
         mem = Memory()
         pr = Progression(mem)
@@ -111,7 +131,7 @@ class ProgressionTests(unittest.TestCase):
         original = struct.pack("<2I", 0x27BDFFF0, 0xFFB00000)
         for reg in (4, 5):
             for value in (-100, 0, 1, 12345):
-                code = struct.unpack("<8I", Progression.gain_wrapper(0x200000, original, reg, 10))
+                code = struct.unpack("<7I", Progression.gain_wrapper(0x200000, original, reg, 10))
                 regs = [0] * 32
                 regs[reg] = value
                 pc = 0
@@ -134,6 +154,5 @@ class ProgressionTests(unittest.TestCase):
                         self.fail(hex(word))
                 self.assertEqual(pc, 4)
                 self.assertEqual(regs[reg], value * 10 if value > 0 else value)
-                self.assertEqual(struct.pack("<2I", *code[4:6]), original)
-                self.assertEqual((code[6] & 0x3FFFFFF) << 2, 0x200008)
-                self.assertEqual(code[7], 0)
+                self.assertEqual(struct.pack("<2I", code[4], code[6]), original)
+                self.assertEqual((code[5] & 0x3FFFFFF) << 2, 0x200008)

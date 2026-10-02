@@ -87,18 +87,18 @@ class ConnectionWarningTests(unittest.TestCase):
             for high in (0x53, 0x60):
                 original = packed([0x27BDFFE0, m.lui(m.V0, high)])
                 self.p.write_bytes(self.render, original)
-                edits = self.warning.prepare(symbols, SimpleNamespace(patches=[]))
+                edits = self.warning.prepare(symbols, SimpleNamespace(patches=[], extra_ranges=[]))
                 self.assertEqual(edits[-1].original, original)
                 self.assertEqual(self.p.read_bytes(self.render, 8), original)
             self.p.write_bytes(self.render, packed([0x27BDFFE0, m.jr(m.RA)]))
             with self.assertRaisesRegex(RuntimeError, 'render prologue changed'):
-                self.warning.prepare(symbols, SimpleNamespace(patches=[]))
+                self.warning.prepare(symbols, SimpleNamespace(patches=[], extra_ranges=[]))
             self.assertIsNone(self.warning.heartbeat)
 
     def test_prepare_fits_shared_storage_and_rejects_overlap(self):
         symbols = {'HUD_ShowOneLiner__FPCcbi': self.show, 'HUD_RenderOneLiner__Fv': self.render}
         self.p.write_bytes(self.render, self.original)
-        hooks = SimpleNamespace(patches=[])
+        hooks = SimpleNamespace(patches=[], extra_ranges=[])
         with patch('worlds.secret_agent_clank.core.patches.connection_warning.triangle_storage',
                    return_value=(0x150000, bytes(352))), patch(
                    'worlds.secret_agent_clank.core.patches.connection_warning.ItemNotifications') as notifications:

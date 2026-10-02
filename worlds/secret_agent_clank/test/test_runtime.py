@@ -38,6 +38,9 @@ class Memory:
             self.writes.append((address, value))
             struct.pack_into("<I", self.data, address, value)
 
+    def write_int32(self, address, value):
+        self.batch_write_int32([(address, value)])
+
     def batch_write_int8(self, writes):
         for address, value in writes:
             self.writes.append((address, value))

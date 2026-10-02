@@ -1,3 +1,4 @@
+from ..constants.vendor import vendor_location_name
 import unittest
 from unittest.mock import patch
 
@@ -38,7 +39,7 @@ class VendorAccessTests(unittest.TestCase):
                     names = {loc.name for loc in m.get_region("Vendor", 1).locations}
                     for name in NG_PLUS_VENDOR_ITEMS:
                         enabled = bool(ng_plus) and (name.endswith("(Clank)") or "Ratchet" in operatives)
-                        self.assertEqual(name in names, enabled, name)
+                        self.assertEqual(vendor_location_name(name) in names, enabled, name)
                     if "Ratchet" not in operatives:
                         self.assertFalse(any("(Ratchet)" in name for name in names))
                     for mod in VENDOR_MODS:
@@ -67,7 +68,7 @@ class VendorAccessTests(unittest.TestCase):
         with patch.dict(vendor_access.VENDOR_REQUIREMENTS, requirements, clear=True):
             m = setup_vendor_world(SecretAgentClankWorld)
         state = CollectionState(m)
-        location = m.get_location(SACClankWeapons.HOLOKNUCKLES, 1)
+        location = m.get_location(vendor_location_name(SACClankWeapons.HOLOKNUCKLES), 1)
         self.assertFalse(location.can_reach(state))
         state.collect(m.worlds[1].create_item(SACClankGadgets.JETBOOTS))
         self.assertTrue(location.can_reach(state))
@@ -80,8 +81,9 @@ class VendorAccessTests(unittest.TestCase):
             m = setup_vendor_world(SecretAgentClankWorld, options={"ng_plus": 1})
         world = m.worlds[1]
         state = CollectionState(m)
-        names = (SACRatchetWeapons.SHOCKROCKET, SACClankGadgets.BOLTGRABBER,
-                 SACClankGadgets.CLANKPDA, TITAN_LOCATIONS["shockrocket"], VENDOR_MODS[0].location)
+        names = (vendor_location_name(SACRatchetWeapons.SHOCKROCKET),
+                 vendor_location_name(SACClankGadgets.BOLTGRABBER),
+                 vendor_location_name(SACClankGadgets.CLANKPDA), TITAN_LOCATIONS["shockrocket"], VENDOR_MODS[0].location)
         for name in names:
             self.assertEqual(m.get_location(name, 1).parent_region.name, "Vendor")
             self.assertFalse(m.get_location(name, 1).can_reach(state))
@@ -139,7 +141,8 @@ class VendorAccessTests(unittest.TestCase):
     def test_reported_four_checks_reachable_with_all_items(self):
         m = setup_vendor_world(SecretAgentClankWorld, options={"ng_plus": 1})
         state = m.get_all_state(False)
-        for name in (SACClankGadgets.CLANKPDA, SACRatchetWeapons.SHOCKROCKET,
-                     SACClankGadgets.BOLTGRABBER, TITAN_LOCATIONS["shockrocket"]):
+        for name in (vendor_location_name(SACClankGadgets.CLANKPDA),
+                     vendor_location_name(SACRatchetWeapons.SHOCKROCKET),
+                     vendor_location_name(SACClankGadgets.BOLTGRABBER), TITAN_LOCATIONS["shockrocket"]):
             self.assertTrue(m.get_location(name, 1).can_reach(state), name)
         self.assertEqual(len(m.itempool), len(m.get_unfilled_locations(1)))

@@ -36,7 +36,8 @@ class ClankSkin(Choice):
 
 class RatchetSkin(Choice):
     """Ratchet's cosmetic skin. In-game keeps your selection in the game's Skins menu.
-    All skins are unlocked on AP initialization. A chosen skin is the initial default;
+    Supported skins are unlocked on AP initialization. Robo-Ratchet is unavailable
+    in the PS2 release. A chosen skin is the initial default;
     later in-game selections are preserved.
     """
     display_name = "Ratchet Skin"
@@ -47,7 +48,6 @@ class RatchetSkin(Choice):
     option_tropical_vacation = 4
     option_plundering_pirate_captain = 5
     option_ratchetzilla = 6
-    option_robo_ratchet = 7
     option_kung_fu_ratchet = 8
     option_zombie_ratchet = 9
     option_dan = 10
@@ -159,11 +159,22 @@ class Goal(Choice):
 
 
 class NgPlus(Range):
-    """New Game Plus level: 0 is the base game, 1 is NG+, and 2 is NG++."""
-    display_name = "NG+"
+    """0 is the base game, 1 is challenge mode, and 2 is challenge mode level 2.
+    With Progressive Challenge Mode enabled, this is the maximum obtainable level.
+    Otherwise, this is the challenge-mode level used from the start.
+    """
+    display_name = "Max Challenge Mode"
     range_start = 0
     range_end = 2
     default = 0
+
+
+class ProgressiveChallengeMode(Toggle):
+    """Start at challenge level 0 and add one Progressive Challenge Mode item per
+    Max Challenge Mode level. Each received copy raises the level by one, up to
+    that maximum. Off starts directly at Max Challenge Mode.
+    """
+    display_name = "Progressive Challenge Mode"
 
 
 class ProgressiveWeapons(Choice):
@@ -230,7 +241,7 @@ class WeaponXPMultiplier(Range):
     display_name = "Weapon XP Multiplier"
     range_start = 1
     range_end = 10
-    default = 1
+    default = 4
 
 
 class HealthXPMultiplier(Range):
@@ -238,7 +249,7 @@ class HealthXPMultiplier(Range):
     display_name = "Nanotech XP Multiplier"
     range_start = 1
     range_end = 10
-    default = 1
+    default = 4
 
 
 class BoltMultiplier(Range):
@@ -246,7 +257,7 @@ class BoltMultiplier(Range):
     display_name = "Bolt Multiplier"
     range_start = 1
     range_end = 10
-    default = 1
+    default = 4
 
 
 class DeathAmnesty(Range):
@@ -325,6 +336,7 @@ class SecretAgentClankOptions(PerGameCommonOptions):
     infobots: Infobots
     operatives: Operatives
     ng_plus: NgPlus
+    progressive_challenge_mode: ProgressiveChallengeMode
     progressive_weapons: ProgressiveWeapons
     weapon_level_checks: WeaponLevelChecks
     stealth_takedown_checks: StealthTakedownChecks
@@ -368,6 +380,7 @@ sac_option_groups = [
         SendScoutedLocations,
         Goal,
         NgPlus,
+        ProgressiveChallengeMode,
     ]),
     OptionGroup("SAC Character Options", [
         Infobots,

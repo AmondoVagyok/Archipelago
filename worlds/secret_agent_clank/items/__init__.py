@@ -14,36 +14,6 @@ from ..constants import (
     SACCheats,
     SACTraps,
 )
-from .a_fiction_full_of_dollars import A_FICTION_FULL_OF_DOLLARS_ITEMS
-from .asyanica_rooftops import ASYANICA_ROOFTOPS_ITEMS
-from .azcotal_alley import AZCOTAL_ALLEY_ITEMS
-from .boltaire_gem_wing import BOLTAIRE_GEM_WING_ITEMS
-from .boltaire_museum import BOLTAIRE_MUSEUM_ITEMS
-from .bulkhead_lock import BULKHEAD_LOCK_ITEMS
-from .countess_villa import COUNTESS_VILLA_ITEMS
-from .dams_edge_hydrano import DAMS_EDGE_HYDRANO_ITEMS
-from .galactic_bolt_reserve import GALACTIC_BOLT_RESERVE_ITEMS
-from .glaciara_ski_slopes import GLACIARA_SKI_SLOPES_ITEMS
-from .gondola_ascent import GONDOLA_ASCENT_ITEMS
-from .high_rollers_casino import HIGH_ROLLERS_CASINO_ITEMS
-from .high_stakes_room import HIGH_STAKES_ROOM_ITEMS
-from .inside_the_a_eye import INSIDE_THE_A_EYE_ITEMS
-from .klunks_lair import KLUNKS_LAIR_ITEMS
-from .larger_than_life import LARGER_THAN_LIFE_ITEMS
-from .madam_butterqwark import MADAM_BUTTERQWARK_ITEMS
-from .max_security_cells import MAX_SECURITY_CELLS_ITEMS
-from .prison_breakout import PRISON_BREAKOUT_ITEMS
-from .rooftop_deathtrap import ROOFTOP_DEATHTRAP_ITEMS
-from .saint_qwark import SAINT_QWARK_ITEMS
-from .spaceship_graveyard import SPACESHIP_GRAVEYARD_ITEMS
-from .suck_and_jive import SUCK_AND_JIVE_ITEMS
-from .the_exercise_yard import THE_EXERCISE_YARD_ITEMS
-from .the_mess_hall import THE_MESS_HALL_ITEMS
-from .the_quasar_fields import THE_QUASAR_FIELDS_ITEMS
-from .the_showers import THE_SHOWERS_ITEMS
-from .underwater_bunker import UNDERWATER_BUNKER_ITEMS
-from .venantonio_canals import VENANTONIO_CANALS_ITEMS
-from .venantonio_labs import VENANTONIO_LABS_ITEMS
 
 BASE_ID = 77_800_000
 
@@ -135,18 +105,6 @@ PROGRESSIVE_WRENCH_ITEM_TABLE = _table((PROGRESSIVE_WRENCH_ITEM_NAME,), ItemClas
 for _mod in ("wrenchpower_firebomb", "wrenchpower_triplewave", "wrenchpower_crystallix", "wrenchpower_wildburst"):
     WEAPON_ITEM_TABLE.pop(_mod, None)
 
-# Per-case item tables -- see module docstring, all empty stubs so far.
-_PER_CASE_ITEM_TABLES: tuple[dict[str, SACItemData], ...] = (
-    BOLTAIRE_MUSEUM_ITEMS, BOLTAIRE_GEM_WING_ITEMS, MAX_SECURITY_CELLS_ITEMS, ROOFTOP_DEATHTRAP_ITEMS,
-    ASYANICA_ROOFTOPS_ITEMS, LARGER_THAN_LIFE_ITEMS, COUNTESS_VILLA_ITEMS, GLACIARA_SKI_SLOPES_ITEMS,
-    THE_MESS_HALL_ITEMS, AZCOTAL_ALLEY_ITEMS, GONDOLA_ASCENT_ITEMS, SUCK_AND_JIVE_ITEMS,
-    HIGH_ROLLERS_CASINO_ITEMS, THE_EXERCISE_YARD_ITEMS, HIGH_STAKES_ROOM_ITEMS, VENANTONIO_LABS_ITEMS,
-    VENANTONIO_CANALS_ITEMS, MADAM_BUTTERQWARK_ITEMS, GALACTIC_BOLT_RESERVE_ITEMS, INSIDE_THE_A_EYE_ITEMS,
-    THE_SHOWERS_ITEMS, SPACESHIP_GRAVEYARD_ITEMS, SAINT_QWARK_ITEMS, THE_QUASAR_FIELDS_ITEMS,
-    PRISON_BREAKOUT_ITEMS, DAMS_EDGE_HYDRANO_ITEMS, A_FICTION_FULL_OF_DOLLARS_ITEMS, BULKHEAD_LOCK_ITEMS,
-    UNDERWATER_BUNKER_ITEMS, KLUNKS_LAIR_ITEMS,
-)
-
 from ..constants.weapon_progression import PROGRESSIVE_TO_INTERNAL
 
 PROGRESSIVE_WEAPON_ITEM_TABLE = _table(tuple(PROGRESSIVE_TO_INTERNAL), ItemClassification.progression)
@@ -171,11 +129,13 @@ ALL_ITEMS: dict[str, SACItemData] = {
     **TRAP_ITEM_TABLE,
     **FILLER_ITEM_TABLE,
 }
-for _table_dict in _PER_CASE_ITEM_TABLES:
-    ALL_ITEMS.update(_table_dict)
-del _table_dict
 
 from ..constants.weapon_mods import WEAPON_MODS
 
 WEAPON_MOD_ITEM_TABLE = _table(tuple(mod.name for mod in WEAPON_MODS), ItemClassification.useful)
 ALL_ITEMS.update(WEAPON_MOD_ITEM_TABLE)
+
+# Append so all existing item IDs remain stable.
+from ..constants.challenge_mode import PROGRESSIVE_CHALLENGE_MODE
+CHALLENGE_MODE_ITEM_TABLE = _table((PROGRESSIVE_CHALLENGE_MODE,), ItemClassification.progression)
+ALL_ITEMS.update(CHALLENGE_MODE_ITEM_TABLE)

@@ -19,22 +19,23 @@ LEVELLED_INTERNALS = ("blaster", "shardgun", "beemineglove", "shockrocket",
     "CuffLink", "TangleVine", "HoloKnuckles", "FlamethrowerPen", "LightningUmbrella")
 
 
-def _attrs(cls):
-    return {name: value for name, value in vars(cls).items() if not name.startswith("_")}
+def _counterparts(base, upgraded):
+    """Pair explicit names by their shared constant attribute, without parsing names."""
+    return (
+        (getattr(base, attr), name)
+        for attr, name in vars(upgraded).items()
+        if not attr.startswith("_") and hasattr(base, attr)
+    )
 
-
-# Unlock -> progressive display name, matched by shared class attribute name
-# (e.g. SACRatchetWeapons.SHOCKROCKET <-> SACProgressiveRatchetWeapons.SHOCKROCKET)
-# rather than string surgery on the display name itself, which broke once the
-# "Unlock: {character} {weapon}" naming scheme was replaced by "Weapon:
-# {character}: {weapon}" (see constants/weapons.py, constants/clank_gadgets.py).
-_UNLOCK_ATTRS = {**_attrs(SACRatchetWeapons), **_attrs(SACClankWeapons)}
-_PROGRESSIVE_ATTRS = {**_attrs(SACProgressiveRatchetWeapons), **_attrs(SACProgressiveClankWeapons)}
 
 UNLOCK_TO_PROGRESSIVE = {
-    _UNLOCK_ATTRS[attr]: _PROGRESSIVE_ATTRS[attr]
-    for attr in _PROGRESSIVE_ATTRS
-    if attr in _UNLOCK_ATTRS and EQUIPMENT_DISPLAY_TO_INTERNAL.get(_UNLOCK_ATTRS[attr]) in LEVELLED_INTERNALS
+    unlock: progressive
+    for base, upgraded in (
+        (SACRatchetWeapons, SACProgressiveRatchetWeapons),
+        (SACClankWeapons, SACProgressiveClankWeapons),
+    )
+    for unlock, progressive in _counterparts(base, upgraded)
+    if EQUIPMENT_DISPLAY_TO_INTERNAL[unlock] in LEVELLED_INTERNALS
 }
 PROGRESSIVE_TO_INTERNAL = {
     progressive: EQUIPMENT_DISPLAY_TO_INTERNAL[unlock] for unlock, progressive in UNLOCK_TO_PROGRESSIVE.items()
@@ -57,17 +58,18 @@ def level_location_name(internal, level):
     from .weapons import EQUIPMENT_INTERNAL_TO_DISPLAY
     return f"{EQUIPMENT_INTERNAL_TO_DISPLAY[internal]} Level {level}"
 
-# Unlock display name -> Titan/Proto display name, matched by shared class
-# attribute name (same pattern as UNLOCK_TO_PROGRESSIVE above).
-_TITAN_ATTRS = {**_attrs(SACTitanWeapons), **_attrs(SACProtoWeapons)}
-_UNLOCK_TO_TITAN = {
-    _UNLOCK_ATTRS[attr]: _TITAN_ATTRS[attr]
-    for attr in _TITAN_ATTRS if attr in _UNLOCK_ATTRS
-}
-
+# Preserve Ratchet-then-Clank order: legacy Titan item IDs depend on it.
+_TITAN_EQUIPMENT = tuple(
+    (EQUIPMENT_DISPLAY_TO_INTERNAL[unlock], titan)
+    for base, upgraded in (
+        (SACRatchetWeapons, SACTitanWeapons),
+        (SACClankWeapons, SACProtoWeapons),
+    )
+    for unlock, titan in _counterparts(base, upgraded)
+)
 TITAN_LOCATIONS = {
-    EQUIPMENT_DISPLAY_TO_INTERNAL[unlock]: vendor_location_name(titan)
-    for unlock, titan in _UNLOCK_TO_TITAN.items()
+    internal: vendor_location_name(titan) for internal, titan in _TITAN_EQUIPMENT
 }
-TITAN_ITEMS = {f"Titan Upgrade: {titan}": EQUIPMENT_DISPLAY_TO_INTERNAL[unlock]
-               for unlock, titan in _UNLOCK_TO_TITAN.items()}
+TITAN_ITEMS = {
+    f"Titan Upgrade: {titan}": internal for internal, titan in _TITAN_EQUIPMENT
+}

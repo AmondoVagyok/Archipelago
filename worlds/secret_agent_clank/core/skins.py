@@ -1,7 +1,8 @@
 """Unlock cosmetic menu entries and feed the game's native skin loader."""
 import struct
 
-from ..constants.skins import (ALL_SKINS_MASK, QWARK_GIANT_SKINS, SKINS_BY_CHARACTER,
+from ..constants.skins import (ALL_SKINS_MASK, DEFAULT_RATCHET_SKIN, UNSUPPORTED_RATCHET_SKIN,
+                               QWARK_GIANT_SKINS, SKINS_BY_CHARACTER,
                                SKIN_CHARACTER_STRIDE, SKIN_OWNED_OFFSET, SKIN_SAVE_OFFSET)
 from .global_flags import GlobalFlags
 from .patches import mips as m
@@ -19,6 +20,8 @@ class Skins:
         selected = {}
         for character, skins in SKINS_BY_CHARACTER.items():
             value = int(data.get(f"{character}_skin", 0))
+            if character == "ratchet" and value == UNSUPPORTED_RATCHET_SKIN:
+                value = DEFAULT_RATCHET_SKIN  # Compatibility with older slot data.
             if value != 0 and value not in skins.values():
                 raise ValueError(f"Invalid {character} skin: {value}")
             selected[character] = value
@@ -48,6 +51,8 @@ class Skins:
         original = self.pine.read_bytes(address, 16)
         if original != packed([0x27BDFFF0, 0x2483FFFE, 0xFFB00000, 0x2C620012]):
             raise RuntimeError("Native skin unlock predicate changed")
+        # Keep the retail exclusion of Robo-Ratchet: its standalone asset is
+        # absent, so merely previewing this entry can break the native loader.
         # The unlock predicate now returns immediately. Its unreachable body
         # provides storage for initialization on the game thread, after a new
         # save exists but before the native model swap reads the selected skin.
@@ -66,6 +71,10 @@ class Skins:
         if displaced != packed([0x80631900, 0x10600003]):
             raise RuntimeError("Native skin loader changed")
         code = [*m.li32(m.T0, pointer), m.lw(m.T0, 0, m.T0),
+                *m.li32(m.T1, SKIN_SAVE_OFFSET), m.addu(m.T1, m.T0, m.T1),
+                m.lbu(m.T2, 0, m.T1), m.addiu(m.T3, m.ZERO, UNSUPPORTED_RATCHET_SKIN),
+                m.bne(m.T2, m.T3, 2), m.addiu(m.T2, m.ZERO, DEFAULT_RATCHET_SKIN),
+                m.sb(m.T2, 0, m.T1),
                 *m.li32(m.T1, SKIN_OWNED_OFFSET), m.addu(m.T1, m.T0, m.T1),
                 m.lw(m.T2, 0, m.T1), *m.li32(m.T3, ALL_SKINS_MASK)]
         # Full ownership is the persistent initialization marker shared with
@@ -87,7 +96,9 @@ class Skins:
         code[initialized_branch] = m.beq(m.T2, m.T3, len(code) - initialized_branch - 1)
         code += [0x80631900, m.beq(m.V1, m.ZERO, 3), m.NOP,
                  jump(load + 0x40), m.NOP, jump(load + 0x4C), m.NOP]
-        replacement = packed([m.jr(m.RA), m.addiu(m.V0, m.ZERO, 1), *code])
+        predicate = [m.xori(m.V0, m.A0, UNSUPPORTED_RATCHET_SKIN),
+                     m.jr(m.RA), m.sltu(m.V0, m.ZERO, m.V0)]
+        replacement = packed([*predicate, *code])
         if len(replacement) > 0xF8:
             raise RuntimeError("Skin initialization exceeds predicate storage")
         # Check the predicate's return as well as its entry before reusing it.
@@ -95,7 +106,7 @@ class Skins:
                 [0xDFB00000, 0xDFBF0008, 0x03E00008, 0x27BD0010]):
             raise RuntimeError("Native skin unlock predicate extent changed")
         return [Patch(address, self.pine.read_bytes(address, len(replacement)), replacement),
-                Patch(load + 0x38, displaced, packed([jump(address + 8), m.NOP]))]
+                Patch(load + 0x38, displaced, packed([jump(address + len(predicate) * 4), m.NOP]))]
 
     def sync(self):
         """Run at the loader gate before native skin loading, then while ready.
@@ -113,6 +124,9 @@ class Skins:
         owned = self.pine.read_int32(owned_address)
         if self.pine.read_int32(pointer) != base:
             return False
+        ratchet_address = base + SKIN_SAVE_OFFSET
+        if self.pine.read_int8(ratchet_address) == UNSUPPORTED_RATCHET_SKIN:
+            self.pine.write_int8(ratchet_address, DEFAULT_RATCHET_SKIN)
         if owned & ALL_SKINS_MASK == ALL_SKINS_MASK:
             return True
         for player_type, character in enumerate(SKINS_BY_CHARACTER):

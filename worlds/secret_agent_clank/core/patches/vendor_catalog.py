@@ -1,6 +1,7 @@
 """Build the shared shop from AP transaction flags, not the native save roster."""
 import struct
 
+from ...constants.challenge_mode import CHALLENGE_VENDOR_LOCATIONS
 from ...constants.vendor_unlocks import VENDOR_CASES
 from ...constants.native_functions import NativeFunctions
 from ...constants.weapon_mods import WEAPON_MODS
@@ -10,6 +11,7 @@ from ..symbols import require
 from . import mips as m
 from .asm import Patch, branch, jump, packed, words
 from .patch import PatchSet
+from .vendor_tabs import VendorTabs
 
 
 class VendorCatalog(PatchSet):
@@ -57,14 +59,19 @@ class VendorCatalog(PatchSet):
         # Change only the descriptor comparison byte. Transaction flags remain
         # untouched, so unlocking a purchased slot cannot resurrect its check.
         owned_cases = frozenset(owned_cases)
-        if getattr(self, "_synced_cases", None) == owned_cases:
+        state = (owned_cases, getattr(self, "challenge_level", 1))
+        if getattr(self, "_synced_cases", None) == state:
             return
-        writes = [(address, unchecked if case in owned_cases else 255)
-                  for address, case, unchecked in self.case_descriptors
-                  if self.pine.read_int8(address) != (unchecked if case in owned_cases else 255)]
+        writes = []
+        for address, case, unchecked in self.case_descriptors:
+            allowed = case in owned_cases and (state[1] > 0 or
+                address not in getattr(self, "challenge_descriptors", set()))
+            desired = unchecked if allowed else 255
+            if self.pine.read_int8(address) != desired:
+                writes.append((address, desired))
         if writes:
             self.pine.batch_write_int8(writes)
-        self._synced_cases = owned_cases
+        self._synced_cases = state
 
     def prepare(self, symbols, hooks):
         p = self.pine
@@ -93,27 +100,35 @@ class VendorCatalog(PatchSet):
             low = w[lower // 4] & 65535
             return ((w[upper // 4] & 65535) << 16) + (low - 65536 if low & 32768 else low)
         entries = self.entries(hooks)
+        catalog_start = builder + self.START + 8
         args = (len(entries), w[0x24 // 4] & 65535, add,
                 global_address(0x58, 0x64), global_address(0x60, 0x68),
-                builder + self.START, builder + self.END)
+                catalog_start, builder + self.END)
         code = self.routine(0, *args)
-        descriptors = builder + self.START + len(code)
+        descriptors = catalog_start + len(code)
         code = self.routine(descriptors, *args)
         self._synced_cases = None
         self.case_descriptors = []
+        self.challenge_descriptors = set()
         index = 0
         for kind in ("vendor", "mods", "titan"):
             for name in hooks.locations.get(kind, {}).values():
                 self.case_descriptors.append((descriptors + index * 8 + 7,
                                               VENDOR_CASES[name], 3 if kind == "titan" else 1))
+                if name in CHALLENGE_VENDOR_LOCATIONS:
+                    self.challenge_descriptors.add(descriptors + index * 8 + 7)
                 index += 1
         buffer = descriptors + len(entries) * 8
-        payload = bytearray(original[:self.START]) + code
+        self.tabs = VendorTabs()
+        tab_patches, dispatch = self.tabs.prepare(p, symbols, hooks, builder, original, catalog_start)
+        payload = bytearray(original[:self.START]) + dispatch + code
         for entry in entries:
             payload.extend(struct.pack("<2I", *entry))
         # Give ICONMENU its own bounded array in the replaced builder body.
         # This supports the full NG+ catalog without overrunning native storage.
-        payload.extend(bytes(max(1, len(entries)) * self.ROW_SIZE))
+        # The same array serves both tabs. Retail iterates 40 gadget slots and
+        # can append a buy-all row, independently of the AP location count.
+        payload.extend(bytes(max(41, len(entries)) * self.ROW_SIZE))
         if len(payload) > self.END:
             raise RuntimeError("AP vendor catalog exceeds verified storage")
         struct.pack_into("<I", payload, 0x0C, m.lui(m.A1, (buffer + 0x8000) >> 16))
@@ -122,5 +137,19 @@ class VendorCatalog(PatchSet):
         # and their flag tables remain installed outside this function.
         hooks.patches[:] = [patch for patch in hooks.patches
                            if not builder <= patch.address < builder + self.END]
-        self.patches = [Patch(builder, original[:len(payload)], bytes(payload))]
+        for start, end in getattr(hooks, "catalog_only_ranges", ()):
+            patch = next(patch for patch in hooks.patches
+                         if patch.address <= start and end <= patch.address + len(patch.replacement))
+            hooks.patches.remove(patch)
+            for low, high in ((patch.address, start), (end, patch.address + len(patch.replacement))):
+                if low < high:
+                    a, b = low - patch.address, high - patch.address
+                    hooks.patches.append(Patch(low, patch.original[a:b], patch.replacement[a:b]))
+            hooks.extra_ranges.append((start, end))
+        self.patches = tab_patches + [Patch(builder, original[:len(payload)], bytes(payload))]
+        # The replacement branches straight to END, bypassing this tail.
+        # Reserve the complete row buffer above before sharing any space.
+        free_start = builder + ((len(payload) + 3) & ~3)
+        if free_start < builder + self.END:
+            hooks.extra_ranges.append((free_start, builder + self.END))
         return self.patches

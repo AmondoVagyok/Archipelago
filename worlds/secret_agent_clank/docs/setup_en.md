@@ -7,8 +7,8 @@ Only one PINE client can connect at a time; close research probes before launchi
 
 1. Generate a **new seed** with this source folder. Native mission titles and their case assignments changed, and all 27 Alien Codes and three keycards now have locations. Old seeds are not compatible with the corrected catalog.
 2. Use a fresh save, or restore your pre-test save. The research save now has the Chalice collected, so it would immediately satisfy that goal. Jet Boots remain granted at your request; the three temporary keycards were restored to absent.
-3. Leave the game at its **main menu**, launch **Secret Agent Clank Client**, connect to the server and slot, and connect PINE. Wait for `New saves will start in <case>. Ready to create a new save.`, then create a new save. Each newly generated seed chooses a random case belonging to an enabled character and grants its Case File. The choice stays fixed for that seed and is restored by Universal Tracker. Loading an existing save keeps its saved destination. If connecting after entering gameplay, use the **in-game level reset once** when asked; do not load a savestate for this reset.
-4. Look for `Native pickup/vendor hooks installed before module ... startup.` Subsequent level transitions and full resets install the hooks automatically. There is no opt-in command; disabling native interception is rejected.
+3. Leave the game at its **main menu**, launch **Secret Agent Clank Client**, connect to the server and slot, and connect PINE. Wait for `New saves will start in <case>. Ready to create a new save.`, then create a new save. Each newly generated seed chooses a random case belonging to an enabled character and grants its Case File. The choice stays fixed for that seed and is restored by Universal Tracker. Loading an existing save keeps its saved destination. If connecting or reconnecting after entering gameplay with missing native hooks, the client automatically requests a fresh load of the current level. It waits for pending travel to finish and installs hooks before gameplay resumes; no manual reset is needed. Existing valid hooks resume without a reload.
+4. Look for `[SAC] Hooks loaded for <module>`. Subsequent level transitions and full resets install the hooks automatically. There is no opt-in command; disabling native interception is rejected.
 5. Test an AP item received before its native pickup, a vendor purchase without receiving its item, and completion of separate cases in a shared module. Purchases and pickups should report checks independently of AP item ownership.
 
 To launch from the repository root with its Python environment:
@@ -107,6 +107,22 @@ Automatic mode grants that level immediately and disables combat XP. The first
 copy unlocks V1 in either mode. Existing boolean `true` settings and old boolean
 slot data still mean automatic. The weapon XP multiplier works in off/manual mode.
 
+**Max Challenge Mode** (YAML key `ng_plus`, range 0–2) sets the challenge level.
+With `progressive_challenge_mode: false` (the default), that level is active
+from the start. With `progressive_challenge_mode: true`, play starts at level 0
+and the pool contains one **Progressive Challenge Mode** item per maximum level.
+Each received copy raises the active level by one, capped at the maximum.
+At maximum 0, no challenge-mode items are added. Reconnecting reconstructs the
+level from received items, so receipts are never counted twice.
+
+Challenge-only vendor offers, weapon levels V5–V8, and Clank nanotech checks
+above 60 unlock with the first challenge-mode item. Higher weapon copies
+received earlier are retained and become effective when challenge mode unlocks.
+The maximum determines which checks and items exist in the seed.
+
+Weapon XP, Nanotech XP, and Bolt Multiplier now default to **4×** for new seeds.
+Explicit settings and multipliers in existing slot data remain unchanged.
+
 `weapon_level_checks` accepts `off`, `level_4`, `level_8`, `level_4_and_8`, or `all`.
 All includes V2-V4, plus V5-V8 in NG+. Only the six Clank combat weapons and nine
 Ratchet weapons have level checks; gadgets, PDAs and Clank Fu moves do not.
@@ -185,7 +201,8 @@ The detector uses the settled resident loader target; the previous level ID can
 remain in memory at the title screen. New Game loading still arms the mandatory
 gameplay hooks when the AP inventory is available.
 
-All skins unlock when AP initializes gameplay, without spending Titanium Bolts.
+All supported skins unlock when AP initializes gameplay, without spending Titanium Bolts.
+Robo-Ratchet remains hidden because its standalone skin asset is missing in the PS2 release.
 The `clank_skin`, `ratchet_skin`, and `qwark_skin` cosmetic options select a skin
 to apply on level load; `in_game` keeps your choice from Special → Skins.
 Qwark's giant form follows the same costume. See [skin options](skins.md) for
@@ -209,3 +226,20 @@ Enabling them requires Clank in `operatives`; otherwise generation reports an
 option error. The 5/10/25 access rules have TODOs for case and item requirements;
 until mapped they conservatively require all enabled Clank cases.
 See [stealth research and rule edit points](stealth-takedowns.md).
+
+### Reconnection recovery
+
+Missing hooks now trigger one automatic current-level load per recovery attempt. The client does not reload the title screen or replace pending travel. Hook planning failures stop game sync and report their traceback separately from socket failures; reconnecting cannot fix insufficient verified hook storage. Automatic recovery is covered by memory-backed tests; live PCSX2 validation is pending.
+
+### Vendor controls
+
+Weapon vendors have two tabs: D-pad Down shows ammo for owned weapons; D-pad Up
+shows available AP purchases. Use left/right to browse. Each vendor visit starts
+on AP purchases. Restart the client and reload the level to install the change;
+existing seeds are supported. See [vendor tabs and controller research](vendor_tabs.md).
+
+### Hook storage
+
+Hook planning measures all progression, multiplier, and stealth allocations together, then uses a largest-first search with backtracking inside verified code ranges. Final addresses are encoded only after the entire request set fits. The replacement vendor catalog shares its unused tail after reserving its complete row buffer, and releases the obsolete Titan offer reader. The watchdog shares only the space after its complete message. Manual weapon XP guards are split into small blocks so they can use these separate ranges. All plans are prepared before installation; allocation failures report requested bytes, total free bytes, and the largest free block.
+
+The complete installation/restore tests cover the available RAM captures with all progression modes, NG+ tiers, stealth checks, and 4x gain multipliers. Live PCSX2 validation of the revised allocation is still required.

@@ -7,7 +7,6 @@ RATCHET_SKINS = {
     "tropical_vacation": 4,
     "plundering_pirate_captain": 5,
     "ratchetzilla": 6,
-    "robo_ratchet": 7,
     "kung_fu_ratchet": 8,
     "zombie_ratchet": 9,
     "dan": 10,
@@ -28,5 +27,9 @@ QWARK_GIANT_SKINS = {18: 22, 19: 23, 20: 24, 21: 25}
 SKIN_SAVE_OFFSET = 0x19900
 SKIN_CHARACTER_STRIDE = 0x34
 SKIN_OWNED_OFFSET = 0x199D4
-ALL_SKINS_MASK = sum(1 << skin for skin in range(1, 26))
+# Retail IsSkinUnlocked explicitly rejects Robo-Ratchet. Its standalone
+# Actors/KlunkRatchet/KlunkRatchet asset is not shipped in IMAGE.ZIP.
+UNSUPPORTED_RATCHET_SKIN = 7
+DEFAULT_RATCHET_SKIN = 1
+ALL_SKINS_MASK = sum(1 << skin for skin in range(1, 26) if skin != UNSUPPORTED_RATCHET_SKIN)
 SKINS_BY_CHARACTER = {"ratchet": RATCHET_SKINS, "clank": CLANK_SKINS, "qwark": QWARK_SKINS}

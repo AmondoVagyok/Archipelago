@@ -5,12 +5,35 @@ from unittest.mock import Mock
 
 from ..client.vendor_scouts import VendorReward
 from ..core.symbols import RuntimeSymbols
-from ..core.vendor import VendorState
+from ..core.vendor import VendorState, VendorItem
 from ..core.vendor_rewards import VendorRewards
 from .test_native_capture_plans import CaptureMemory
 
 
 class VendorRewardsTests(unittest.TestCase):
+    def test_ammo_tab_restores_weapon_art_and_ap_tab_reapplies_logo(self):
+        p = CaptureMemory()
+        vendor = Mock(active=True)
+        vendor._native_header.return_value = (0x180000, 1, 0)
+        vendor.read_items.return_value = [VendorItem(0, 1, 73, 15, 'shockrocket', 10)]
+        manager = VendorRewards(p, vendor, self.fail)
+        manager.scouts = Mock()
+        manager.scouts.for_row.return_value = None
+        manager.icon = Mock(installed=True, ICON_ID=73)
+        manager.icon.restore.side_effect = lambda: setattr(manager.icon, 'installed', False)
+        manager.icon.apply.side_effect = lambda: setattr(manager.icon, 'installed', True)
+        manager.rows[0x180000] = ((0, 15, 0), 73)
+        manager.tick({})
+        manager.icon.restore.assert_called_once()
+        manager.icon.prepare.assert_not_called()
+        self.assertEqual(manager.rows, {})
+        manager.tick({})
+        manager.icon.prepare.assert_not_called()
+        vendor.read_items.return_value = [VendorItem(0, 0, 73, 15, 'shockrocket', 0)]
+        manager.tick({})
+        manager.icon.prepare.assert_called_once()
+        manager.icon.apply.assert_called_once()
+
     def test_automatic_cosmetics_preserve_transaction_and_restore(self):
         capture = Path(__file__).parents[1] / ".research/vendor_separation_baseline.bin"
         if not capture.exists():

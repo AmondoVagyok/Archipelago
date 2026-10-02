@@ -66,7 +66,7 @@ class SACLocation:
         """Whether this location exists at all under the given options (the category toggles)."""
         if self.type == SACLocationType.VENDOR:
             from ..constants.vendor import NG_PLUS_VENDOR_ITEMS
-            return self.name not in NG_PLUS_VENDOR_ITEMS or bool(options.ng_plus.value)
+            return self.name.removeprefix("Vendor: ") not in NG_PLUS_VENDOR_ITEMS or bool(options.ng_plus.value)
         match self.type:
             case SACLocationType.CASE_COMPLETE:
                 return options.all_missions.value != Missions.option_all

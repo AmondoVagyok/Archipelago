@@ -1,3 +1,4 @@
+from ..constants.vendor import vendor_location_name
 import unittest
 
 from ..core.patches import (
@@ -144,7 +145,7 @@ class LocationHookTests(unittest.TestCase):
         # the dict and pass through unchanged.
         self.assertFalse(set(PICKUP_LOCATIONS) & set(VENDOR_LOCATIONS))
         pickup_names = {EQUIPMENT_INTERNAL_TO_DISPLAY.get(n, n) for n in PICKUP_LOCATIONS.values()}
-        vendor_names = {EQUIPMENT_INTERNAL_TO_DISPLAY.get(n, n) for n in VENDOR_LOCATIONS.values()}
+        vendor_names = {vendor_location_name(EQUIPMENT_INTERNAL_TO_DISPLAY.get(n, n)) for n in VENDOR_LOCATIONS.values()}
         self.assertTrue(pickup_names <= set(ALL_LOCATIONS))
         self.assertTrue(vendor_names <= set(ALL_LOCATIONS))
 

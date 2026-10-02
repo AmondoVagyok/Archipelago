@@ -1,3 +1,4 @@
+from ..constants.vendor import vendor_location_name
 import unittest
 
 from ..constants.planets import CASE_NAME_TO_PLANET
@@ -18,7 +19,7 @@ class LocationRecordTests(unittest.TestCase):
         from ..constants.vendor import VENDOR_WEAPONS
         from ..constants.weapon_mods import CHALLENGE_MOD_IDS, WEAPON_MODS
         from ..locations import BASE_VENDOR_LOCATIONS, MOD_VENDOR_LOCATIONS
-        self.assertEqual(set(BASE_VENDOR_LOCATIONS), set(VENDOR_WEAPONS))
+        self.assertEqual(set(BASE_VENDOR_LOCATIONS), {vendor_location_name(name) for name in VENDOR_WEAPONS})
         self.assertFalse(set(BASE_VENDOR_LOCATIONS) & {loc.name for loc in CASE_LOCATIONS})
         for mod in WEAPON_MODS:
             self.assertEqual(mod.location in MOD_VENDOR_LOCATIONS, mod.mod_id not in CHALLENGE_MOD_IDS)

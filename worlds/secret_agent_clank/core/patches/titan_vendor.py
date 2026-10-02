@@ -94,6 +94,9 @@ class TitanVendor(PatchSet):
         self.table = table
         hooks.tables["titan"] = table
         hooks.locations["titan"] = mapping
+        # Only the native offer builder calls this reader. The AP catalog
+        # replaces those call sites, so it can reclaim the reader afterwards.
+        hooks.catalog_only_ranges.append((reader, recorder))
         self.patches = edits
         return edits
 

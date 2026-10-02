@@ -18,10 +18,7 @@ from .constants.clank_gadgets import SACClankGadgets
 from .constants.ratchet_challenges import RATCHET_CHALLENGES
 from .constants.weapon_mods import enabled_mods
 from .constants.weapon_progression import TITAN_LOCATIONS
-from .constants.weapons import (
-    GADGET_INTERNAL_TO_DISPLAY,
-    RATCHET_WEAPON_INTERNAL_TO_DISPLAY,
-)
+from .constants.weapons import EQUIPMENT_INTERNAL_TO_DISPLAY
 from .entities import SACLocation
 from .locations import BASE_VENDOR_LOCATIONS, CASE_LOCATIONS, MOD_VENDOR_LOCATIONS, TITAN_VENDOR_LOCATIONS
 from .options import Goal
@@ -70,9 +67,8 @@ def create_regions(world: "SecretAgentClankWorld") -> None:
             vendor_region.locations.append(SACLocation(
                 player, mod.location, MOD_VENDOR_LOCATIONS[mod.location].code, vendor_region))
         if world.options.ng_plus.value:
-            internal_to_display = {**RATCHET_WEAPON_INTERNAL_TO_DISPLAY, **GADGET_INTERNAL_TO_DISPLAY}
             for internal, name in TITAN_LOCATIONS.items():
-                if enabled_item(internal_to_display[internal]):
+                if enabled_item(EQUIPMENT_INTERNAL_TO_DISPLAY[internal]):
                     vendor_region.locations.append(SACLocation(
                         player, name, TITAN_VENDOR_LOCATIONS[name].code, vendor_region))
         menu_region.connect(vendor_region)

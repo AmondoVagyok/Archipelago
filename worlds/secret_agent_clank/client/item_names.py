@@ -1,39 +1,41 @@
-"""Translate historical AP equipment names without reinterpreting numeric IDs."""
-from ..constants.weapons import EQUIPMENT_INTERNAL_TO_DISPLAY, CLANK_PICKUP_TO_INTERNAL
-from ..constants.weapon_progression import PROGRESSIVE_TO_INTERNAL
+"""Translate historical AP equipment names at the client boundary only."""
+from ..constants.weapons import EQUIPMENT_INTERNAL_TO_DISPLAY
+from ..constants.weapon_progression import UNLOCK_TO_PROGRESSIVE
 
-# Earlier seeds classified several Clank tools as Ratchet unlocks.
-LEGACY_EQUIPMENT_NAMES = {
-    f"Unlock: {character} {internal}": display
-    for internal, display in EQUIPMENT_INTERNAL_TO_DISPLAY.items()
-    for character in ("Ratchet", "Clank")
-}
-LEGACY_EQUIPMENT_NAMES.update({
-    "Kick Blast (Ratchet)": EQUIPMENT_INTERNAL_TO_DISPLAY["kickblast"],
-    "Agency PDA (Ratchet)": EQUIPMENT_INTERNAL_TO_DISPLAY["ratchetpda"],
-    "Bolt Transfer (Ratchet)": EQUIPMENT_INTERNAL_TO_DISPLAY["bolttransfer"],
-})
-LEGACY_EQUIPMENT_NAMES.update({
-    old: EQUIPMENT_INTERNAL_TO_DISPLAY[internal]
-    for old, internal in {
-        "Unlock: Clank Bowtie": "throwTie",
-        "Unlock: Clank Cufflink": "CuffLink",
-        "Unlock: Clank Tanglevine": "TangleVine",
-        "Unlock: Clank Flamethrower Briefcase": "FlamethrowerPen",
-        "Unlock: Clank HoloKnuckles": "HoloKnuckles",
-        "Unlock: Clank PDA": "clankpda",
-    }.items()
-})
-LEGACY_EQUIPMENT_NAMES.update({
-    name.rsplit(": ", 1)[-1]: name for name in CLANK_PICKUP_TO_INTERNAL
-})
-_PROGRESSIVE_BY_INTERNAL = {internal: name for name, internal in PROGRESSIVE_TO_INTERNAL.items()}
-LEGACY_EQUIPMENT_NAMES.update({
-    "Progressive: " + old.removeprefix("Unlock: "): _PROGRESSIVE_BY_INTERNAL[internal]
-    for old, current in list(LEGACY_EQUIPMENT_NAMES.items()) if old.startswith("Unlock: ")
-    for internal, display in EQUIPMENT_INTERNAL_TO_DISPLAY.items()
-    if display == current and internal in _PROGRESSIVE_BY_INTERNAL
-})
+
+def _legacy_equipment_names() -> dict[str, str]:
+    aliases: dict[str, str] = {}
+
+    def add_unlock(suffix: str, display: str) -> None:
+        aliases[f"Unlock: {suffix}"] = display
+        if display in UNLOCK_TO_PROGRESSIVE:
+            aliases[f"Progressive: {suffix}"] = UNLOCK_TO_PROGRESSIVE[display]
+
+    # Earlier seeds classified several Clank tools as Ratchet unlocks.
+    for internal, display in EQUIPMENT_INTERNAL_TO_DISPLAY.items():
+        for character in ("Ratchet", "Clank"):
+            add_unlock(f"{character} {internal}", display)
+
+    for old, internal in (
+        ("Kick Blast (Ratchet)", "kickblast"),
+        ("Agency PDA (Ratchet)", "ratchetpda"),
+        ("Bolt Transfer (Ratchet)", "bolttransfer"),
+    ):
+        aliases[old] = EQUIPMENT_INTERNAL_TO_DISPLAY[internal]
+
+    for old, internal in (
+        ("Bowtie", "throwTie"),
+        ("Cufflink", "CuffLink"),
+        ("Tanglevine", "TangleVine"),
+        ("Flamethrower Briefcase", "FlamethrowerPen"),
+        ("HoloKnuckles", "HoloKnuckles"),
+        ("PDA", "clankpda"),
+    ):
+        add_unlock(f"Clank {old}", EQUIPMENT_INTERNAL_TO_DISPLAY[internal])
+    return aliases
+
+
+LEGACY_EQUIPMENT_NAMES = _legacy_equipment_names()
 
 
 def canonical_item_name(server_name: str) -> str:

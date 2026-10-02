@@ -12,7 +12,7 @@ RYNO and Hot Foot 2.1 use Museum, the first vendor; the wiki gives only
 from .clank_gadgets import SACClankGadgets as G, SACClankWeapons as W
 from .weapons import SACRatchetWeapons as R
 from .planets import SACCases as C
-from .vendor import VENDOR_WEAPONS
+from .vendor import VENDOR_WEAPONS, vendor_location_name
 from .weapon_mods import VENDOR_MODS
 from .weapon_progression import TITAN_LOCATIONS
 from .weapons import EQUIPMENT_DISPLAY_TO_INTERNAL
@@ -51,11 +51,12 @@ VENDOR_CASES.update({
     G.BOLTGRABBER: C.GALACTIC_BOLT_RESERVE, W.SUPERKICK: C.BOLTAIRE_MUSEUM,
     R.KICKBLAST: C.VENANTONIO_LABS, W.KICKSPLOSION: C.BOLTAIRE_MUSEUM,
 })
+VENDOR_CASES = {vendor_location_name(name): case for name, case in VENDOR_CASES.items()}
 VENDOR_CASES.update({mod.location: MOD_CASES[mod.mod_id] for mod in VENDOR_MODS})
 VENDOR_CASES.update({name: WEAPON_CASES[internal] for internal, name in TITAN_LOCATIONS.items()})
 
 VENDOR_ROW_CASES = {
-    (0, WEAPON_ORDER.index(EQUIPMENT_DISPLAY_TO_INTERNAL[name])): VENDOR_CASES[name]
+    (0, WEAPON_ORDER.index(EQUIPMENT_DISPLAY_TO_INTERNAL[name])): VENDOR_CASES[vendor_location_name(name)]
     for name in VENDOR_WEAPONS
 }
 VENDOR_ROW_CASES.update({(3, mod.mod_id): MOD_CASES[mod.mod_id] for mod in VENDOR_MODS})

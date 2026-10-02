@@ -1,4 +1,4 @@
-"""Route completed missions to Case Files, including Ratchet's movie exit."""
+"""Return mission completion to the current level, including Ratchet movies."""
 from ...constants.native_functions import NativeFunctions as Functions
 from ..symbols import require
 from .asm import Patch, branch, jump, packed
@@ -9,7 +9,6 @@ class TravelLayout:
     HELPER_PROLOGUE = (0x27BDFFF0, 0xFFB00000, 0xFFBF0008)
     HELPER_DECISION_OFFSET = 0x14
     HELPER_DECISION = (0x0050102B, 0x14400010, 0x0200202D)
-    FORCED_TRAVEL_BRANCH = 0x18
     OPEN_MAP_CALL = 0x20
     MAP_SCREEN_ARGUMENT = 0x34
     MAP_SCREEN_INSTRUCTION = 0x2404000E
@@ -31,7 +30,8 @@ class MissionTravel(PatchSet):
         helper, map_ender = require(
             symbols, Functions.UPDATE_CHANGE_TO_LEVEL_OR_MAP_IF_ALREADY_COMPLETED,
             Functions.SCRNGALACTICMAP_SET_LEVEL_ENDER)
-        helper_patch = self._prepare_map_route(helper, map_ender)
+        change = require(symbols, Functions.UPDATE_CHANGE_TO_LEVEL)
+        helper_patch = self._prepare_current_level_route(helper, map_ender, change)
         arena_patches = self._prepare_arena_routes(symbols, helper)
         self.patches = [helper_patch, *arena_patches]
         return self.patches
@@ -41,7 +41,7 @@ class MissionTravel(PatchSet):
         if self.pine.read_bytes(address, len(expected)) != expected:
             raise RuntimeError(f"{label} layout changed at {address:#x}")
 
-    def _prepare_map_route(self, helper, map_ender):
+    def _prepare_current_level_route(self, helper, map_ender, change):
         layout = TravelLayout
         checks = (
             (0, layout.HELPER_PROLOGUE),
@@ -51,8 +51,13 @@ class MissionTravel(PatchSet):
         )
         for offset, expected in checks:
             self._expect(helper + offset, expected, "Mission-end travel")
-        return Patch(helper + layout.FORCED_TRAVEL_BRANCH,
-                     packed([layout.HELPER_DECISION[1]]), packed([0]))
+        # Tail-call the native reload with the resident current module, not the
+        # story destination passed by the caller or left by SetNextLevel.
+        # Do not call SetLevelEnder: its mandatory map exit can travel onward.
+        # The shared-module operative flags are left intact.
+        replacement = packed([0x3C040020, 0x8C846328,
+                              jump(change), 0x24050001])
+        return Patch(helper, self.pine.read_bytes(helper, len(replacement)), replacement)
 
     def _prepare_arena_routes(self, symbols, helper):
         update, exit_screen, next_level, set_next, change = require(

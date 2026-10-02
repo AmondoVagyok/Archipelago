@@ -6,6 +6,7 @@ from ..constants.clank_gadgets import SACClankGadgets
 from ..constants.missions import CHAPTER_ENTRIES
 from ..constants.operatives import SACOperatives
 from ..constants.planets import CASE_ID_TO_CASE, CASES_BY_OPERATIVE, SACCases
+from ..constants.vendor import vendor_location_name
 from ..constants.weapons import CLANK_PICKUP_TO_INTERNAL, EQUIPMENT_INTERNAL_TO_DISPLAY
 from .address_maps import BOLTS_ADDRESS, CHALLENGE_MODE_ADDRESS
 from .bolt_rewards import BoltRewards
@@ -419,7 +420,7 @@ class Core:
                 self.titanium_bolts.confirm(name)
 
         for name in self.vendor.poll_purchases():
-            name = EQUIPMENT_INTERNAL_TO_DISPLAY.get(name, name)
+            name = vendor_location_name(EQUIPMENT_INTERNAL_TO_DISPLAY.get(name, name))
             if name not in self._checked_items and self.send_location(name):
                 self._checked_items.add(name)
 

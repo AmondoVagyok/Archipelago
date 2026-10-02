@@ -59,52 +59,46 @@ class SACQwarkWeapons:
     GIANTQWARKBLASTER = "Giant Blaster (Qwark)"
 
 
-# Display name -> WEAPON_ORDER internal name (core/weapons.py) -- used by
-# core/core.py every tick to translate WeaponInventory.check()'s raw
-# results before send_location().
-RATCHET_WEAPON_DISPLAY_TO_INTERNAL: dict[str, str] = {
-    SACRatchetWeapons.SHOCKROCKET:       WEAPON_ORDER[WeaponSlot.SHOCKROCKET],
-    SACRatchetWeapons.PLASMAWHIP:        WEAPON_ORDER[WeaponSlot.PLASMAWHIP],
-    SACRatchetWeapons.PORKBOMB:          WEAPON_ORDER[WeaponSlot.PORKBOMB],
-    SACRatchetWeapons.KICKBLAST:         WEAPON_ORDER[WeaponSlot.KICKBLAST],
-    SACRatchetWeapons.BLASTER:           WEAPON_ORDER[WeaponSlot.BLASTER],
-    SACRatchetWeapons.SHARDGUN:          WEAPON_ORDER[WeaponSlot.SHARDGUN],
-    SACRatchetWeapons.BEEMINEGLOVE:      WEAPON_ORDER[WeaponSlot.BEEMINEGLOVE],
-    SACRatchetWeapons.WALLOPER:          WEAPON_ORDER[WeaponSlot.WALLOPER],
-    SACRatchetWeapons.MINELAUNCHER:      WEAPON_ORDER[WeaponSlot.MINELAUNCHER],
-    SACRatchetWeapons.RATCHETPDA:        WEAPON_ORDER[WeaponSlot.RATCHETPDA],
-    SACRatchetWeapons.BOLTTRANSFER:      WEAPON_ORDER[WeaponSlot.BOLTTRANSFER],
-    SACRatchetWeapons.RYNO:              WEAPON_ORDER[WeaponSlot.RYNO],
-}
-RATCHET_WEAPON_INTERNAL_TO_DISPLAY: dict[str, str] = {v: k for k, v in RATCHET_WEAPON_DISPLAY_TO_INTERNAL.items()}
+# Category order is also the historical AP item allocation order.
+RATCHET_WEAPONS: tuple[str, ...] = (
+    SACRatchetWeapons.SHOCKROCKET,
+    SACRatchetWeapons.PLASMAWHIP,
+    SACRatchetWeapons.PORKBOMB,
+    SACRatchetWeapons.KICKBLAST,
+    SACRatchetWeapons.BLASTER,
+    SACRatchetWeapons.SHARDGUN,
+    SACRatchetWeapons.BEEMINEGLOVE,
+    SACRatchetWeapons.WALLOPER,
+    SACRatchetWeapons.MINELAUNCHER,
+    SACRatchetWeapons.RATCHETPDA,
+    SACRatchetWeapons.BOLTTRANSFER,
+    SACRatchetWeapons.RYNO,
+)
+GADGETS_FROM_WEAPON_TABLE: tuple[str, ...] = (
+    SACClankGadgets.CLANKPDA,
+    SACClankGadgets.JETBOOTS,
+    SACClankGadgets.OMNIKEY,
+    SACClankGadgets.HYPNOWATCH,
+    SACClankGadgets.HOLOMONOCLE,
+    SACClankGadgets.BOLTGRABBER,
+    SACClankWeapons.THROWTIE,
+    SACClankWeapons.CUFFLINK,
+    SACClankWeapons.TANGLEVINE,
+    SACClankWeapons.FLAMETHROWERPEN,
+    SACClankWeapons.HOLOKNUCKLES,
+    SACClankWeapons.SUPERKICK,
+    SACClankWeapons.LIGHTNINGUMBRELLA,
+    SACClankWeapons.KICKSPLOSION,
+)
 
-# WEAPON_ORDER-struct half of Clank's items (constants/clank_gadgets.py) --
-# both SACClankGadgets (lock/unlock-only) and SACClankWeapons (has
-# progression) combined, since world.py only needs to know "is this
-# WEAPON_ORDER slot Clank's", not which of the two naming classes it's in.
-GADGET_DISPLAY_TO_INTERNAL: dict[str, str] = {
-    SACClankGadgets.CLANKPDA:        WEAPON_ORDER[WeaponSlot.CLANKPDA],
-    SACClankGadgets.JETBOOTS:        WEAPON_ORDER[WeaponSlot.JETBOOTS],
-    SACClankGadgets.OMNIKEY:         WEAPON_ORDER[WeaponSlot.OMNIKEY],
-    SACClankGadgets.HYPNOWATCH:      WEAPON_ORDER[WeaponSlot.HYPNOWATCH],
-    SACClankGadgets.HOLOMONOCLE:     WEAPON_ORDER[WeaponSlot.HOLOMONOCLE],
-    SACClankGadgets.BOLTGRABBER:     WEAPON_ORDER[WeaponSlot.BOLTGRABBER],
-    SACClankWeapons.THROWTIE:          WEAPON_ORDER[WeaponSlot.THROWTIE],
-    SACClankWeapons.CUFFLINK:          WEAPON_ORDER[WeaponSlot.CUFFLINK],
-    SACClankWeapons.TANGLEVINE:        WEAPON_ORDER[WeaponSlot.TANGLEVINE],
-    SACClankWeapons.FLAMETHROWERPEN:   WEAPON_ORDER[WeaponSlot.FLAMETHROWERPEN],
-    SACClankWeapons.HOLOKNUCKLES:      WEAPON_ORDER[WeaponSlot.HOLOKNUCKLES],
-    SACClankWeapons.SUPERKICK:         WEAPON_ORDER[WeaponSlot.SUPERKICK],
-    SACClankWeapons.LIGHTNINGUMBRELLA: WEAPON_ORDER[WeaponSlot.LIGHTNINGUMBRELLA],
-    SACClankWeapons.KICKSPLOSION:      WEAPON_ORDER[WeaponSlot.KICKSPLOSION],
-}
-GADGET_INTERNAL_TO_DISPLAY: dict[str, str] = {v: k for k, v in GADGET_DISPLAY_TO_INTERNAL.items()}
-
-# Both characters use the native GadgetData array. Keep AP names independent
-# of its internal slot names; the pen and shades retain separate pickup IDs.
-EQUIPMENT_DISPLAY_TO_INTERNAL = {
-    **RATCHET_WEAPON_DISPLAY_TO_INTERNAL,
-    **GADGET_DISPLAY_TO_INTERNAL,
+# One shared native equipment lookup, with its reverse for runtime checks.
+# Attribute names match WeaponSlot, so no parallel hand-maintained slot map
+# is needed. The positional pen/shades pickups remain separate below.
+EQUIPMENT_DISPLAY_TO_INTERNAL: dict[str, str] = {
+    display: WEAPON_ORDER[WeaponSlot[attr]]
+    for cls in (SACRatchetWeapons, SACClankGadgets, SACClankWeapons)
+    for attr, display in vars(cls).items()
+    if display in (*RATCHET_WEAPONS, *GADGETS_FROM_WEAPON_TABLE)
 }
 EQUIPMENT_INTERNAL_TO_DISPLAY = {
     internal: display for display, internal in EQUIPMENT_DISPLAY_TO_INTERNAL.items()
@@ -114,10 +108,6 @@ CLANK_PICKUP_TO_INTERNAL = {
     SACClankGadgets.THERM_OPTIC_SHADES: "sunglasses",
 }
 
-
-# Flat tuples for items/__init__.py's _table().
-RATCHET_WEAPONS: tuple[str, ...] = tuple(RATCHET_WEAPON_DISPLAY_TO_INTERNAL)
-GADGETS_FROM_WEAPON_TABLE: tuple[str, ...] = tuple(GADGET_DISPLAY_TO_INTERNAL)
 
 # Mapping of each SACRatchetWeapons entry to the SACCases case its AP
 # location lives in.

@@ -12,22 +12,17 @@ NANOTECH_LOCATIONS = {
 
 def create_nanotech_locations(world, menu_region):
     from BaseClasses import Region
-    from rule_builder.rules import CanReachRegion, False_
-    from ..constants import CASES_BY_OPERATIVE, SACOperatives
+    from ..constants import SACOperatives
     from ..entities import SACLocation as Location
+    from ..rules.nanotech import nanotech_access_rule
 
     if not world.options.nanotech_checks or SACOperatives.CLANK not in world.options.operatives.value:
         return
     region = Region("Clank Nanotech", world.player, world.multiworld)
-    existing = {r.name for r in world.multiworld.get_regions(world.player)}
-    access = False_()
-    for case in CASES_BY_OPERATIVE[SACOperatives.CLANK]:
-        if case.name in existing:
-            access = access | CanReachRegion(case.name)
     for level in nanotech_levels(world.options.ng_plus.value):
         definition = NANOTECH_LOCATIONS[nanotech_location_name(level)]
         location = Location(world.player, definition.name, definition.code, region)
-        world.set_rule(location, access)
+        world.set_rule(location, nanotech_access_rule(world, level))
         region.locations.append(location)
     menu_region.connect(region)
     world.multiworld.regions.append(region)

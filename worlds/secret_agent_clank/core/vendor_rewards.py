@@ -55,8 +55,14 @@ class VendorRewards:
             pointer, count, selected = header
             rows = self.vendor.read_items()
             rewards = [(row, self.scouts.for_row(row)) for row in rows]
-            if any(row.icon == self.icon.ICON_ID or reward is not None
-                   for row, reward in rewards) and not self.icon.installed:
+            ap_rows = any(row.node_type in (0, 3, 4) for row in rows)
+            if not ap_rows and self.icon.installed:
+                # Ammo uses real weapon art, including the Shock Rocket
+                # texture borrowed for the AP logo on the purchase tab.
+                self.icon.restore()
+                self.rows.clear()
+            if ap_rows and any(row.icon == self.icon.ICON_ID or reward is not None
+                               for row, reward in rewards) and not self.icon.installed:
                 self.icon.prepare(symbols, indices=self.indices, palette=self.palette, selected_only=False)
                 self.icon.apply()
             if self.vendor._native_header() != header:

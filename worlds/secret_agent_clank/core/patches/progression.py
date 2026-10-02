@@ -6,6 +6,7 @@ from ...constants.nanotech import (CLANK_START_NANOTECH, CLANK_XP_SAVE_OFFSET,
     CLANK_XP_THRESHOLDS, nanotech_levels, nanotech_location_name)
 from collections import Counter
 
+from ...constants.challenge_mode import PROGRESSIVE_CHALLENGE_MODE
 from ...constants.native_functions import NativeFunctions
 from ...constants.weapon_progression import (
     LEVELLED_INTERNALS, PROGRESSIVE_TO_INTERNAL, TITAN_LOCATIONS,
@@ -15,10 +16,11 @@ from ..inventories.weapons import WEAPON_ORDER
 from ..symbols import require
 from .asm import Patch, jump, packed
 from .gain_storage import GainStorage
+from .storage import free_blocks, plan_storage
 from .patch import PatchSet
 from .titan_vendor import TitanPrice
 from .mips import (A0, T0, T1, T2, V0, ZERO, RA, addiu, addu, beq, jr,
-                   lbu, li32, lw, sll, sltiu, sltu, sub_)
+                   lbu, li32, lui, lw, sll, sltiu, sltu)
 
 
 class Progression(PatchSet):
@@ -26,10 +28,17 @@ class Progression(PatchSet):
     def gain_wrapper(target, original, register, multiplier):
         # Preserve nonpositive adjustments (e.g. deductions). v1 and HI/LO are
         # caller-saved; original prologues below do not consume their old values.
+        first, second = struct.unpack("<2I", original)
+        if multiplier > 0 and multiplier & (multiplier - 1) == 0:
+            # The verified stack adjustment is safe on both paths. A shift
+            # replaces loading the multiplier and using HI/LO.
+            return packed([0x18000002 | (register << 21), first,
+                           sll(register, register, multiplier.bit_length() - 1),
+                           second, jump(target + 8), 0])
         return packed([0x18000003 | (register << 21), 0x24030000 | multiplier,
                        (register << 21) | (3 << 16) | 0x18,
                        (register << 11) | 0x12,
-                       *struct.unpack("<2I", original), jump(target + 8), 0])
+                       first, jump(target + 8), second])
 
     def __init__(self, pine):
         super().__init__(pine)
@@ -40,6 +49,8 @@ class Progression(PatchSet):
         self.nanotech_checks_enabled = False
         self.cap_address = None
         self.ng_plus = 0
+        self.max_challenge_mode = 0
+        self.progressive_challenge_mode = False
         self.weapon_xp = self.health_xp = self.bolts = 1
         self.levels = {}
         self.base = None
@@ -60,9 +71,11 @@ class Progression(PatchSet):
         if self.check_mode not in range(5):
             raise ValueError("weapon_level_checks must be between 0 and 4")
         self.nanotech_checks_enabled = bool(data.get("nanotech_checks", False))
-        self.ng_plus = int(data.get("ng_plus", 0))
-        if self.ng_plus not in (0, 1, 2):
+        self.max_challenge_mode = int(data.get("ng_plus", 0))
+        if self.max_challenge_mode not in (0, 1, 2):
             raise ValueError("ng_plus must be between 0 and 2")
+        self.progressive_challenge_mode = bool(data.get("progressive_challenge_mode", False))
+        self.ng_plus = 0 if self.progressive_challenge_mode else self.max_challenge_mode
         for attr, key in (("weapon_xp", "weapon_xp_multiplier"), ("health_xp", "health_xp_multiplier"), ("bolts", "bolt_multiplier")):
             value = int(data.get(key, 1))
             if not 1 <= value <= 10:
@@ -71,6 +84,8 @@ class Progression(PatchSet):
 
     def receive(self, names):
         counts = Counter(names)
+        if self.progressive_challenge_mode:
+            self.ng_plus = min(counts[PROGRESSIVE_CHALLENGE_MODE], self.max_challenge_mode)
         self.levels = {internal: min(counts[name], max_level(internal, self.ng_plus))
                        for name, internal in PROGRESSIVE_TO_INTERNAL.items()} if self.enabled else {}
 
@@ -78,24 +93,22 @@ class Progression(PatchSet):
         return {name: level > 0 for name, level in self.levels.items()}
 
     @staticmethod
-    def manual_xp_wrapper(base, caps, target, original, multiplier):
-        """GADGET_GetsXP(unsigned gadget index, unsigned XP, bool): stop at cap.
-
-        The cap table is updated on sync, so another AP copy resumes native XP
-        without reinstalling code. Only caller-saved registers are scratched.
-        """
-        words = [sltiu(T0, A0, len(WEAPON_ORDER)), 0, 0,
+    def manual_xp_guard(base, caps, tail, allocate):
+        """Two small guard blocks fit verified stubs without a 120-byte arena."""
+        # Select the native XP tail or the caller return with MOVZ.
+        # The shared return delay slot sets the ignored/blocked result to zero.
+        continuation = allocate(packed([
+                 lui(T1, (base + 0x5C + 0x8000) >> 16), addu(T0, T0, T1),
+                 lw(T1, (base + 0x5C) & 0xFFFF, T0),
+                 addiu(T1, T1, 1), sltu(T0, T1, T2),
+                 *li32(T1, tail), (RA << 21) | (T0 << 16) | (T1 << 11) | 0x0A,
+                 jr(T1), addu(V0, ZERO, ZERO)]))
+        return packed([sltiu(T0, A0, len(WEAPON_ORDER)), beq(T0, ZERO, 9),
                  *li32(T0, caps), addu(T0, T0, A0), lbu(T2, 0, T0),
-                 sll(T0, A0, 7), sll(T1, A0, 3), sub_(T0, T0, T1),
-                 sll(T1, A0, 2), sub_(T0, T0, T1),
-                 *li32(T1, base), addu(T0, T0, T1), lw(T1, 0x5C, T0),
-                 addiu(T1, T1, 1), sltu(T0, T1, T2), 0, 0]
-        tail = (Progression.gain_wrapper(target, original, 5, multiplier)
-                if multiplier != 1 else original + packed([jump(target + 8), 0]))
-        stop = len(words) + len(tail) // 4
-        words[1] = beq(T0, ZERO, stop - 2)
-        words[18] = beq(T0, ZERO, stop - 19)
-        return packed(words) + tail + packed([jr(RA), addu(V0, ZERO, ZERO)])
+                 addiu(T1, ZERO, 0x74),
+                 (A0 << 21) | (T1 << 16) | 0x19,  # multu a0,t1
+                 (T0 << 11) | 0x12,  # mflo t0; only caller-saved HI/LO change
+                 jump(continuation), 0, jr(RA), addu(V0, ZERO, ZERO)])
 
     def level_checks(self):
         if not self.check_mode or self.base is None:
@@ -158,7 +171,7 @@ class Progression(PatchSet):
                     raise RuntimeError("Clank nanotech XP save layout changed")
             if require(symbols, "pGV") != pointer:
                 raise RuntimeError("Clank nanotech save pointer changed")
-        if self.enabled or self.ng_plus:
+        if self.enabled or self.max_challenge_mode:
             if self.base is None:
                 raise RuntimeError("Missing native gadget list")
             get = require(symbols, NativeFunctions.GADGET_GET_CURRENT_POWER_LEVEL)
@@ -172,7 +185,7 @@ class Progression(PatchSet):
         if buy is not None:
             ranges.append((buy + 0x1FC, buy + 0x338))
         edits = []
-        if (self.enabled and not self.manual) or (module == 31 and self.ng_plus):
+        if (self.enabled and not self.manual) or (module == 31 and self.max_challenge_mode):
             xp = require(symbols, NativeFunctions.GADGET_GETS_XP)
             if p.read_bytes(xp, 8) != packed([0x27BDFFB0, 0xFFB30028]):
                 raise RuntimeError("Weapon XP entry changed")
@@ -180,64 +193,89 @@ class Progression(PatchSet):
             # AP tiers bypass XP. Treehouse has no combat XP sources and
             # also lends this body to its NG+ vendor hook storage.
             ranges.append((xp + 8, xp + 0x170))
-        extra_storage = bool(getattr(hooks, "extra_ranges", ()))
-        def allocate(data):
-            nonlocal extra_storage
-            occupied = [(x.address, x.address + len(x.replacement)) for x in hooks.patches + edits]
-            for start, end in ranges:
-                for address in range(start, end - len(data) + 1, 4):
-                    if all(address + len(data) <= a or address >= b for a, b in occupied):
-                        edits.append(Patch(address, p.read_bytes(address, len(data)), data))
-                        return address
-            if not extra_storage:
-                guards, extra_ranges = GainStorage(p).prepare(symbols)
-                edits.extend(guards)
-                ranges.extend(extra_ranges)
-                extra_storage = True
-                return allocate(data)
-            raise RuntimeError(
-                f"Insufficient verified hook storage for gain multipliers "
-                f"(module {module}, requested {len(data)} bytes, "
-                f"weapon XP {self.weapon_xp}, health XP {self.health_xp}, "
-                f"bolts {self.bolts}, NG+ {self.ng_plus}, vendor {vendor_enabled})")
-        if vendor_enabled:
-            edits.extend(TitanPrice(p).prepare(symbols, allocate))
-        if self.manual and module != 31:
-            xp = require(symbols, NativeFunctions.GADGET_GETS_XP)
-            original = p.read_bytes(xp, 8)
-            if original != packed([0x27BDFFB0, 0xFFB30028]):
-                raise RuntimeError("Weapon XP entry changed")
-            self.cap_address = allocate(bytes(len(WEAPON_ORDER)))
-            wrapper = self.manual_xp_wrapper(self.base, self.cap_address, xp, original, self.weapon_xp)
-            address = allocate(wrapper)
-            edits.append(Patch(xp, original, packed([jump(address), 0])))
-        targets = [(NativeFunctions.PLAYER_GRANT_BOLTS, self.bolts, 4, 0x27BDFFF0, 0xFFB00000)]
-        # Treehouse has no combat XP sources. Its small vendor-only arena
-        # needs only the bolt handler for any environmental bolt gains.
-        if module != 31:
-            targets.append((NativeFunctions.GLOBALVARS_ADD_EXPERIENCE, self.health_xp, 4, 0x27BDFFE0, None))
-            if not self.enabled:
-                targets.append((NativeFunctions.GADGET_GETS_XP, self.weapon_xp, 5, 0x27BDFFB0, 0xFFB30028))
-        for name, multiplier, register, first, second in targets:
-            if multiplier == 1:
-                continue
-            target = require(symbols, name)
-            original = p.read_bytes(target, 8)
-            a, b = struct.unpack("<2I", original)
-            if a != first or (b != second if second is not None else b & 0xFFFF0000 != 0x3C020000):
-                raise RuntimeError(f"Gain routine changed: {name}")
-            address = allocate(self.gain_wrapper(target, original, register, multiplier))
-            edits.append(Patch(target, original, packed([jump(address), 0])))
-        if self.stealth is not None:
-            from ...constants.native_modules import CASE_MODULES
-            from ...constants import CASES_BY_OPERATIVE, SACOperatives
-            # Shared DLLs can contain Clank code even on another operative's
-            # route. Only the Clank success call is intercepted, never generic kills.
-            clank_modules = {CASE_MODULES[case.name] for case in CASES_BY_OPERATIVE[SACOperatives.CLANK]}
-            if module in clank_modules:
-                edits.extend(self.stealth.prepare(symbols, allocate))
-            else:
+        base_edits = list(edits)
+
+        def build(allocate):
+            if vendor_enabled:
+                edits.extend(TitanPrice(p).prepare(symbols, allocate))
+            if self.manual and module != 31:
+                xp = require(symbols, NativeFunctions.GADGET_GETS_XP)
+                original = p.read_bytes(xp, 8)
+                if original != packed([0x27BDFFB0, 0xFFB30028]):
+                    raise RuntimeError("Weapon XP entry changed")
+                self.cap_address = allocate(bytes(len(WEAPON_ORDER)))
+                tail = (self.gain_wrapper(xp, original, 5, self.weapon_xp)
+                        if self.weapon_xp != 1 else original + packed([jump(xp + 8), 0]))
+                wrapper = self.manual_xp_guard(self.base, self.cap_address, allocate(tail), allocate)
+                address = allocate(wrapper)
+                edits.append(Patch(xp, original, packed([jump(address), 0])))
+            targets = [(NativeFunctions.PLAYER_GRANT_BOLTS, self.bolts, 4, 0x27BDFFF0, 0xFFB00000)]
+            # Treehouse has no combat XP sources. Its small vendor-only arena
+            # needs only the bolt handler for any environmental bolt gains.
+            if module != 31:
+                targets.append((NativeFunctions.GLOBALVARS_ADD_EXPERIENCE, self.health_xp, 4, 0x27BDFFE0, None))
+                if not self.enabled:
+                    targets.append((NativeFunctions.GADGET_GETS_XP, self.weapon_xp, 5, 0x27BDFFB0, 0xFFB30028))
+            for name, multiplier, register, first, second in targets:
+                if multiplier == 1:
+                    continue
+                target = require(symbols, name)
+                original = p.read_bytes(target, 8)
+                a, b = struct.unpack("<2I", original)
+                if a != first or (b != second if second is not None else b & 0xFFFF0000 != 0x3C020000):
+                    raise RuntimeError(f"Gain routine changed: {name}")
+                address = allocate(self.gain_wrapper(target, original, register, multiplier))
+                edits.append(Patch(target, original, packed([jump(address), 0])))
+            if self.stealth is not None:
+                from ...constants.native_modules import CASE_MODULES
+                from ...constants import CASES_BY_OPERATIVE, SACOperatives
+                # Shared DLLs can contain Clank code even on another operative's
+                # route. Only the Clank success call is intercepted, never generic kills.
+                clank_modules = {CASE_MODULES[case.name] for case in CASES_BY_OPERATIVE[SACOperatives.CLANK]}
+                if module in clank_modules:
+                    edits.extend(self.stealth.prepare(symbols, allocate))
+                else:
+                    self.stealth.binding = None
+
+        # First measure all code and data, including stealth. Placeholder
+        # addresses are used only to encode fixed-size instructions; no RAM
+        # reads or writes are made through them. Rebuild with final addresses.
+        sizes = []
+        def measure(data):
+            sizes.append(len(data))
+            return 0
+        build(measure)
+        occupied = hooks.patches + edits
+        addresses = plan_storage(ranges, occupied, sizes)
+        if addresses is None and not getattr(hooks, "gain_storage_prepared", False):
+            guards, extra_ranges = GainStorage(p).prepare(symbols)
+            base_edits.extend(guards)
+            occupied += guards
+            ranges.extend(extra_ranges)
+            addresses = plan_storage(ranges, occupied, sizes)
+        if addresses is None:
+            self.cap_address = None
+            if self.stealth is not None:
                 self.stealth.binding = None
+            available = [end - start for start, end in free_blocks(ranges, occupied)]
+            raise RuntimeError(
+                f"Insufficient verified storage for complete native hook plan "
+                f"(module {module}, requests {sizes}, total {sum(sizes)} bytes; "
+                f"free {sum(available)} bytes, largest block {max(available, default=0)} bytes, "
+                f"blocks {available})")
+        edits = base_edits
+        index = 0
+        def allocate(data):
+            nonlocal index
+            if index >= len(sizes) or len(data) != sizes[index]:
+                raise RuntimeError("Native hook size changed between planning and encoding")
+            address = addresses[index]
+            index += 1
+            edits.append(Patch(address, p.read_bytes(address, len(data)), data))
+            return address
+        build(allocate)
+        if index != len(sizes):
+            raise RuntimeError("Native hook requests changed between planning and encoding")
         self.patches = edits
         return edits
 

@@ -71,6 +71,11 @@ class ConnectionWarning:
                 raise RuntimeError("Connection warning storage is occupied")
         self.entry, self.heartbeat = entry, heartbeat
         self.code = code
+        # The entire no-op body was verified above. Publish only its remaining
+        # tail, after the complete warning code, heartbeat, and message.
+        free_start = (entry + len(payload) + 3) & ~3
+        if free_start < storage + len(native):
+            hooks.extra_ranges.append((free_start, storage + len(native)))
         return edits
 
     def refresh(self, connected):

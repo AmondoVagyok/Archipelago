@@ -146,8 +146,6 @@ class StealthTests(unittest.TestCase):
                     mem = CaptureMemory()
                     mem.data[:] = raw
                     module = mem.read_int32(0x206328)
-                    if module == 11 and mode == 1:
-                        self.skipTest("Existing module 11 manual-progression plan exhausts storage even without stealth")
                     hooks = LocationHooks(mem)
                     hooks.prepare(symbols, pickup_locations=PICKUP_LOCATIONS,
                                   vendor_locations=VENDOR_LOCATIONS, entitlements={})
@@ -167,8 +165,8 @@ class StealthTests(unittest.TestCase):
                     prog.stealth = StealthState(mem)
                     prog.stealth.configure(3)
                     prog.stealth.load(0)
-                    hooks.patches.extend(prog.prepare(symbols, hooks, module))
                     hooks.patches.extend(VendorCatalog(mem).prepare(symbols, hooks))
+                    hooks.patches.extend(prog.prepare(symbols, hooks, module))
                     hooks.patches.extend(VendorPresentation(mem).prepare(symbols, hooks))
                     # The pre-existing ConnectionWarning prologue signature
                     # does not match these captures (second word is LUI).

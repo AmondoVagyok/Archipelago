@@ -104,6 +104,19 @@ class WeaponLevelTests(unittest.TestCase):
         state.collect(world.create_item(CASE_NAME_TO_INFOBOT[SACCases.VENANTONIO_LABS]), prevent_sweep=True)
         self.assertTrue(location.can_reach(state))
 
+    def test_clank_levels_need_enemy_access(self):
+        m = setup_multiworld(SecretAgentClankWorld, options={"weapon_level_checks": "all"})
+        world = m.worlds[1]
+        state = CollectionState(m)
+        state.prog_items[1].clear()
+        state.stale[1] = True
+        state.collect(world.create_item("Cufflink Bomb (Clank)"), prevent_sweep=True)
+        state.collect(world.create_item(CASE_NAME_TO_INFOBOT[SACCases.KLUNKS_LAIR]), prevent_sweep=True)
+        location = m.get_location(level_location_name("CuffLink", 2), 1)
+        self.assertFalse(location.can_reach(state))
+        state.collect(world.create_item(CASE_NAME_TO_INFOBOT[SACCases.BOLTAIRE_MUSEUM]), prevent_sweep=True)
+        self.assertTrue(location.can_reach(state))
+
     def test_case_access_and_required_copies(self):
         for mode in ("off", "manual", "automatic"):
             m = setup_multiworld(SecretAgentClankWorld, options={
@@ -185,7 +198,13 @@ class WeaponLevelTests(unittest.TestCase):
                 memory.write_bytes(caps, bytes([cap] * len(WEAPON_ORDER)))
                 memory.batch_write_int32([(base + slot * 0x74 + 0x5C, native_level)])
                 original = struct.pack("<2I", 0x27BDFFB0, 0xFFB30028)
-                memory.write_bytes(wrapper, Progression.manual_xp_wrapper(base, caps, xp, original, 1))
+                tail, continuation = 0x150000, 0x160000
+                from ..core.patches.asm import jump, packed
+                memory.write_bytes(tail, original + packed([jump(xp + 8), 0]))
+                def allocate(code):
+                    memory.write_bytes(continuation, code)
+                    return continuation
+                memory.write_bytes(wrapper, Progression.manual_xp_guard(base, caps, tail, allocate))
                 cpu = CPU(memory)
                 cpu.r[29] = 0x700000
                 cpu.r[4:7] = [slot, 50, 1]

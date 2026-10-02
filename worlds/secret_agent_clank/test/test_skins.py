@@ -1,4 +1,5 @@
 import unittest
+import struct
 from pathlib import Path
 
 from ..constants.skins import (ALL_SKINS_MASK, CLANK_SKINS, QWARK_SKINS, RATCHET_SKINS,
@@ -24,6 +25,38 @@ class SkinMemory(Memory):
 
 
 class SkinTests(unittest.TestCase):
+    def test_retail_disabled_skin_audit(self):
+        captures = list((Path(__file__).parents[1] / ".research").glob("*.ram"))
+        if not captures:
+            self.skipTest("Local retail research captures not present")
+        audited = 0
+        for capture in captures:
+            p = SkinMemory()
+            p.data[:] = capture.read_bytes()
+            symbols = RuntimeSymbols.parse(p.data[:0x1000000], 0)
+            address = symbols.get("IsSkinUnlocked__F12SPHeroSkinId")
+            if address is None:
+                continue
+            # Grant every prerequisite through call stubs, without changing
+            # retail control flow. Only deliberately unavailable skins should
+            # still return false; story/NG+/code locks are not missing assets.
+            words = struct.unpack("<62I", p.read_bytes(address, 0xF8))
+            def prerequisite_met(cpu):
+                cpu.r[2] = 1
+            stubs = {(word & 0x3FFFFFF) << 2: prerequisite_met
+                     for word in words if word >> 26 == 3}
+            disabled = set()
+            for skin in range(1, 26):
+                cpu = CPU(p)
+                cpu.r[4] = skin
+                cpu.run(address, stubs=stubs)
+                if not cpu.r[2]:
+                    disabled.add(skin)
+            with self.subTest(capture=capture.name):
+                self.assertEqual(disabled, {7})
+            audited += 1
+        self.assertGreater(audited, 0, "No retail skin predicates were audited")
+
     def fixture(self):
         p = SkinMemory()
         skins = Skins(p)
@@ -92,6 +125,45 @@ class SkinTests(unittest.TestCase):
             skins.configure({"clank_skin": 17})
             skins.sync()
             self.assertEqual(p.read_int8(slot), choice)
+
+    def test_legacy_robo_ratchet_slot_data_uses_prison_scrubs(self):
+        p, skins = self.fixture()
+        skins.configure({"ratchet_skin": 7})
+        skins.sync()
+        self.assertEqual(p.read_int8(0x200000 + SKIN_SAVE_OFFSET), 1)
+        self.assertNotIn("robo_ratchet", RatchetSkin.options)
+        self.assertEqual(ALL_SKINS_MASK & (1 << 7), 0)
+
+    def test_sync_repairs_robo_ratchet_even_on_initialized_saves(self):
+        p, skins = self.fixture()
+        p.write_int32(0x200000 + SKIN_OWNED_OFFSET, 0xFFFFFFFE)
+        p.write_int8(0x200000 + SKIN_SAVE_OFFSET, 7)
+        p.writes.clear()
+        skins.sync()
+        self.assertEqual(p.writes, [(0x200000 + SKIN_SAVE_OFFSET, 1)])
+
+    def test_native_predicate_hides_only_unsupported_robo_ratchet(self):
+        p, skins, symbols = self.native_fixture()
+        for edit in skins.prepare(symbols):
+            p.write_bytes(edit.address, edit.replacement)
+        for skin in range(1, 26):
+            cpu = CPU(p)
+            cpu.r[4] = skin
+            cpu.run(symbols["IsSkinUnlocked__F12SPHeroSkinId"])
+            self.assertEqual(cpu.r[2], int(skin != 7))
+
+    def test_native_loader_repairs_robo_ratchet_before_model_swap(self):
+        for owned in (0, 0xFFFFFFFE):
+            p, skins, symbols = self.native_fixture()
+            for edit in skins.prepare(symbols):
+                p.write_bytes(edit.address, edit.replacement)
+            p.write_int32(0x200000 + SKIN_OWNED_OFFSET, owned)
+            p.write_int8(0x200000 + SKIN_SAVE_OFFSET, 7)
+            cpu = CPU(p)
+            cpu.r[3] = 0x200000 + SKIN_SAVE_OFFSET - 0x1900
+            cpu.run(0x123038, stop=0x123040)
+            self.assertEqual(cpu.r[3], 1)
+            self.assertEqual(p.read_int8(0x200000 + SKIN_SAVE_OFFSET), 1)
 
     def native_fixture(self):
         p, skins = self.fixture()
@@ -168,6 +240,12 @@ class SkinTests(unittest.TestCase):
             symbols = RuntimeSymbols.parse(p.data[:0x1000000], 0)
             if "IsSkinUnlocked__F12SPHeroSkinId" not in symbols:
                 continue
+            # Retail explicitly hides ID 7; AP must not expose unavailable
+            # assets simply because their names exist in the menu tables.
+            cpu = CPU(p)
+            cpu.r[4] = 7
+            cpu.run(symbols["IsSkinUnlocked__F12SPHeroSkinId"])
+            self.assertEqual(cpu.r[2], 0)
             for selected in ({}, {"ratchet_skin": 10, "clank_skin": 17, "qwark_skin": 21}):
                 with self.subTest(capture=capture.name, selected=selected):
                     p.data[:] = capture.read_bytes()
