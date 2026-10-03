@@ -137,10 +137,10 @@ _RAW_RATCHET_CHALLENGES: tuple[CaseStructure, ...] = (
 @dataclass(frozen=True)
 class SACRatchetChallengeLocations:
     PRISON_BREAKOUT_CATCH_AS_CATCH_CAN = "Prison Planet (Ratchet) - Prison Breakout!: Catch-as-Catch-Can"
-    PRISON_BREAKOUT_AMOEBOID_ON_A_POLE = "Prison Planet (Ratchet) -  Prison Breakout!: Amoeboid on a Pole"
-    PRISON_BREAKOUT_IRON_MAN = "Prison Planet (Ratchet) -  Prison Breakout!: Iron Man"
-    PRISON_BREAKOUT_TRIPLE_THREAT = "Prison Planet (Ratchet) -  Prison Breakout!: Triple Threat"
-    PRISON_BREAKOUT_MEGA_CHALLENGE_BATTLE_ROYAL = "Prison Planet (Ratchet) -  Prison Breakout!: Mega Challenge: Battle Royal"
+    PRISON_BREAKOUT_AMOEBOID_ON_A_POLE = "Prison Planet (Ratchet) - Prison Breakout!: Amoeboid on a Pole"
+    PRISON_BREAKOUT_IRON_MAN = "Prison Planet (Ratchet) - Prison Breakout!: Iron Man"
+    PRISON_BREAKOUT_TRIPLE_THREAT = "Prison Planet (Ratchet) - Prison Breakout!: Triple Threat"
+    PRISON_BREAKOUT_MEGA_CHALLENGE_BATTLE_ROYAL = "Prison Planet (Ratchet) - Prison Breakout!: Mega Challenge: Battle Royal"
     THE_EXERCISE_YARD_LAST_ONE_PICKED_FOR_DODGEBALL = "Prison Planet (Ratchet) - The Exercise Yard: Last One Picked For Dodgeball"
     THE_EXERCISE_YARD_STEEL_IS_STEEL = "Prison Planet (Ratchet) - The Exercise Yard: Steel Is Steel"
     THE_EXERCISE_YARD_PUMPING_IRON_MOLTEN_IRON = "Prison Planet (Ratchet) - The Exercise Yard: Pumping Iron. Molten Iron."

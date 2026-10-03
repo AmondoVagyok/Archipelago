@@ -20,16 +20,9 @@ TITANIUM_BOLT_CASES = {
     25: (SACCases.PRISON_BREAKOUT, 1),
     29: (SACCases.UNDERWATER_BUNKER, 1),
 }
-# (module, index) -> the bolt's in-game hint. Unlisted bolts are named by index.
-TITANIUM_BOLT_DESCRIPTIONS: dict[tuple[int, int], str] = {
-    (1, 1): "JetBoot around the pillar",
-    (1, 2): "Jump over the railings",
-    (3, 1): "Complete Mega Challenge",
-    (4, 1): "1 - Inside The Air Duct",
-}
-
+# AP names come from SACTitaniumBoltLocations below, paired in this (module, index) order.
 _RAW_TITANIUM_BOLT_ENTRIES = {
-    (module, index): CaseStructure(case, TITANIUM_BOLT_DESCRIPTIONS.get((module, index), str(index)), SACTags.TITANIUM_BOLT)
+    (module, index): CaseStructure(case, str(index), SACTags.TITANIUM_BOLT)
     for module, (case, count) in TITANIUM_BOLT_CASES.items()
     for index in range(1, count + 1)
 }
@@ -58,7 +51,7 @@ class SACTitaniumBoltLocations:
     SPACESHIP_GRAVEYARD_2 = "Spaceship Graveyard (Clank) - Spaceship Graveyard: T-Bolt: Tie-A-Rang The Large Boxes"
     SPACESHIP_GRAVEYARD_3 = "Spaceship Graveyard (Clank) - Spaceship Graveyard: T-Bolt: Pit With Many Spores"
     SPACESHIP_GRAVEYARD_4 = "Spaceship Graveyard (Clank) - Spaceship Graveyard: T-Bolt: Gap on The Right in The Last Static Spores Platforming"
-    PRISON_BREAKOUT_1 = "Prison Planet (Ratchet) -  Prison Breakout!: T-Bolt: Complete Mega Challenge: Battle Royale"
+    PRISON_BREAKOUT_1 = "Prison Planet (Ratchet) - Prison Breakout!: T-Bolt: Complete Mega Challenge: Battle Royale"
     UNDERWATER_BUNKER_1 = "Hydrano (Clank) - Underwater Bunker: T-Bolt: Omni-Key Room Before End of Level"
 
 
