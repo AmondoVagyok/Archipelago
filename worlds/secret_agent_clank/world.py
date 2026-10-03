@@ -1,6 +1,6 @@
 from typing import Any
 
-from BaseClasses import ItemClassification, Tutorial
+from BaseClasses import CollectionState, ItemClassification, Tutorial
 from Options import OptionError
 from worlds.AutoWorld import WebWorld, World
 
@@ -136,6 +136,27 @@ class SecretAgentClankWorld(World):
 
     def set_rules(self) -> None:
         set_rules(self)
+
+    def generate_basic(self) -> None:
+        # Runs after every world's set_rules. With nothing reachable from the
+        # starting inventory, fill has nowhere to put the first progression
+        # item and fails with an unhelpful FillError, so reject the options here.
+        if self.using_ut:
+            return
+        state = CollectionState(self.multiworld)
+        if any(location.item is None for location in self.multiworld.get_reachable_locations(state, self.player)):
+            return
+        # Other worlds' early locations can still hold this world's first items.
+        if any(location.item is None for location in self.multiworld.get_reachable_locations(state)):
+            return
+        player_name = self.multiworld.get_player_name(self.player)
+        raise OptionError(
+            f"{player_name}'s Secret Agent Clank has no locations reachable from the starting inventory "
+            f"(starting case: {self.starting_case}), so items cannot be placed. Enable more operatives or cases, "
+            "raise starting_weapons / starting_gadgets, or turn on more location checks "
+            "(such as Missions: All, All Cutscenes, Skill Points, Keycards, Alien Codes, "
+            "Weapon Level Checks or Nanotech Checks)."
+        )
 
     def create_items(self) -> None:
         existing = region_names(self)
