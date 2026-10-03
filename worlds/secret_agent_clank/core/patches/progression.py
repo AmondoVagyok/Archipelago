@@ -191,7 +191,7 @@ class Progression(PatchSet):
         give, buy = symbols.get(NativeFunctions.WEAPON_PICKUP_GIVE_WEAPON), symbols.get(NativeFunctions.SCRNVENDOR_PROCESS_PURCHASE)
         if give is not None:
             ranges.append((give + 0x60, give + 0x278))
-        if buy is not None:
+        if buy is not None and vendor_enabled:
             ranges.append((buy + 0x1FC, buy + 0x338))
         edits = []
         if (self.enabled and not self.manual) or (module == 31 and self.max_challenge_mode):
@@ -256,6 +256,12 @@ class Progression(PatchSet):
         addresses = plan_storage(ranges, occupied, sizes)
         if addresses is None and not getattr(hooks, "gain_storage_prepared", False):
             guards, extra_ranges = GainStorage(p).prepare(symbols)
+            base_edits.extend(guards)
+            occupied += guards
+            ranges.extend(extra_ranges)
+            addresses = plan_storage(ranges, occupied, sizes)
+        if addresses is None and not vendor_enabled:
+            guards, extra_ranges = GainStorage(p).prepare_line(symbols)
             base_edits.extend(guards)
             occupied += guards
             ranges.extend(extra_ranges)

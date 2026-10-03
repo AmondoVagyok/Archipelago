@@ -120,6 +120,19 @@ class NativeRuntimeTests(unittest.TestCase):
         self.assertEqual(runtime.vendor_modules, {4, 11})
         self.assertNotIn(21, runtime.vendor_modules)
 
+    def test_non_clank_routes_never_enable_vendor_patches(self):
+        from ..constants.planets import ALL_CASES
+        runtime = NativeRuntime(self.p, Mock(), Mock())
+        runtime.configure_vendors(case.name for case in ALL_CASES)
+        for module in (3, 5, 9, 14, 18, 20, 21, 23, 25, 27, 28):
+            self.assertFalse(runtime.vendor_enabled_for_module(module))
+        for clank in (0, 1):
+            self.p.batch_write_int8([(0x206C89, clank)])
+            self.assertEqual(runtime.vendor_enabled_for_module(4), bool(clank))
+        for qwark in (0, 1):
+            self.p.batch_write_int8([(0x206CA8, qwark)])
+            self.assertEqual(runtime.vendor_enabled_for_module(11), not qwark)
+
     def test_no_vendor_module_keeps_progression_without_titan_hooks(self):
         self.runtime.configure_vendors([])
         self.runtime.gate.held_module.return_value = 21
@@ -132,6 +145,7 @@ class NativeRuntimeTests(unittest.TestCase):
             self.assertFalse(self.runtime.service(set(), {}))
             catalog.return_value.sync_cases.assert_not_called()
         self.assertEqual(self.hooks.prepare.call_args.kwargs["vendor_locations"], {})
+        self.assertFalse(self.hooks.prepare.call_args.kwargs["vendor_enabled"])
         self.assertFalse(self.runtime.progression.prepare.call_args.kwargs["vendor_enabled"])
         self.hooks.install_at_loader_gate.assert_called_once()
 

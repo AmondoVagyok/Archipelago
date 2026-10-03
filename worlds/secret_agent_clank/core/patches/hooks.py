@@ -5,6 +5,7 @@ from ...constants.weapons import EQUIPMENT_INTERNAL_TO_DISPLAY
 from .asm import MARKER
 from .vendor_only import VendorOnly
 from .weapon_pickup import WeaponPickup
+from .equipment_only import EquipmentOnly
 
 
 class LocationHooks:
@@ -25,7 +26,8 @@ class LocationHooks:
         self.gain_storage_prepared = False
         self.catalog_only_ranges = []
 
-    def prepare(self, symbols, *, pickup_locations, vendor_locations, checked=(), entitlements=None):
+    def prepare(self, symbols, *, pickup_locations, vendor_locations, checked=(), entitlements=None,
+                vendor_enabled=True):
         """Build a complete, signature-checked patch plan without writing RAM."""
         self.extra_ranges = []
         self.gain_storage_prepared = False
@@ -38,12 +40,15 @@ class LocationHooks:
                             for slot, name in vendor_locations.items()}
         p = self.pine
         give = symbols.get(NativeFunctions.WEAPON_PICKUP_GIVE_WEAPON)
-        if give is None:
+        if give is None and not vendor_enabled:
+            plan = EquipmentOnly(p).prepare(symbols, checked, entitlements)
+        elif give is None:
             plan = VendorOnly(p).prepare(symbols, vendor_locations, checked, entitlements)
         else:
             plan = WeaponPickup(p).prepare(
                 symbols, give, pickup_locations=pickup_locations,
                 vendor_locations=vendor_locations, checked=checked, entitlements=entitlements,
+                vendor_enabled=vendor_enabled,
             )
         self.patches = plan.patches
         self.locations = plan.locations
@@ -52,6 +57,7 @@ class LocationHooks:
         self.marker_address = plan.marker_address
         self.module = plan.module
         self.entitlement_table = plan.entitlement_table
+        self.extra_ranges = plan.extra_ranges
         return len(self.patches)
 
     def install(self, screen_address):

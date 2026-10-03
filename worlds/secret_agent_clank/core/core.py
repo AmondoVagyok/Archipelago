@@ -39,6 +39,10 @@ from .vendor_rewards import VendorRewards
 logger = logging.getLogger("CommonClient")
 
 _BLACK_OUT_PEN_PICKUP = f"{SACClankGadgets.BLACK_OUT_PEN} (Pickup)"
+# Native slot name -> AP pickup location for the pen/shades, which have no plain location.
+_CLANK_PICKUP_LOCATIONS = {
+    internal: f"{display} (Pickup)" for display, internal in CLANK_PICKUP_TO_INTERNAL.items()
+}
 # Native WEAPON_ORDER names of the pickups the installed location hooks report themselves.
 _HOOKED_PICKUP_NAMES = frozenset(
     "fountainpen" if name == _BLACK_OUT_PEN_PICKUP else name for name in PICKUP_LOCATIONS.values()
@@ -223,8 +227,10 @@ class Core:
             hooks.installed = True
             hooks.sync_checked(self._checked_items)
             return True
+        vendor_enabled = self.native_runtime.vendor_enabled_for_module(self.case.case_id)
         hooks.prepare(self.case.symbols, pickup_locations=PICKUP_LOCATIONS,
-                      vendor_locations=VENDOR_LOCATIONS, checked=self._checked_items)
+                      vendor_locations=VENDOR_LOCATIONS if vendor_enabled else {}, checked=self._checked_items,
+                      vendor_enabled=vendor_enabled)
         hooks.install(screen)
         self._native_pause_notice = False
         self._log("[SAC] Native vendor/pickup checks active for this level.")
@@ -358,6 +364,8 @@ class Core:
             if not self.notifications.bind(self.case.symbols):
                 self._log("[SAC] Native receipt HUD layout could not be validated for this module.")
             self.keycards.bind(self.case.symbols)
+            if not self.native_runtime.vendor_enabled_for_module(self.case.case_id):
+                self.vendor.set_addr(None)
             self.on_case_ready()
         newly_accessible = self.case.case_menu.unlock_owned_missions(self._owned_cases)
         menu_screen = self.case.case_menu.screen_address
@@ -384,8 +392,8 @@ class Core:
                 continue
             if self.location_hooks.installed and name in _HOOKED_PICKUP_NAMES:
                 continue
-            if name == "fountainpen":
-                self._send_once(_BLACK_OUT_PEN_PICKUP)
+            if name in _CLANK_PICKUP_LOCATIONS:
+                self._send_once(_CLANK_PICKUP_LOCATIONS[name])
             elif name in self._ap_owned["ratchet"]:
                 self._send_once(EQUIPMENT_INTERNAL_TO_DISPLAY.get(name, name))
         for name in self.case.clank_items.check():

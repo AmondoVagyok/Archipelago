@@ -1,5 +1,7 @@
 """Install native location hooks before each loaded module starts gameplay."""
 from ..constants.native_modules import CASE_MODULES
+from ..constants.planets import CASES_BY_OPERATIVE
+from ..constants.operatives import SACOperatives
 from ..constants.vendor import vendor_location_name
 from ..constants.weapons import EQUIPMENT_INTERNAL_TO_DISPLAY
 from .address_maps import CURRENT_CASE_ADDRESS, FORCE_CASE_ADDRESS
@@ -14,6 +16,9 @@ from .patches.vendor_catalog import VendorCatalog
 from .symbols import RuntimeSymbols
 
 
+CLANK_MODULES = frozenset(CASE_MODULES[case.name] for case in CASES_BY_OPERATIVE[SACOperatives.CLANK])
+
+
 class NativeRuntime:
     def __init__(self, pine, hooks, log):
         self.pine, self.hooks, self.log = pine, hooks, log
@@ -25,7 +30,7 @@ class NativeRuntime:
         self.progression = None
         self.weapon_mods = None
         self.skins = None
-        self.vendor_modules = None
+        self.vendor_modules = set(CLANK_MODULES)
         self.vendor_locations = None
         self.vendor_catalog = None
         self.presentation = None
@@ -35,7 +40,20 @@ class NativeRuntime:
         self.starting_case = StartingCase(pine, log)
 
     def configure_vendors(self, case_names):
-        self.vendor_modules = {CASE_MODULES[name] for name in case_names}
+        self.vendor_modules = {CASE_MODULES[name] for name in case_names} & CLANK_MODULES
+
+    def vendor_enabled_for_module(self, module):
+        if module not in self.vendor_modules:
+            return False
+        # These two DLLs are shared with Gadgetbots and Qwark respectively.
+        # Read the resident USA save flags, already set by Case Files / New
+        # Game before the loader gate. The incoming DLL's pGV is not yet bound.
+        # GLOBAL flag A9 = Asyanica Clank; C8 = Rionosis Qwark (save + 0x4E0).
+        if module == 4:
+            return bool(self.pine.read_int8(0x206C89) & 1)
+        if module == 11:
+            return not bool(self.pine.read_int8(0x206CA8) & 1)
+        return True
 
     def service(self, checked, entitlements):
         """Return True only when gameplay may use this module's installed hooks."""
@@ -73,12 +91,12 @@ class NativeRuntime:
                 symbols = RuntimeSymbols(p)
                 symbols.refresh()
                 self.hooks.installed = False
-                vendor_enabled = self.vendor_modules is None or target in self.vendor_modules
+                vendor_enabled = self.vendor_enabled_for_module(target)
                 self.hooks.prepare(symbols, pickup_locations=PICKUP_LOCATIONS,
                                    vendor_locations={slot: name for slot, name in VENDOR_LOCATIONS.items()
                                        if vendor_enabled and (self.vendor_locations is None or
                                            vendor_location_name(EQUIPMENT_INTERNAL_TO_DISPLAY.get(name, name)) in self.vendor_locations)}, checked=checked,
-                                   entitlements=entitlements)
+                                   entitlements=entitlements, vendor_enabled=vendor_enabled)
                 if self.wrench is not None:
                     self.hooks.patches.extend(self.wrench.prepare(symbols, target))
                 self.hooks.patches.extend(MissionTravel(p).prepare(symbols))
@@ -97,6 +115,9 @@ class NativeRuntime:
                     self.hooks.patches.extend(self.vendor_catalog.prepare(symbols, self.hooks))
                 if self.presentation is not None and vendor_enabled:
                     self.hooks.patches.extend(self.presentation.prepare(symbols, self.hooks))
+                elif self.presentation is not None:
+                    self.presentation.mailbox = self.presentation.timer = None
+                    self.presentation.patches = []
                 self.hooks.patches.extend(self.connection_warning.prepare(symbols, self.hooks))
                 if self.progression is not None:
                     self.hooks.patches.extend(self.progression.prepare(
@@ -112,7 +133,7 @@ class NativeRuntime:
                 self.gate.release()
                 self.awaiting_start = True
                 self.reload_requested = False
-                self.log(f"[SAC] Hooks loaded for {target}")
+                self.log(f"[SAC] Hooks loaded for {target} (vendor patches {'enabled' if vendor_enabled else 'disabled'})")
                 return False
             if is_main_menu(p):
                 self.awaiting_start = False

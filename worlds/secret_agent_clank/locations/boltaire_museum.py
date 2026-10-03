@@ -47,20 +47,6 @@ LOCATIONS: tuple[SACLocation, ...] = (
         lambda world: _FINISH_MISSION,
     ),
     SACLocation(
-        SACClankGadgets.BLACK_OUT_PEN,
-        _PLANET,
-        _CASE,
-        SACLocationType.CLANK_GADGET,
-        77_800_005,
-    ),
-    SACLocation(
-        SACClankGadgets.THERM_OPTIC_SHADES,
-        _PLANET,
-        _CASE,
-        SACLocationType.CLANK_GADGET,
-        77_800_006,
-    ),
-    SACLocation(
         SACGadgetPickupLocations.BOLTAIRE_MUSEUM_BLACK_OUT_PEN,
         _PLANET,
         _CASE,

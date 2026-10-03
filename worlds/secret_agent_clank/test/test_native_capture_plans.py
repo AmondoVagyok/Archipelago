@@ -1,9 +1,12 @@
 """Full hook installation regressions against local read-only research captures."""
 import unittest
+from itertools import product
 from pathlib import Path
 
 from ..core.main_menu import is_main_menu
-from ..core.patches import PICKUP_LOCATIONS, VENDOR_LOCATIONS, LocationHooks
+from ..core.patches import MARKER, PICKUP_LOCATIONS, VENDOR_LOCATIONS, LocationHooks
+from ..core.native_runtime import NativeRuntime
+from ..constants.native_functions import NativeFunctions
 from ..core.patches.connection_warning import ConnectionWarning
 from ..core.patches.gain_storage import GainStorage
 from ..core.patches.mission_travel import MissionTravel
@@ -21,6 +24,9 @@ from .test_runtime import Memory
 class CaptureMemory(Memory):
     def write_bytes(self, address, data):
         self.data[address:address + len(data)] = data
+
+    def write_int8(self, address, value):
+        self.batch_write_int8([(address, value)])
 
 
 class NativeCapturePlansTests(unittest.TestCase):
@@ -54,55 +60,65 @@ class NativeCapturePlansTests(unittest.TestCase):
             captured.data[:] = raw
             if is_main_menu(captured):
                 continue  # Title DLL has no gameplay hook plan.
+            if MARKER in raw:
+                with self.subTest(capture=capture.name):
+                    self.skipTest("Capture already contains installed AP hooks")
+                continue
             symbols = RuntimeSymbols.parse(raw[:0x1000000], 0)
-            for ng in (0, 1, 2):
-                for progressive in (False, True, 1):
-                    with self.subTest(capture=capture.name, ng=ng, progressive=progressive):
-                        p = CaptureMemory()
-                        p.data[:] = raw
-                        module = p.read_int32(0x206328)
-                        vendor = module not in (2, 3, 21, 31)
-                        hooks = LocationHooks(p)
-                        hooks.prepare(symbols, pickup_locations=PICKUP_LOCATIONS,
-                                      vendor_locations=VENDOR_LOCATIONS if vendor else {},
-                                      entitlements={})
-                        wrench = WrenchProgression(p)
-                        wrench.enabled = True
-                        hooks.patches.extend(wrench.prepare(symbols, module))
-                        hooks.patches.extend(MissionTravel(p).prepare(symbols))
-                        mods = WeaponMods(p)
-                        mods.configure({"weapon_mods": True, "operatives": {"Ratchet": 1, "Clank": 1}, "ng_plus": ng})
-                        hooks.patches.extend(mods.prepare(symbols, hooks, module, set(), vendor))
-                        progression = Progression(p)
-                        progression.configure({"ng_plus": ng, "progressive_weapons": progressive,
-                            "weapon_xp_multiplier": 4, "health_xp_multiplier": 4, "bolt_multiplier": 4})
-                        progression.stealth = StealthState(p)
-                        progression.stealth.configure(3)
-                        progression.stealth.load(0)
-                        if ng and vendor:
-                            hooks.patches.extend(TitanVendor(p).prepare(symbols, hooks, set()))
-                        elif vendor:
-                            hooks.patches.extend(TitanOffers(p).prepare(symbols))
-                        if vendor:
-                            hooks.patches.extend(VendorCatalog(p).prepare(symbols, hooks))
-                        if vendor:
-                            hooks.patches.extend(VendorPresentation(p).prepare(symbols, hooks))
-                        hooks.patches.extend(ConnectionWarning(p).prepare(symbols, hooks))
-                        hooks.patches.extend(progression.prepare(symbols, hooks, module,
-                                                                 vendor_enabled=vendor))
-                        spans = sorted((x.address, x.address + len(x.replacement)) for x in hooks.patches)
-                        self.assertTrue(all(b <= c for (a, b), (c, d) in zip(spans, spans[1:])))
-                        self.assertEqual(p.data, raw, "Planning must not write RAM")
-                        hooks._install_plan()
-                        if progression.stealth.binding is not None:
-                            counter, site, replacement, address, code = progression.stealth.binding
-                            self.assertGreater(counter, 0)
-                            self.assertEqual(p.read_bytes(site, len(replacement)), replacement)
-                            self.assertEqual(p.read_bytes(address, len(code)), code)
-                        if vendor:
-                            flags = p.read_bytes(hooks.tables["vendor"], 40)
-                            for slot in range(40):
-                                self.assertEqual(flags[slot], 1 if slot in VENDOR_LOCATIONS else 4)
-                        for change in reversed(hooks.patches):
-                            p.write_bytes(change.address, change.original)
-                        self.assertEqual(p.data, raw)
+            for ng, progressive, multiplier in product((0, 1, 2), (False, True, 1), (3, 4)):
+                with self.subTest(capture=capture.name, ng=ng, progressive=progressive, multiplier=multiplier):
+                    p = CaptureMemory()
+                    p.data[:] = raw
+                    module = p.read_int32(0x206328)
+                    vendor = NativeRuntime(p, None, lambda _: None).vendor_enabled_for_module(module)
+                    hooks = LocationHooks(p)
+                    hooks.prepare(symbols, pickup_locations=PICKUP_LOCATIONS,
+                                  vendor_locations=VENDOR_LOCATIONS if vendor else {},
+                                  entitlements={}, vendor_enabled=vendor)
+                    wrench = WrenchProgression(p)
+                    wrench.enabled = True
+                    hooks.patches.extend(wrench.prepare(symbols, module))
+                    hooks.patches.extend(MissionTravel(p).prepare(symbols))
+                    mods = WeaponMods(p)
+                    mods.configure({"weapon_mods": True, "operatives": {"Ratchet": 1, "Clank": 1}, "ng_plus": ng})
+                    hooks.patches.extend(mods.prepare(symbols, hooks, module, set(), vendor))
+                    progression = Progression(p)
+                    progression.configure({"ng_plus": ng, "progressive_weapons": progressive,
+                        "weapon_xp_multiplier": multiplier, "health_xp_multiplier": multiplier, "bolt_multiplier": multiplier})
+                    progression.stealth = StealthState(p)
+                    progression.stealth.configure(3)
+                    progression.stealth.load(0)
+                    if ng and vendor:
+                        hooks.patches.extend(TitanVendor(p).prepare(symbols, hooks, set()))
+                    elif vendor:
+                        hooks.patches.extend(TitanOffers(p).prepare(symbols))
+                    if vendor:
+                        hooks.patches.extend(VendorCatalog(p).prepare(symbols, hooks))
+                    if vendor:
+                        hooks.patches.extend(VendorPresentation(p).prepare(symbols, hooks))
+                    hooks.patches.extend(ConnectionWarning(p).prepare(symbols, hooks))
+                    hooks.patches.extend(progression.prepare(symbols, hooks, module,
+                                                             vendor_enabled=vendor))
+                    spans = sorted((x.address, x.address + len(x.replacement)) for x in hooks.patches)
+                    self.assertTrue(all(b <= c for (a, b), (c, d) in zip(spans, spans[1:])))
+                    self.assertEqual(p.data, raw, "Planning must not write RAM")
+                    hooks._install_plan()
+                    if not vendor:
+                        for name, size in ((NativeFunctions.SCRNVENDOR_PROCESS_PURCHASE, 0x350),
+                                           (NativeFunctions.GADGET_IS_SELLABLE, 0x30)):
+                            address = symbols.get(name)
+                            if address is not None:
+                                self.assertEqual(p.read_bytes(address, size), raw[address:address + size])
+                        self.assertNotIn("vendor", hooks.tables)
+                    if progression.stealth.binding is not None:
+                        counter, site, replacement, address, code = progression.stealth.binding
+                        self.assertGreater(counter, 0)
+                        self.assertEqual(p.read_bytes(site, len(replacement)), replacement)
+                        self.assertEqual(p.read_bytes(address, len(code)), code)
+                    if vendor:
+                        flags = p.read_bytes(hooks.tables["vendor"], 40)
+                        for slot in range(40):
+                            self.assertEqual(flags[slot], 1 if slot in VENDOR_LOCATIONS else 4)
+                    for change in reversed(hooks.patches):
+                        p.write_bytes(change.address, change.original)
+                    self.assertEqual(p.data, raw)
