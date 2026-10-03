@@ -17,6 +17,9 @@ from .symbols import RuntimeSymbols
 
 
 CLANK_MODULES = frozenset(CASE_MODULES[case.name] for case in CASES_BY_OPERATIVE[SACOperatives.CLANK])
+NON_VENDOR_CASES = frozenset(case.name for operative in
+                            (SACOperatives.RATCHET, SACOperatives.QWARK, SACOperatives.GADGETBOTS)
+                            for case in CASES_BY_OPERATIVE[operative])
 
 
 class NativeRuntime:
@@ -40,7 +43,7 @@ class NativeRuntime:
         self.starting_case = StartingCase(pine, log)
 
     def configure_vendors(self, case_names):
-        self.vendor_modules = {CASE_MODULES[name] for name in case_names} & CLANK_MODULES
+        self.vendor_modules = {CASE_MODULES[name] for name in case_names if name not in NON_VENDOR_CASES}
 
     def vendor_enabled_for_module(self, module):
         if module not in self.vendor_modules:

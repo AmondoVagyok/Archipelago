@@ -36,6 +36,15 @@ The automatic lifecycle passed replay checks on four RAM captures, including Tre
 
 Keep the client running while playing. Normal shutdown and recoverable errors release the resident loader barrier. A killed process or broken PINE connection can prevent cleanup; restart the game if loading remains held. Savestates can overwrite hooks and are not supported as a substitute for a native reset in the test workflow.
 
+Gadgetbot, Ratchet, and Qwark routes skip vendor patches and vendor hook tables,
+including their routes through DLLs shared with Clank. Equipment initialization
+and progression remain active and use verified non-vendor storage. The hook-load
+log reports whether vendor patches are enabled. After updating the client,
+restart both the client and PCSX2 and load an in-game save so old patches are
+not retained in memory or restored from a save state. This reduces unnecessary
+patching; the reported immediate Bulkhead Lock completion crash has not yet
+been reproduced or confirmed fixed.
+
 
 Titanium bolts now have 23 individual, always-on locations, named
 `Operative: Case: Titanium Bolt N` (N is the native pickup ID). Generate a

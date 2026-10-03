@@ -30,6 +30,26 @@ class CaptureMemory(Memory):
 
 
 class NativeCapturePlansTests(unittest.TestCase):
+    def test_line_storage_rejects_changes_in_body_and_callee(self):
+        capture = Path(__file__).parents[1] / ".research/SAC.p2s.ram"
+        if not capture.exists():
+            self.skipTest("Local clean capture not present")
+        p = CaptureMemory()
+        p.data[:] = capture.read_bytes()
+        symbols = RuntimeSymbols.parse(p.data[:0x1000000], 0)
+        before = bytes(p.data)
+        guards, ranges = GainStorage(p).prepare_line(symbols)
+        self.assertEqual(bytes(p.data), before)
+        self.assertEqual(ranges, [(guards[0].address + 8, guards[0].address + 104)])
+        for address in (guards[0].address, guards[0].address + 0x44,
+                        guards[0].address + 0x54, symbols["SetARGB__7ApeRGBAUi"]):
+            with self.subTest(address=hex(address)):
+                p.data[address] ^= 1
+                with self.assertRaisesRegex(RuntimeError, "line stub layout changed"):
+                    GainStorage(p).prepare_line(symbols)
+                p.data[address] ^= 1
+                self.assertEqual(bytes(p.data), before)
+
     def test_gain_storage_rejects_a_changed_stub_body_without_writing(self):
         capture = Path(__file__).parents[1] / ".research/showers_forced_graveyard.bin"
         if not capture.exists():

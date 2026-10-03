@@ -132,6 +132,10 @@ class NativeRuntimeTests(unittest.TestCase):
         for qwark in (0, 1):
             self.p.batch_write_int8([(0x206CA8, qwark)])
             self.assertEqual(runtime.vendor_enabled_for_module(11), not qwark)
+        runtime.configure_vendors([SACCases.ROOFTOP_DEATHTRAP, SACCases.SUCK_AND_JIVE])
+        self.assertEqual(runtime.vendor_modules, set())
+        runtime.configure_vendors([SACCases.HIGH_TREEHOUSE])
+        self.assertTrue(runtime.vendor_enabled_for_module(31))
 
     def test_no_vendor_module_keeps_progression_without_titan_hooks(self):
         self.runtime.configure_vendors([])

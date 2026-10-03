@@ -1,5 +1,6 @@
 """Every location in High-Rollers Casino, each carrying its planet, case and access rule."""
 from rule_builder.rules import Has, True_
+from worlds.secret_agent_clank.constants.clank_gadgets import SACClankWeapons
 
 from ..constants import (
     SACAlienCodeLocations,
@@ -18,6 +19,7 @@ _PLANET = SACPlanets.CASINO
 _CASE = SACCases.HIGH_ROLLERS_CASINO
 
 _BASE = Has(SACClankGadgets.HOLOMONOCLE)
+_complete = _BASE & Has(SACClankWeapons.CUFFLINK)
 
 LOCATIONS: tuple[SACLocation, ...] = (
     SACLocation(
@@ -42,7 +44,7 @@ LOCATIONS: tuple[SACLocation, ...] = (
         _CASE,
         SACLocationType.CASE_COMPLETE,
         77_812_003,
-        lambda world: _BASE,
+        lambda world: _complete,
     ),
     SACLocation(
         SACMissionLocations.HIGH_ROLLERS_CASINO_EXPLORE_PARADISE,
@@ -82,7 +84,7 @@ LOCATIONS: tuple[SACLocation, ...] = (
         _CASE,
         SACLocationType.CUTSCENE,
         77_812_007,
-        lambda world: True_(),
+        lambda world: _complete,
     ),
     SACLocation(
         SACAlienCodeLocations.HIGH_ROLLERS_CASINO_COLINS_SECRET,

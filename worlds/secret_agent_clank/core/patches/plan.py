@@ -1,4 +1,4 @@
-"""Result of a location patch plan (weapon_pickup.py or vendor_only.py), consumed by LocationHooks."""
+"""Location/ownership patch plan consumed by LocationHooks."""
 from dataclasses import dataclass, field
 
 from .asm import Patch
