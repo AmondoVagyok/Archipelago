@@ -7,6 +7,7 @@ from ..constants import (
     SACClankGadgets,
     SACCutsceneLocations,
     SACMissionLocations,
+    SACPickups,
     SACPlanets,
     SACSkillPointLocations,
     SACTitaniumBoltLocations,
@@ -20,7 +21,7 @@ _BASE = Has(SACClankGadgets.HOLOMONOCLE)
 
 LOCATIONS: tuple[SACLocation, ...] = (
     SACLocation(
-        SACClankGadgets.HOLOMONOCLE,
+        SACPickups.HIGH_ROLLERS_CASINO_HOLO_MONOCLE,
         _PLANET,
         _CASE,
         SACLocationType.CLANK_GADGET,

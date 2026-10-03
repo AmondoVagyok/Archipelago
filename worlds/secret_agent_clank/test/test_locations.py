@@ -1,6 +1,6 @@
 import unittest
 
-from ..constants import SACCases, SACClankGadgets, SACClankWeapons, SACRatchetWeapons
+from ..constants import SACCases, SACPickups
 from ..constants.cutscenes import CUTSCENES
 from ..constants.planets import CASE_NAME_TO_PLANET
 from ..constants.vendor import VENDOR_WEAPONS, vendor_location_name
@@ -30,5 +30,6 @@ class LocationRecordTests(unittest.TestCase):
             self.assertFalse("Spaceship Graveyard: Enter Cutscene" in name)
 
     def test_rooftop_pickups_belong_to_clank_case(self):
-        for name in (SACClankGadgets.OMNIKEY, SACClankWeapons.CUFFLINK, SACRatchetWeapons.MINELAUNCHER):
+        for name in (SACPickups.ASYANICA_ROOFTOPS_OMNI_KEY, SACPickups.ASYANICA_ROOFTOPS_CUFFLINK_BOMB,
+                     SACPickups.ASYANICA_ROOFTOPS_MINE_LAUNCHER):
             self.assertEqual(ALL_LOCATIONS[name].case, SACCases.ASYANICA_ROOFTOPS)

@@ -5,7 +5,6 @@ from .clank_gadgets import (
     CLANK_GADGETS,
     SACClankGadgets,
     SACClankWeapons,
-    SACGadgetPickupLocations,
     SACProgressiveClankWeapons,
     SACProtoWeapons,
 )
@@ -19,6 +18,7 @@ from .operatives import (
     PROGRESSIVE_CHARACTER_ITEM_NAME,
     SACOperatives,
 )
+from .pickups import PICKUP_LOCATION_BY_INTERNAL, SACPickups
 from .planets import (
     ALL_CASES,
     CASE_ID_TO_CASE,
@@ -76,6 +76,7 @@ __all__ = [
     "MISSION_COMPLETE_NAME",
     "MISSION_TO_CASE",
     "OPERATIVE_NAMES",
+    "PICKUP_LOCATION_BY_INTERNAL",
     "PLANET_ACCESS_ITEM_NAME",
     "PLANET_NAMES",
     "PROGRESSIVE_CHARACTER_ITEM_NAME",
@@ -97,7 +98,6 @@ __all__ = [
     "SACClankWeapons",
     "SACCutsceneLocations",
     "SACCutscenes",
-    "SACGadgetPickupLocations",
     "SACGadgetbotChallengeLocations",
     "SACGadgetbotChallenges",
     "SACKeycardLocations",
@@ -105,6 +105,7 @@ __all__ = [
     "SACMissionLocations",
     "SACMissions",
     "SACOperatives",
+    "SACPickups",
     "SACPlanets",
     "SACProgressiveClankWeapons",
     "SACProgressiveRatchetWeapons",

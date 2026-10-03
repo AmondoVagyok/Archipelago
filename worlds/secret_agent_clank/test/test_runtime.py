@@ -2,7 +2,8 @@ import struct
 import unittest
 from unittest.mock import Mock
 
-from ..constants.clank_gadgets import SACClankGadgets, SACGadgetPickupLocations
+from ..constants.clank_gadgets import SACClankGadgets
+from ..constants.pickups import SACPickups
 from ..constants.planets import CASE_ID_TO_CASE
 from ..constants.weapons import CLANK_PICKUP_TO_INTERNAL, EQUIPMENT_DISPLAY_TO_INTERNAL
 from ..core.address_maps import CURRENT_CASE_ADDRESS, FORCE_CASE_ADDRESS
@@ -54,7 +55,7 @@ class RuntimeTests(unittest.TestCase):
     def test_blackout_pen_is_one_item_and_one_location(self):
         self.assertIn(SACClankGadgets.BLACK_OUT_PEN, ALL_ITEMS)
         self.assertNotIn("fountainpen", ALL_ITEMS)
-        self.assertIn(SACGadgetPickupLocations.BOLTAIRE_MUSEUM_BLACK_OUT_PEN, ALL_LOCATIONS)
+        self.assertIn(SACPickups.BOLTAIRE_MUSEUM_BLACKOUT_PEN, ALL_LOCATIONS)
         self.assertNotIn("fountainpen", ALL_LOCATIONS)
 
     def test_blackout_pen_receipt_writes_shared_slot_without_a_check(self):

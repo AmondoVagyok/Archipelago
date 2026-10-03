@@ -7,10 +7,9 @@ from ..constants import (
     SACClankGadgets,
     SACClankWeapons,
     SACCutsceneLocations,
-    SACGadgetPickupLocations,
     SACMissionLocations,
+    SACPickups,
     SACPlanets,
-    SACRatchetWeapons,
     SACSkillPointLocations,
     SACTitaniumBoltLocations,
 )
@@ -23,7 +22,7 @@ _FINISH_MISSION = HasAll(SACClankGadgets.BLACK_OUT_PEN, SACClankWeapons.THROWTIE
 
 LOCATIONS: tuple[SACLocation, ...] = (
     SACLocation(
-        SACRatchetWeapons.BLASTER,
+        SACPickups.BOLTAIRE_MUSEUM_DUAL_LACERATORS,
         _PLANET,
         _CASE,
         SACLocationType.RATCHET_WEAPON,
@@ -31,7 +30,7 @@ LOCATIONS: tuple[SACLocation, ...] = (
         lambda world: Has(SACClankGadgets.BLACK_OUT_PEN),
     ),
     SACLocation(
-        SACClankWeapons.THROWTIE,
+        SACPickups.BOLTAIRE_MUSEUM_TIE_A_RANG,
         _PLANET,
         _CASE,
         SACLocationType.CLANK_WEAPON,
@@ -39,7 +38,7 @@ LOCATIONS: tuple[SACLocation, ...] = (
         lambda world: True_(),
     ),
     SACLocation(
-        SACClankGadgets.JETBOOTS,
+        SACPickups.BOLTAIRE_MUSEUM_JET_BOOTS,
         _PLANET,
         _CASE,
         SACLocationType.CLANK_GADGET,
@@ -47,7 +46,7 @@ LOCATIONS: tuple[SACLocation, ...] = (
         lambda world: _FINISH_MISSION,
     ),
     SACLocation(
-        SACGadgetPickupLocations.BOLTAIRE_MUSEUM_BLACK_OUT_PEN,
+        SACPickups.BOLTAIRE_MUSEUM_BLACKOUT_PEN,
         _PLANET,
         _CASE,
         SACLocationType.GADGET_PICKUP,
@@ -55,7 +54,7 @@ LOCATIONS: tuple[SACLocation, ...] = (
         lambda world: True_(),
     ),
     SACLocation(
-        SACGadgetPickupLocations.BOLTAIRE_MUSEUM_THERM_OPTIC_SHADES,
+        SACPickups.BOLTAIRE_MUSEUM_THERM_OPTIC_SHADES,
         _PLANET,
         _CASE,
         SACLocationType.GADGET_PICKUP,

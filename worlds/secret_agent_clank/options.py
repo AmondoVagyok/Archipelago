@@ -258,7 +258,7 @@ class BoltMultiplier(Range):
 
 
 class DeathAmnesty(Range):
-    """Number of deaths allowed before items are stripped from the player's inventory on death."""
+    """Number of deaths allowed before triggering a death link."""
     display_name = "Death Amnesty"
     range_start = 0
     range_end = 5

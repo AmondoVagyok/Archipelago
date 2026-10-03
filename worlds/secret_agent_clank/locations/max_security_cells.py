@@ -5,9 +5,9 @@ from ..constants import (
     SACCases,
     SACCutsceneLocations,
     SACMissionLocations,
+    SACPickups,
     SACPlanets,
     SACRatchetChallengeLocations,
-    SACRatchetWeapons,
     SACSkillPointLocations,
     SACTitaniumBoltLocations,
 )
@@ -18,7 +18,7 @@ _CASE = SACCases.MAX_SECURITY_CELLS
 
 LOCATIONS: tuple[SACLocation, ...] = (
     SACLocation(
-        SACRatchetWeapons.SHARDGUN,
+        SACPickups.MAX_SECURITY_CELLS_SHARDGUN,
         _PLANET,
         _CASE,
         SACLocationType.RATCHET_WEAPON,
@@ -26,7 +26,7 @@ LOCATIONS: tuple[SACLocation, ...] = (
         lambda world: True_(),
     ),
     SACLocation(
-        SACRatchetWeapons.WALLOPER,
+        SACPickups.MAX_SECURITY_CELLS_WALLOPER,
         _PLANET,
         _CASE,
         SACLocationType.RATCHET_WEAPON,

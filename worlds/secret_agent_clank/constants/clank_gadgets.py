@@ -65,13 +65,3 @@ CLANK_GADGETS: tuple[str, ...] = tuple(
     gadget for gadgets in CLANK_GADGET_BY_CASE_ID.values() for gadget in gadgets
 )
 
-
-def gadget_pickup_name(display_name: str) -> str:
-    return f"{display_name} (Pickup)"
-
-
-@dataclass(frozen=True)
-class SACGadgetPickupLocations:
-    """Pickup location names for the gadgets in CLANK_GADGET_BY_CASE_ID."""
-    BOLTAIRE_MUSEUM_BLACK_OUT_PEN = gadget_pickup_name(SACClankGadgets.BLACK_OUT_PEN)
-    BOLTAIRE_MUSEUM_THERM_OPTIC_SHADES = gadget_pickup_name(SACClankGadgets.THERM_OPTIC_SHADES)

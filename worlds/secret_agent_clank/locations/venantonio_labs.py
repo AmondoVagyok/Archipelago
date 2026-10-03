@@ -8,6 +8,7 @@ from ..constants import (
     SACClankWeapons,
     SACCutsceneLocations,
     SACMissionLocations,
+    SACPickups,
     SACPlanets,
     SACSkillPointLocations,
     SACTitaniumBoltLocations,
@@ -23,7 +24,7 @@ _FINISH = _BRIEFCASE_PATH & Has(SACClankGadgets.OMNIKEY)
 
 LOCATIONS: tuple[SACLocation, ...] = (
     SACLocation(
-        SACClankWeapons.FLAMETHROWERPEN,
+        SACPickups.VENANTONIO_LABS_BLOWTORCH_BRIEFCASE,
         _PLANET,
         _CASE,
         SACLocationType.CLANK_WEAPON,

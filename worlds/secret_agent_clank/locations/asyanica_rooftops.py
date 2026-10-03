@@ -8,8 +8,8 @@ from ..constants import (
     SACClankWeapons,
     SACKeycardLocations,
     SACMissionLocations,
+    SACPickups,
     SACPlanets,
-    SACRatchetWeapons,
     SACSkillPointLocations,
     SACTitaniumBoltLocations,
 )
@@ -23,7 +23,7 @@ _OMNIKEY = _BASE_RULE & Has(SACClankGadgets.OMNIKEY)
 
 LOCATIONS: tuple[SACLocation, ...] = (
     SACLocation(
-        SACRatchetWeapons.MINELAUNCHER,
+        SACPickups.ASYANICA_ROOFTOPS_MINE_LAUNCHER,
         _PLANET,
         _CASE,
         SACLocationType.RATCHET_WEAPON,
@@ -31,7 +31,7 @@ LOCATIONS: tuple[SACLocation, ...] = (
         lambda world: _BASE_RULE,
     ),
     SACLocation(
-        SACClankWeapons.CUFFLINK,
+        SACPickups.ASYANICA_ROOFTOPS_CUFFLINK_BOMB,
         _PLANET,
         _CASE,
         SACLocationType.CLANK_WEAPON,
@@ -39,7 +39,7 @@ LOCATIONS: tuple[SACLocation, ...] = (
         lambda world: _BASE_RULE,
     ),
     SACLocation(
-        SACClankGadgets.OMNIKEY,
+        SACPickups.ASYANICA_ROOFTOPS_OMNI_KEY,
         _PLANET,
         _CASE,
         SACLocationType.CLANK_GADGET,

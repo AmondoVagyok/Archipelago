@@ -147,6 +147,15 @@ class LocationHookTests(unittest.TestCase):
         self.assertTrue(pickup_names <= set(ALL_LOCATIONS))
         self.assertTrue(vendor_names <= set(ALL_LOCATIONS))
 
+    def test_every_pickup_location_is_reported_by_the_client(self):
+        from ..constants.pickups import PICKUP_LOCATION_BY_INTERNAL
+        from ..locations.model import SACLocationType
+        from ..locations import ALL_LOCATIONS
+        pickup_types = {SACLocationType.RATCHET_WEAPON, SACLocationType.CLANK_WEAPON,
+                        SACLocationType.CLANK_GADGET, SACLocationType.GADGET_PICKUP}
+        pickups = {name for name, loc in ALL_LOCATIONS.items() if loc.type in pickup_types}
+        self.assertEqual(pickups, set(PICKUP_LOCATION_BY_INTERNAL.values()))
+
     def test_code_and_marker_are_word_aligned(self):
         self.assertEqual(len(MARKER), 16)
         for record in (False, True):

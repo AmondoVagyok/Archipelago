@@ -5,11 +5,10 @@ from ..constants import (
     SACAlienCodeLocations,
     SACCases,
     SACClankGadgets,
-    SACClankWeapons,
     SACCutsceneLocations,
     SACMissionLocations,
+    SACPickups,
     SACPlanets,
-    SACRatchetWeapons,
     SACSkillPointLocations,
     SACTitaniumBoltLocations,
 )
@@ -20,7 +19,7 @@ _CASE = SACCases.AZCOTAL_ALLEY
 
 LOCATIONS: tuple[SACLocation, ...] = (
     SACLocation(
-        SACRatchetWeapons.BEEMINEGLOVE,
+        SACPickups.AZCOTAL_ALLEY_BEE_MINE_MK_II,
         _PLANET,
         _CASE,
         SACLocationType.RATCHET_WEAPON,
@@ -28,7 +27,7 @@ LOCATIONS: tuple[SACLocation, ...] = (
         lambda world: True_(),
     ),
     SACLocation(
-        SACClankWeapons.TANGLEVINE,
+        SACPickups.AZCOTAL_ALLEY_TANGLEVINE_CARNATION,
         _PLANET,
         _CASE,
         SACLocationType.CLANK_WEAPON,

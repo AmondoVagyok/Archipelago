@@ -9,6 +9,7 @@ from worlds.AutoWorld import call_all
 
 from ..constants import CASE_NAME_TO_INFOBOT
 from ..constants.clank_gadgets import SACClankGadgets, SACClankWeapons
+from ..constants.pickups import SACPickups
 from ..constants.planets import ALL_CASES, SACCases
 from ..constants.vendor import NG_PLUS_VENDOR_ITEMS, vendor_location_name
 from ..constants.vendor_unlocks import VENDOR_CASES
@@ -61,7 +62,7 @@ class VendorAccessTests(unittest.TestCase):
         state.collect(world.create_item(CASE_NAME_TO_INFOBOT[SACCases.ASYANICA_ROOFTOPS]))
         state.collect(world.create_item(SACClankGadgets.JETBOOTS))
         self.assertTrue(titan.can_reach(state))
-        self.assertFalse(m.get_location(SACRatchetWeapons.BLASTER, 1).can_reach(state))
+        self.assertFalse(m.get_location(SACPickups.BOLTAIRE_MUSEUM_DUAL_LACERATORS, 1).can_reach(state))
         self.assertFalse(state.has(SACRatchetWeapons.BLASTER, 1))
 
     def test_normal_vendor_check_inherits_shared_item_gate(self):

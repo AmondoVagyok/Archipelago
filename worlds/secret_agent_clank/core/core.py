@@ -2,9 +2,9 @@
 import logging
 from collections.abc import Callable, Sequence
 
-from ..constants.clank_gadgets import SACClankGadgets
 from ..constants.missions import CHAPTER_ENTRIES
 from ..constants.operatives import SACOperatives
+from ..constants.pickups import PICKUP_LOCATION_BY_INTERNAL
 from ..constants.planets import CASE_ID_TO_CASE, CASES_BY_OPERATIVE, SACCases
 from ..constants.vendor import vendor_location_name
 from ..constants.weapons import CLANK_PICKUP_TO_INTERNAL, EQUIPMENT_INTERNAL_TO_DISPLAY
@@ -38,15 +38,8 @@ from .vendor_rewards import VendorRewards
 
 logger = logging.getLogger("CommonClient")
 
-_BLACK_OUT_PEN_PICKUP = f"{SACClankGadgets.BLACK_OUT_PEN} (Pickup)"
-# Native slot name -> AP pickup location for the pen/shades, which have no plain location.
-_CLANK_PICKUP_LOCATIONS = {
-    internal: f"{display} (Pickup)" for display, internal in CLANK_PICKUP_TO_INTERNAL.items()
-}
 # Native WEAPON_ORDER names of the pickups the installed location hooks report themselves.
-_HOOKED_PICKUP_NAMES = frozenset(
-    "fountainpen" if name == _BLACK_OUT_PEN_PICKUP else name for name in PICKUP_LOCATIONS.values()
-)
+_HOOKED_PICKUP_NAMES = frozenset(WEAPON_ORDER[slot] for slot in PICKUP_LOCATIONS)
 
 
 class Core:
@@ -392,10 +385,8 @@ class Core:
                 continue
             if self.location_hooks.installed and name in _HOOKED_PICKUP_NAMES:
                 continue
-            if name in _CLANK_PICKUP_LOCATIONS:
-                self._send_once(_CLANK_PICKUP_LOCATIONS[name])
-            elif name in self._ap_owned["ratchet"]:
-                self._send_once(EQUIPMENT_INTERNAL_TO_DISPLAY.get(name, name))
+            if name in PICKUP_LOCATION_BY_INTERNAL:
+                self._send_once(PICKUP_LOCATION_BY_INTERNAL[name])
         for name in self.case.clank_items.check():
             self._send_once(f"{name} (Pickup)")
         self._reapply_all_inventories()
