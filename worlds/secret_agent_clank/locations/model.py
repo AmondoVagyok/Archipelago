@@ -1,16 +1,17 @@
-"""SACLocation: one record per AP location, with its planet, case, category and access rule."""
-from collections.abc import Callable
-from dataclasses import dataclass
+"""SACLocation: one record per AP location, with its case, category and access rule; CaseRegion groups a case's."""
+from collections.abc import Callable, Iterable
+from dataclasses import dataclass, replace
 from enum import Enum, auto
 from typing import TYPE_CHECKING
 
-from ..constants.skill_point_requirements import SKILL_POINT_REQUIREMENTS
+from rule_builder.rules import Rule
+
+from ..constants.planets import CASE_NAME_TO_OPERATIVE, CASE_NAME_TO_PLANET
+from ..constants.skill_point_requirements import EXTRA_SKILL_POINT_OPERATIVES, SKILL_POINT_DIFFICULTY
 from ..constants.vendor import NG_PLUS_VENDOR_ITEMS
 from ..options import Missions
 
 if TYPE_CHECKING:
-    from rule_builder.rules import Rule
-
     from ..options import SecretAgentClankOptions
     from ..world import SecretAgentClankWorld
 
@@ -54,12 +55,15 @@ _REGION_TYPE_ORDER: tuple[SACLocationType, ...] = (
 @dataclass(frozen=True, slots=True)
 class SACLocation:
     name: str
-    planet: str | None  # SACPlanets constant; None only for the vendor-catalog regions.
-    case: str | None    # SACCases constant; None only for the vendor-catalog regions.
     type: SACLocationType
-    code: int
-    # Called with the world in set_rules; None means reachable with the case region.
-    rule: "Callable[[SecretAgentClankWorld], Rule] | None" = None
+    # A fixed rule, or a function of the world for option-dependent rules; None means
+    # reachable with its region.
+    rule: "Rule | Callable[[SecretAgentClankWorld], Rule] | None" = None
+    # SACCases constant, filled in by CaseRegion; None outside the case regions (vendor, levels, ...).
+    case: str | None = None
+
+    def resolve_rule(self, world: "SecretAgentClankWorld") -> "Rule | None":
+        return self.rule if self.rule is None or isinstance(self.rule, Rule) else self.rule(world)
 
     def available(self, options: "SecretAgentClankOptions") -> bool:
         """Whether this location exists at all under the given options (the category toggles)."""
@@ -71,10 +75,8 @@ class SACLocation:
             case SACLocationType.MISSION:
                 return options.all_missions.value == Missions.option_all
             case SACLocationType.SKILL_POINT:
-                requirement = SKILL_POINT_REQUIREMENTS[self.name]
-                return (options.skill_points.value >= requirement.difficulty
-                        and all(options.operatives.value.get(operative, 0)
-                                for operative in requirement.operatives))
+                return (options.skill_points.value >= SKILL_POINT_DIFFICULTY[self.name]
+                        and all(options.operatives.value.get(operative, 0) for operative in self.operatives))
             case SACLocationType.CUTSCENE:
                 return bool(options.all_cutscenes)
             case SACLocationType.KEYCARD:
@@ -84,5 +86,27 @@ class SACLocation:
         return True
 
     @property
+    def operatives(self) -> frozenset[str]:
+        """Operatives that must be enabled to play this location: its case's, plus any a skill point also needs."""
+        if self.case is None:
+            return frozenset()
+        return frozenset({CASE_NAME_TO_OPERATIVE[self.case], *EXTRA_SKILL_POINT_OPERATIVES.get(self.name, ())})
+
+    @property
     def region_order(self) -> int:
         return _REGION_TYPE_ORDER.index(self.type)
+
+
+class CaseRegion:
+    """One case's AP region: the case, and every location played in it."""
+
+    def __init__(self, case: str, locations: Iterable[SACLocation]) -> None:
+        self.case = case
+        self.locations: tuple[SACLocation, ...] = tuple(replace(location, case=case) for location in locations)
+
+    @property
+    def planet(self) -> str:
+        return CASE_NAME_TO_PLANET[self.case]
+
+    def __repr__(self) -> str:
+        return f"CaseRegion({self.case!r}, {len(self.locations)} locations)"

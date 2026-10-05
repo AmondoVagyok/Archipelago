@@ -15,14 +15,13 @@ from ..constants.weapons import EQUIPMENT_INTERNAL_TO_DISPLAY
 from ..entities import SACLocation as Location
 from ..rules.rule_helpers import HasEnemyAccess, region_names
 from ..rules.vendor_access import VENDOR_ONLY_ITEM_NAMES
-from .model import BASE_ID, SACLocation, SACLocationType
+from .model import SACLocation, SACLocationType
 
 WEAPON_LEVEL_LOCATIONS = {
     level_location_name(internal, level): SACLocation(
-        level_location_name(internal, level), None, None, SACLocationType.WEAPON_LEVEL,
-        BASE_ID + 33000 + index * 8 + level - 2,
+        level_location_name(internal, level), SACLocationType.WEAPON_LEVEL,
     )
-    for index, internal in enumerate(LEVELLED_INTERNALS)
+    for internal in LEVELLED_INTERNALS
     for level in checked_levels(internal, 4, 1)
 }
 
@@ -62,7 +61,7 @@ def create_weapon_level_locations(world, menu_region):
             access = access & HasEnemyAccess(world)
         for level in checked_levels(internal, mode, world.options.ng_plus.value):
             definition = WEAPON_LEVEL_LOCATIONS[level_location_name(internal, level)]
-            location = Location(world.player, definition.name, definition.code, region)
+            location = Location(world.player, definition.name, world.location_name_to_id[definition.name], region)
             weapon = (Has(UNLOCK_TO_PROGRESSIVE[name], level)
                       if world.options.progressive_weapons else Has(name))
             rule = access & weapon

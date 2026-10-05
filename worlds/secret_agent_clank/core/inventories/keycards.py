@@ -1,7 +1,7 @@
 """Native keycard bits and the actual keycard door opening in Treehouse."""
 import struct
 
-from ...constants.keycards import KEYCARDS
+from ...constants.keycards import KEYCARD_BITS
 from ..global_flags import GlobalFlags
 
 
@@ -81,7 +81,7 @@ class KeycardInventory:
         value = self.flags.read(0xAA)
         if value is None:
             return []
-        self.found = {str(entry) for bit, entry in enumerate(KEYCARDS) if value[0] & (1 << bit)}
+        self.found = {name for name, bit in KEYCARD_BITS.items() if value[0] & (1 << bit)}
         chalice = self.flags.read(0xCB)
         self.chalice_collected = chalice is not None and chalice[0] != 0
         if value[0] == 7 and self._door_is_open():

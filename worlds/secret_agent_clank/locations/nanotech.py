@@ -5,12 +5,11 @@ from ..constants import SACOperatives
 from ..constants.nanotech import nanotech_levels, nanotech_location_name
 from ..entities import SACLocation as Location
 from ..rules.nanotech import nanotech_access_rule
-from .model import BASE_ID, SACLocation, SACLocationType
+from .model import SACLocation, SACLocationType
 
 NANOTECH_LOCATIONS = {
     nanotech_location_name(level): SACLocation(
-        nanotech_location_name(level), None, None, SACLocationType.NANOTECH,
-        BASE_ID + 34000 + level,
+        nanotech_location_name(level), SACLocationType.NANOTECH,
     ) for level in nanotech_levels(True)
 }
 
@@ -21,7 +20,7 @@ def create_nanotech_locations(world, menu_region):
     region = Region("Clank Nanotech", world.player, world.multiworld)
     for level in nanotech_levels(world.options.ng_plus.value):
         definition = NANOTECH_LOCATIONS[nanotech_location_name(level)]
-        location = Location(world.player, definition.name, definition.code, region)
+        location = Location(world.player, definition.name, world.location_name_to_id[definition.name], region)
         world.set_rule(location, nanotech_access_rule(world, level))
         region.locations.append(location)
     menu_region.connect(region)

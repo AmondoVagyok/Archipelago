@@ -1,122 +1,26 @@
-"""Every location in Dam's Edge, Hydrano, each carrying its planet, case and access rule."""
-from rule_builder.rules import True_
-
+"""Dam's Edge, Hydrano: the case region and every location in it, with its access rule."""
 from ..constants import (
     SACCases,
     SACCutsceneLocations,
     SACMissionLocations,
-    SACPlanets,
     SACSkillPointLocations,
     SACSpecialChallengeLocations,
 )
-from .model import SACLocation, SACLocationType
+from .model import CaseRegion, SACLocation, SACLocationType
 
-_PLANET = SACPlanets.HYDRANO
-_CASE = SACCases.DAMS_EDGE_HYDRANO
-
-LOCATIONS: tuple[SACLocation, ...] = (
-    SACLocation(
-        SACSpecialChallengeLocations.DAMS_EDGE_HYDRANO_VEHICLE_CHASING_A_LEAD,
-        _PLANET,
-        _CASE,
-        SACLocationType.SPECIAL_CHALLENGE,
-        77_825_000,
-        lambda world: True_(),
-    ),
-    SACLocation(
-        SACSpecialChallengeLocations.DAMS_EDGE_HYDRANO_VEHICLE_RUSH_HOUR,
-        _PLANET,
-        _CASE,
-        SACLocationType.SPECIAL_CHALLENGE,
-        77_825_001,
-        lambda world: True_(),
-    ),
-    SACLocation(
-        SACSpecialChallengeLocations.DAMS_EDGE_HYDRANO_VEHICLE_DRIVING_TEST,
-        _PLANET,
-        _CASE,
-        SACLocationType.SPECIAL_CHALLENGE,
-        77_825_002,
-        lambda world: True_(),
-    ),
-    SACLocation(
-        SACMissionLocations.DAMS_EDGE_HYDRANO_COMPLETE,
-        _PLANET,
-        _CASE,
-        SACLocationType.CASE_COMPLETE,
-        77_825_003,
-        lambda world: True_(),
-    ),
-    SACLocation(
-        SACMissionLocations.DAMS_EDGE_HYDRANO_SHIP_S_SIGNAL,
-        _PLANET,
-        _CASE,
-        SACLocationType.MISSION,
-        77_825_004,
-        lambda world: True_(),
-    ),
-    SACLocation(
-        SACMissionLocations.DAMS_EDGE_HYDRANO_FOLLOW_THAT_CAR,
-        _PLANET,
-        _CASE,
-        SACLocationType.MISSION,
-        77_825_005,
-        lambda world: True_(),
-    ),
-    SACLocation(
-        SACMissionLocations.DAMS_EDGE_HYDRANO_THE_DRIFT_KING,
-        _PLANET,
-        _CASE,
-        SACLocationType.MISSION,
-        77_825_006,
-        lambda world: True_(),
-    ),
-    SACLocation(
-        SACSkillPointLocations.DAMS_EDGE_HYDRANO_YEEE_HAAAAAW,
-        _PLANET,
-        _CASE,
-        SACLocationType.SKILL_POINT,
-        77_825_009,
-        lambda world: True_(),
-    ),
-    SACLocation(
-        SACSkillPointLocations.DAMS_EDGE_HYDRANO_OFFENSIVE_DRIVER,
-        _PLANET,
-        _CASE,
-        SACLocationType.SKILL_POINT,
-        77_825_010,
-        lambda world: True_(),
-    ),
-    SACLocation(
-        SACSkillPointLocations.DAMS_EDGE_HYDRANO_SLIPPERY_SLOPE,
-        _PLANET,
-        _CASE,
-        SACLocationType.SKILL_POINT,
-        77_825_011,
-        lambda world: True_(),
-    ),
-    SACLocation(
-        SACSkillPointLocations.DAMS_EDGE_HYDRANO_RING_AROUND_THE_ROSIE,
-        _PLANET,
-        _CASE,
-        SACLocationType.SKILL_POINT,
-        77_825_012,
-        lambda world: True_(),
-    ),
-    SACLocation(
-        SACCutsceneLocations.DAMS_EDGE_HYDRANO_ENTER_CUTSCENE,
-        _PLANET,
-        _CASE,
-        SACLocationType.CUTSCENE,
-        77_825_007,
-        lambda world: True_(),
-    ),
-    SACLocation(
-        SACCutsceneLocations.DAMS_EDGE_HYDRANO_COMPLETE_CUTSCENE,
-        _PLANET,
-        _CASE,
-        SACLocationType.CUTSCENE,
-        77_825_008,
-        lambda world: True_(),
-    ),
-)
+REGION = CaseRegion(SACCases.DAMS_EDGE_HYDRANO, (
+    SACLocation(SACSpecialChallengeLocations.DAMS_EDGE_HYDRANO_VEHICLE_CHASING_A_LEAD,
+                SACLocationType.SPECIAL_CHALLENGE),
+    SACLocation(SACSpecialChallengeLocations.DAMS_EDGE_HYDRANO_VEHICLE_RUSH_HOUR, SACLocationType.SPECIAL_CHALLENGE),
+    SACLocation(SACSpecialChallengeLocations.DAMS_EDGE_HYDRANO_VEHICLE_DRIVING_TEST, SACLocationType.SPECIAL_CHALLENGE),
+    SACLocation(SACMissionLocations.DAMS_EDGE_HYDRANO_COMPLETE, SACLocationType.CASE_COMPLETE),
+    SACLocation(SACMissionLocations.DAMS_EDGE_HYDRANO_SHIP_S_SIGNAL, SACLocationType.MISSION),
+    SACLocation(SACMissionLocations.DAMS_EDGE_HYDRANO_FOLLOW_THAT_CAR, SACLocationType.MISSION),
+    SACLocation(SACMissionLocations.DAMS_EDGE_HYDRANO_THE_DRIFT_KING, SACLocationType.MISSION),
+    SACLocation(SACSkillPointLocations.DAMS_EDGE_HYDRANO_YEEE_HAAAAAW, SACLocationType.SKILL_POINT),
+    SACLocation(SACSkillPointLocations.DAMS_EDGE_HYDRANO_OFFENSIVE_DRIVER, SACLocationType.SKILL_POINT),
+    SACLocation(SACSkillPointLocations.DAMS_EDGE_HYDRANO_SLIPPERY_SLOPE, SACLocationType.SKILL_POINT),
+    SACLocation(SACSkillPointLocations.DAMS_EDGE_HYDRANO_RING_AROUND_THE_ROSIE, SACLocationType.SKILL_POINT),
+    SACLocation(SACCutsceneLocations.DAMS_EDGE_HYDRANO_ENTER_CUTSCENE, SACLocationType.CUTSCENE),
+    SACLocation(SACCutsceneLocations.DAMS_EDGE_HYDRANO_COMPLETE_CUTSCENE, SACLocationType.CUTSCENE),
+))

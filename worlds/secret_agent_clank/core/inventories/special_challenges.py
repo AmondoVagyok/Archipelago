@@ -1,22 +1,21 @@
-"""Special Challenge tracking; addresses are in constants/special_challenges.py."""
+"""Special Challenge tracking; flags are in constants/special_challenges.py."""
 from typing import TYPE_CHECKING
 
-from ...constants.special_challenges import SPECIAL_CHALLENGES
-from .case_events import CaseEventInventory
+from ...constants.special_challenges import SPECIAL_CHALLENGE_FLAGS
+from .case_events import EventFlagInventory
 
 if TYPE_CHECKING:
     from ...pypine import Pine
 
 
-class SpecialChallengeInventory(CaseEventInventory):
+class SpecialChallengeInventory(EventFlagInventory):
 
     def __init__(self, pine: "Pine") -> None:
-        super().__init__(pine, SPECIAL_CHALLENGES)
+        super().__init__(pine, SPECIAL_CHALLENGE_FLAGS)
 
     def sync(self) -> None:
         """Saved completions remain pending until AP accepts their checks."""
         pass
 
     def check(self) -> list[str]:
-        return [str(entry) for entry in self.entries
-                if not self.completed[str(entry)] and self.get(entry)]
+        return [name for name in self.names if not self.completed[name] and self.get(name)]

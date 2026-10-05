@@ -1,7 +1,7 @@
 """Arena win counters resolved from the native arena table and current save."""
 import struct
 
-from ...constants.ratchet_challenges import RATCHET_CHALLENGES, RATCHET_CHALLENGES_BY_CASE
+from ...constants.ratchet_challenges import RATCHET_CHALLENGES_BY_CASE
 from ..case_menu import CASE_LABELS, ee_pointer
 from ..global_flags import GlobalFlags
 from .case_events import CaseEventInventory
@@ -9,7 +9,7 @@ from .case_events import CaseEventInventory
 
 class RatchetChallengeInventory(CaseEventInventory):
     def __init__(self, pine):
-        super().__init__(pine, RATCHET_CHALLENGES)
+        super().__init__(pine, (name for names in RATCHET_CHALLENGES_BY_CASE.values() for name in names))
         self.flags = GlobalFlags(pine)
         self.indices = {}
 
@@ -56,8 +56,8 @@ class RatchetChallengeInventory(CaseEventInventory):
         self.indices = indices
         return True
 
-    def get(self, entry):
-        index = self.indices.get(str(entry))
+    def get(self, name):
+        index = self.indices.get(name)
         value = self.flags.read(index) if index is not None else None
         return value is not None and value[0] > 0
 
@@ -66,5 +66,4 @@ class RatchetChallengeInventory(CaseEventInventory):
         pass
 
     def check(self):
-        return [str(entry) for entry in self.entries
-                if not self.completed[str(entry)] and self.get(entry)]
+        return [name for name in self.names if not self.completed[name] and self.get(name)]

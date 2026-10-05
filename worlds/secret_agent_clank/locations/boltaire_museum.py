@@ -1,5 +1,5 @@
-"""Every location in Boltaire Museum, each carrying its planet, case and access rule."""
-from rule_builder.rules import Has, HasAll, True_
+"""Boltaire Museum: the case region and every location in it, with its access rule."""
+from rule_builder.rules import Has, HasAll
 
 from ..constants import (
     SACAlienCodeLocations,
@@ -9,152 +9,35 @@ from ..constants import (
     SACCutsceneLocations,
     SACMissionLocations,
     SACPickups,
-    SACPlanets,
     SACSkillPointLocations,
     SACTitaniumBoltLocations,
 )
-from .model import SACLocation, SACLocationType
-
-_PLANET = SACPlanets.BOLTAIRE_MUSEUM
-_CASE = SACCases.BOLTAIRE_MUSEUM
+from .model import CaseRegion, SACLocation, SACLocationType
 
 _FINISH_MISSION = HasAll(SACClankGadgets.BLACK_OUT_PEN, SACClankWeapons.THROWTIE, SACClankGadgets.JETBOOTS)
 
-LOCATIONS: tuple[SACLocation, ...] = (
-    SACLocation(
-        SACPickups.BOLTAIRE_MUSEUM_DUAL_LACERATORS,
-        _PLANET,
-        _CASE,
-        SACLocationType.RATCHET_WEAPON,
-        77_800_000,
-        lambda world: Has(SACClankGadgets.BLACK_OUT_PEN),
-    ),
-    SACLocation(
-        SACPickups.BOLTAIRE_MUSEUM_TIE_A_RANG,
-        _PLANET,
-        _CASE,
-        SACLocationType.CLANK_WEAPON,
-        77_800_001,
-        lambda world: True_(),
-    ),
-    SACLocation(
-        SACPickups.BOLTAIRE_MUSEUM_JET_BOOTS,
-        _PLANET,
-        _CASE,
-        SACLocationType.CLANK_GADGET,
-        77_800_002,
-        lambda world: _FINISH_MISSION,
-    ),
-    SACLocation(
-        SACPickups.BOLTAIRE_MUSEUM_BLACKOUT_PEN,
-        _PLANET,
-        _CASE,
-        SACLocationType.GADGET_PICKUP,
-        77_800_007,
-        lambda world: True_(),
-    ),
-    SACLocation(
-        SACPickups.BOLTAIRE_MUSEUM_THERM_OPTIC_SHADES,
-        _PLANET,
-        _CASE,
-        SACLocationType.GADGET_PICKUP,
-        77_800_008,
-        lambda world: True_(),
-    ),
-    SACLocation(
-        SACTitaniumBoltLocations.BOLTAIRE_MUSEUM_1,
-        _PLANET,
-        _CASE,
-        SACLocationType.TITANIUM_BOLT,
-        77_800_901,
-        lambda world: Has(SACClankGadgets.JETBOOTS),
-    ),
-    SACLocation(
-        SACTitaniumBoltLocations.BOLTAIRE_MUSEUM_2,
-        _PLANET,
-        _CASE,
-        SACLocationType.TITANIUM_BOLT,
-        77_800_902,
-        lambda world: HasAll(SACClankGadgets.JETBOOTS, SACClankGadgets.BLACK_OUT_PEN),
-    ),
-    SACLocation(
-        SACMissionLocations.BOLTAIRE_MUSEUM_COMPLETE,
-        _PLANET,
-        _CASE,
-        SACLocationType.CASE_COMPLETE,
-        77_800_009,
-        lambda world: True_(),
-    ),
-    SACLocation(
-        SACMissionLocations.BOLTAIRE_MUSEUM_ESCAPE_THE_RAVINE,
-        _PLANET,
-        _CASE,
-        SACLocationType.MISSION,
-        77_800_010,
-        lambda world: True_(),
-    ),
-    SACLocation(
-        SACMissionLocations.BOLTAIRE_MUSEUM_GET_INSIDE_THE_MUSEUM,
-        _PLANET,
-        _CASE,
-        SACLocationType.MISSION,
-        77_800_011,
-        lambda world: True_(),
-    ),
-    SACLocation(
-        SACMissionLocations.BOLTAIRE_MUSEUM_NOT_THE_GUIDED_TOUR,
-        _PLANET,
-        _CASE,
-        SACLocationType.MISSION,
-        77_800_012,
-        lambda world: _FINISH_MISSION,
-    ),
-    SACLocation(
-        SACSkillPointLocations.BOLTAIRE_MUSEUM_FURIOUS_FISTS,
-        _PLANET,
-        _CASE,
-        SACLocationType.SKILL_POINT,
-        77_800_014,
-        lambda world: _FINISH_MISSION,
-    ),
-    SACLocation(
-        SACSkillPointLocations.BOLTAIRE_MUSEUM_SILENT_NIGHT,
-        _PLANET,
-        _CASE,
-        SACLocationType.SKILL_POINT,
-        77_800_015,
-        lambda world: _FINISH_MISSION,
-    ),
-    SACLocation(
-        SACCutsceneLocations.BOLTAIRE_MUSEUM_ENTER_CUTSCENE,
-        _PLANET,
-        _CASE,
-        SACLocationType.CUTSCENE,
-        77_800_013,
-        lambda world: True_(),
-    ),
-    SACLocation(
-        SACAlienCodeLocations.BOLTAIRE_MUSEUM_THE_LEGENDS,
-        _PLANET,
-        _CASE,
-        SACLocationType.ALIEN_CODE,
-        77_800_016,
-        lambda world: Has(SACClankGadgets.THERM_OPTIC_SHADES),
-    ),
-    SACLocation(
-        SACAlienCodeLocations.BOLTAIRE_MUSEUM_RONNS_SECRET,
-        _PLANET,
-        _CASE,
-        SACLocationType.ALIEN_CODE,
-        77_800_017,
-        lambda world: _FINISH_MISSION & Has(SACClankGadgets.THERM_OPTIC_SHADES),
-    ),
-    SACLocation(
-        SACAlienCodeLocations.BOLTAIRE_MUSEUM_BENS_SECRET,
-        _PLANET,
-        _CASE,
-        SACLocationType.ALIEN_CODE,
-        77_800_018,
-        lambda world: _FINISH_MISSION & Has(SACClankGadgets.THERM_OPTIC_SHADES),
-    ),
-)
+REGION = CaseRegion(SACCases.BOLTAIRE_MUSEUM, (
+    SACLocation(SACPickups.BOLTAIRE_MUSEUM_DUAL_LACERATORS,
+                SACLocationType.RATCHET_WEAPON, Has(SACClankGadgets.BLACK_OUT_PEN)),
+    SACLocation(SACPickups.BOLTAIRE_MUSEUM_TIE_A_RANG, SACLocationType.CLANK_WEAPON),
+    SACLocation(SACPickups.BOLTAIRE_MUSEUM_JET_BOOTS, SACLocationType.CLANK_GADGET, _FINISH_MISSION),
+    SACLocation(SACPickups.BOLTAIRE_MUSEUM_BLACKOUT_PEN, SACLocationType.GADGET_PICKUP),
+    SACLocation(SACPickups.BOLTAIRE_MUSEUM_THERM_OPTIC_SHADES, SACLocationType.GADGET_PICKUP),
+    SACLocation(SACTitaniumBoltLocations.BOLTAIRE_MUSEUM_1,
+                SACLocationType.TITANIUM_BOLT, Has(SACClankGadgets.JETBOOTS)),
+    SACLocation(SACTitaniumBoltLocations.BOLTAIRE_MUSEUM_2,
+                SACLocationType.TITANIUM_BOLT, HasAll(SACClankGadgets.JETBOOTS, SACClankGadgets.BLACK_OUT_PEN)),
+    SACLocation(SACMissionLocations.BOLTAIRE_MUSEUM_COMPLETE, SACLocationType.CASE_COMPLETE),
+    SACLocation(SACMissionLocations.BOLTAIRE_MUSEUM_ESCAPE_THE_RAVINE, SACLocationType.MISSION),
+    SACLocation(SACMissionLocations.BOLTAIRE_MUSEUM_GET_INSIDE_THE_MUSEUM, SACLocationType.MISSION),
+    SACLocation(SACMissionLocations.BOLTAIRE_MUSEUM_NOT_THE_GUIDED_TOUR, SACLocationType.MISSION, _FINISH_MISSION),
+    SACLocation(SACSkillPointLocations.BOLTAIRE_MUSEUM_FURIOUS_FISTS, SACLocationType.SKILL_POINT, _FINISH_MISSION),
+    SACLocation(SACSkillPointLocations.BOLTAIRE_MUSEUM_SILENT_NIGHT, SACLocationType.SKILL_POINT, _FINISH_MISSION),
+    SACLocation(SACCutsceneLocations.BOLTAIRE_MUSEUM_ENTER_CUTSCENE, SACLocationType.CUTSCENE),
+    SACLocation(SACAlienCodeLocations.BOLTAIRE_MUSEUM_THE_LEGENDS,
+                SACLocationType.ALIEN_CODE, Has(SACClankGadgets.THERM_OPTIC_SHADES)),
+    SACLocation(SACAlienCodeLocations.BOLTAIRE_MUSEUM_RONNS_SECRET,
+                SACLocationType.ALIEN_CODE, _FINISH_MISSION & Has(SACClankGadgets.THERM_OPTIC_SHADES)),
+    SACLocation(SACAlienCodeLocations.BOLTAIRE_MUSEUM_BENS_SECRET,
+                SACLocationType.ALIEN_CODE, _FINISH_MISSION & Has(SACClankGadgets.THERM_OPTIC_SHADES)),
+))

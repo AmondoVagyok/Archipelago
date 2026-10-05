@@ -1,65 +1,12 @@
-"""Every location in A Fiction Full Of Dollars, each carrying its planet, case and access rule."""
-from rule_builder.rules import True_
+"""A Fiction Full Of Dollars: the case region and every location in it, with its access rule."""
+from ..constants import SACCases, SACCutsceneLocations, SACMissionLocations, SACSkillPointLocations
+from .model import CaseRegion, SACLocation, SACLocationType
 
-from ..constants import (
-    SACCases,
-    SACCutsceneLocations,
-    SACMissionLocations,
-    SACPlanets,
-    SACSkillPointLocations,
-)
-from .model import SACLocation, SACLocationType
-
-_PLANET = SACPlanets.HYDRANO
-_CASE = SACCases.A_FICTION_FULL_OF_DOLLARS
-
-LOCATIONS: tuple[SACLocation, ...] = (
-    SACLocation(
-        SACMissionLocations.A_FICTION_FULL_OF_DOLLARS_COMPLETE,
-        _PLANET,
-        _CASE,
-        SACLocationType.CASE_COMPLETE,
-        77_826_000,
-        lambda world: True_(),
-    ),
-    SACLocation(
-        SACMissionLocations.A_FICTION_FULL_OF_DOLLARS_QWARKOGRAPHY_CH_5,
-        _PLANET,
-        _CASE,
-        SACLocationType.MISSION,
-        77_826_001,
-        lambda world: True_(),
-    ),
-    SACLocation(
-        SACSkillPointLocations.A_FICTION_FULL_OF_DOLLARS_CLEANS_POOLS_TOO,
-        _PLANET,
-        _CASE,
-        SACLocationType.SKILL_POINT,
-        77_826_004,
-        lambda world: True_(),
-    ),
-    SACLocation(
-        SACSkillPointLocations.A_FICTION_FULL_OF_DOLLARS_PERFECT_MIRROR,
-        _PLANET,
-        _CASE,
-        SACLocationType.SKILL_POINT,
-        77_826_005,
-        lambda world: True_(),
-    ),
-    SACLocation(
-        SACCutsceneLocations.A_FICTION_FULL_OF_DOLLARS_ENTER_CUTSCENE,
-        _PLANET,
-        _CASE,
-        SACLocationType.CUTSCENE,
-        77_826_002,
-        lambda world: True_(),
-    ),
-    SACLocation(
-        SACCutsceneLocations.A_FICTION_FULL_OF_DOLLARS_COMPLETE_CUTSCENE,
-        _PLANET,
-        _CASE,
-        SACLocationType.CUTSCENE,
-        77_826_003,
-        lambda world: True_(),
-    ),
-)
+REGION = CaseRegion(SACCases.A_FICTION_FULL_OF_DOLLARS, (
+    SACLocation(SACMissionLocations.A_FICTION_FULL_OF_DOLLARS_COMPLETE, SACLocationType.CASE_COMPLETE),
+    SACLocation(SACMissionLocations.A_FICTION_FULL_OF_DOLLARS_QWARKOGRAPHY_CH_5, SACLocationType.MISSION),
+    SACLocation(SACSkillPointLocations.A_FICTION_FULL_OF_DOLLARS_CLEANS_POOLS_TOO, SACLocationType.SKILL_POINT),
+    SACLocation(SACSkillPointLocations.A_FICTION_FULL_OF_DOLLARS_PERFECT_MIRROR, SACLocationType.SKILL_POINT),
+    SACLocation(SACCutsceneLocations.A_FICTION_FULL_OF_DOLLARS_ENTER_CUTSCENE, SACLocationType.CUTSCENE),
+    SACLocation(SACCutsceneLocations.A_FICTION_FULL_OF_DOLLARS_COMPLETE_CUTSCENE, SACLocationType.CUTSCENE),
+))

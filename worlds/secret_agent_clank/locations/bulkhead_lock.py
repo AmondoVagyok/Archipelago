@@ -1,82 +1,21 @@
-"""Every location in Bulkhead Lock, each carrying its planet, case and access rule."""
-from rule_builder.rules import True_
-
+"""Bulkhead Lock: the case region and every location in it, with its access rule."""
 from ..constants import (
     SACCases,
     SACCutsceneLocations,
     SACGadgetbotChallengeLocations,
     SACMissionLocations,
-    SACPlanets,
     SACSkillPointLocations,
 )
-from .model import SACLocation, SACLocationType
+from .model import CaseRegion, SACLocation, SACLocationType
 
-_PLANET = SACPlanets.FORT_SPROCKET
-_CASE = SACCases.BULKHEAD_LOCK
-
-LOCATIONS: tuple[SACLocation, ...] = (
-    SACLocation(
-        SACGadgetbotChallengeLocations.BULKHEAD_LOCK_KNOCKIN_ON_KLUNKS_DOOR,
-        _PLANET,
-        _CASE,
-        SACLocationType.GADGETBOT_CHALLENGE,
-        77_827_000,
-        lambda world: True_(),
-    ),
-    SACLocation(
-        SACGadgetbotChallengeLocations.BULKHEAD_LOCK_MISSION_POSSIBLE,
-        _PLANET,
-        _CASE,
-        SACLocationType.GADGETBOT_CHALLENGE,
-        77_827_001,
-        lambda world: True_(),
-    ),
-    SACLocation(
-        SACMissionLocations.BULKHEAD_LOCK_COMPLETE,
-        _PLANET,
-        _CASE,
-        SACLocationType.CASE_COMPLETE,
-        77_827_002,
-        lambda world: True_(),
-    ),
-    SACLocation(
-        SACMissionLocations.BULKHEAD_LOCK_UNDERWATER_BASE,
-        _PLANET,
-        _CASE,
-        SACLocationType.MISSION,
-        77_827_003,
-        lambda world: True_(),
-    ),
-    SACLocation(
-        SACMissionLocations.BULKHEAD_LOCK_LOCKED_DOOR,
-        _PLANET,
-        _CASE,
-        SACLocationType.MISSION,
-        77_827_004,
-        lambda world: True_(),
-    ),
-    SACLocation(
-        SACMissionLocations.BULKHEAD_LOCK_INSULT_TO_INJURY,
-        _PLANET,
-        _CASE,
-        SACLocationType.MISSION,
-        77_827_005,
-        lambda world: True_(),
-    ),
-    SACLocation(
-        SACSkillPointLocations.BULKHEAD_LOCK_CEREAL_DECODER_RING,
-        _PLANET,
-        _CASE,
-        SACLocationType.SKILL_POINT,
-        77_827_007,
-        lambda world: True_(),
-    ),
-    SACLocation(
-        SACCutsceneLocations.BULKHEAD_LOCK_ENTER_CUTSCENE,
-        _PLANET,
-        _CASE,
-        SACLocationType.CUTSCENE,
-        77_827_006,
-        lambda world: True_(),
-    ),
-)
+REGION = CaseRegion(SACCases.BULKHEAD_LOCK, (
+    SACLocation(SACGadgetbotChallengeLocations.BULKHEAD_LOCK_KNOCKIN_ON_KLUNKS_DOOR,
+                SACLocationType.GADGETBOT_CHALLENGE),
+    SACLocation(SACGadgetbotChallengeLocations.BULKHEAD_LOCK_MISSION_POSSIBLE, SACLocationType.GADGETBOT_CHALLENGE),
+    SACLocation(SACMissionLocations.BULKHEAD_LOCK_COMPLETE, SACLocationType.CASE_COMPLETE),
+    SACLocation(SACMissionLocations.BULKHEAD_LOCK_UNDERWATER_BASE, SACLocationType.MISSION),
+    SACLocation(SACMissionLocations.BULKHEAD_LOCK_LOCKED_DOOR, SACLocationType.MISSION),
+    SACLocation(SACMissionLocations.BULKHEAD_LOCK_INSULT_TO_INJURY, SACLocationType.MISSION),
+    SACLocation(SACSkillPointLocations.BULKHEAD_LOCK_CEREAL_DECODER_RING, SACLocationType.SKILL_POINT),
+    SACLocation(SACCutsceneLocations.BULKHEAD_LOCK_ENTER_CUTSCENE, SACLocationType.CUTSCENE),
+))

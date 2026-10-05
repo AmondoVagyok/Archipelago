@@ -1,26 +1,5 @@
-"""Native keycard flag 0xAA: red bit 0, blue bit 1, yellow bit 2."""
+"""Keycard locations and their bits in native flag 0xAA."""
 from dataclasses import dataclass
-
-from .planets import SACCases
-from .types import CaseStructure, SACTags, group_by_case
-
-
-@dataclass(frozen=True)
-class SACKeycards:
-    RED_KEYCARD = "Red Keycard"
-    BLUE_KEYCARD = "Blue Keycard"
-    YELLOW_KEYCARD = "Yellow Keycard"
-
-
-KEYCARDS: tuple[CaseStructure, ...] = (
-    CaseStructure(SACCases.ASYANICA_ROOFTOPS, SACKeycards.RED_KEYCARD, SACTags.KEYCARD),
-    CaseStructure(SACCases.INSIDE_THE_A_EYE, SACKeycards.BLUE_KEYCARD, SACTags.KEYCARD),
-    CaseStructure(SACCases.SAINT_QWARK, SACKeycards.YELLOW_KEYCARD, SACTags.KEYCARD),
-)
-
-KEYCARDS_BY_CASE: dict[str, tuple[str, ...]] = group_by_case(
-    tuple(entry for entry in KEYCARDS if entry.case_name != "TODO")
-)
 
 
 @dataclass(frozen=True)
@@ -30,3 +9,10 @@ class SACKeycardLocations:
     RED_KEYCARD = "Asyanica (Clank) - Asyanica Rooftops: Red Keycard at the Second Set of Police Cars"
     BLUE_KEYCARD = "Fort Sprocket (Gadgetbots) - Inside the A-Eye: Blue Keycard during Vaultbreakers"
     YELLOW_KEYCARD = "Spaceship Graveyard (Qwark) - Saint Qwark: Yellow Keycard after Cannon Save"
+
+
+KEYCARD_BITS: dict[str, int] = {
+    SACKeycardLocations.RED_KEYCARD: 0,
+    SACKeycardLocations.BLUE_KEYCARD: 1,
+    SACKeycardLocations.YELLOW_KEYCARD: 2,
+}

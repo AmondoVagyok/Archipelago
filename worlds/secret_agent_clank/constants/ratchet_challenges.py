@@ -1,137 +1,11 @@
-"""Ratchet arena challenge names in native per-case challenge order."""
+"""Ratchet arena challenge locations.
 
+Win counters are resolved at runtime from the native arena table, which lists
+each case's five challenges consecutively in the order given here.
+"""
 from dataclasses import dataclass
 
 from .planets import SACCases
-from .types import CaseStructure, SACTags, group_by_case, with_display_names
-
-
-@dataclass(frozen=True)
-class SACRatchetChallenges:
-    """Short Ratchet Challenge titles; RATCHET_CHALLENGES below assigns each to its case."""
-
-    CATCH_AS_CATCH_CAN = "Catch-as-Catch-Can"
-    AMOEBOID_ON_A_POLE = "Amoeboid on a Pole"
-    IRON_MAN = "Iron Man"
-    TRIPLE_THREAT = "Triple Threat"
-    MEGA_CHALLENGE_BATTLE_ROYAL = "Mega Challenge: Battle Royal"
-
-    LAST_ONE_PICKED_FOR_DODGEBALL = "Last One Picked For Dodgeball"
-    STEEL_IS_STEEL = "Steel Is Steel"
-    PUMPING_IRON_MOLTEN_IRON = "Pumping Iron. Molten Iron."
-    GREAT_BALLS_OF_FIRE = "Great Balls Of Fire!"
-    MEGA_CHALLENGE_PRISON_YARD = "Mega Challenge: Prison Yard"
-
-    NAILS_FOR_BREAKFAST = "Nails for Breakfast"
-    TYHRRANOID_RECYCLING = "Tyhrranoid Recycling"
-    ITS_RAINING_PHLEGM_HALLELUJAH = "It's Raining Phlegm! Hallelujah!"
-    MEATLOAF_TUESDAYS = "Meatloaf Tuesdays"
-    MEGA_CHALLENGE_CAFETERIA = "Mega Challenge: Cafeteria"
-
-    NO_GOOD_DEED_GOES_UNPUNISHED = "No good deed goes unpunished."
-    COVER_YOUR_SHAME = "Cover Your Shame!"
-    DIDNT_NEED_TO_SEE_THAT = "Didn't need to see that!"
-    ITS_A_DRY_HEAT = "It's a Dry Heat"
-    MEGA_CHALLENGE_SHOWER = "Mega Challenge: Shower"
-
-    KARMIC_BREAKDOWN = "Karmic Breakdown"
-    NO_SHELTER = "No Shelter"
-    PAST_DUE = "Past Due"
-    SPEAK_SOFTLY_AND = "Speak Softly And.."
-    MEGA_CHALLENGE_CELLBLOCK = "Mega Challenge: Cellblock"
-
-
-_RAW_RATCHET_CHALLENGES: tuple[CaseStructure, ...] = (
-    CaseStructure(
-        SACCases.PRISON_BREAKOUT, SACRatchetChallenges.CATCH_AS_CATCH_CAN, SACTags.RATCHET_CHALLENGE,
-        event_flag=0b00000001, event_address=0x206C54,
-    ),
-    CaseStructure(
-        SACCases.PRISON_BREAKOUT, SACRatchetChallenges.AMOEBOID_ON_A_POLE, SACTags.RATCHET_CHALLENGE,
-        event_flag=0b00000001, event_address=0x206C55,
-    ),
-    CaseStructure(
-        SACCases.PRISON_BREAKOUT, SACRatchetChallenges.IRON_MAN, SACTags.RATCHET_CHALLENGE,
-        event_flag=0b00000001, event_address=0x206C56,
-    ),
-    CaseStructure(
-        SACCases.PRISON_BREAKOUT, SACRatchetChallenges.TRIPLE_THREAT, SACTags.RATCHET_CHALLENGE,
-        event_flag=0b00000001, event_address=0x206C57,
-    ),
-    CaseStructure(
-        SACCases.PRISON_BREAKOUT, SACRatchetChallenges.MEGA_CHALLENGE_BATTLE_ROYAL, SACTags.RATCHET_CHALLENGE,
-        event_flag=0b00000001, event_address=0x206C58,
-    ),
-
-    CaseStructure(
-        SACCases.THE_EXERCISE_YARD, SACRatchetChallenges.LAST_ONE_PICKED_FOR_DODGEBALL, SACTags.RATCHET_CHALLENGE,
-        event_flag=0b00000001, event_address=0x206C44,
-    ),
-    CaseStructure(
-        SACCases.THE_EXERCISE_YARD, SACRatchetChallenges.STEEL_IS_STEEL, SACTags.RATCHET_CHALLENGE,
-        event_flag=0b00000001, event_address=0x206C45,
-    ),
-    CaseStructure(
-        SACCases.THE_EXERCISE_YARD, SACRatchetChallenges.PUMPING_IRON_MOLTEN_IRON, SACTags.RATCHET_CHALLENGE,
-        event_flag=0b00000001, event_address=0x206C46,
-    ),
-    CaseStructure(
-        SACCases.THE_EXERCISE_YARD, SACRatchetChallenges.GREAT_BALLS_OF_FIRE, SACTags.RATCHET_CHALLENGE,
-        event_flag=0b00000001, event_address=0x206C47,
-    ),
-    CaseStructure(
-        SACCases.THE_EXERCISE_YARD, SACRatchetChallenges.MEGA_CHALLENGE_PRISON_YARD, SACTags.RATCHET_CHALLENGE,
-        event_flag=0b00000001, event_address=0x206C48,
-    ),
-
-    CaseStructure(
-        SACCases.THE_MESS_HALL, SACRatchetChallenges.NAILS_FOR_BREAKFAST, SACTags.RATCHET_CHALLENGE,
-        event_flag=0b00000001, event_address=0x206C3C,
-    ),
-    CaseStructure(
-        SACCases.THE_MESS_HALL, SACRatchetChallenges.TYHRRANOID_RECYCLING, SACTags.RATCHET_CHALLENGE,
-        event_flag=0b00000001, event_address=0x206C3D,
-    ),
-    CaseStructure(
-        SACCases.THE_MESS_HALL, SACRatchetChallenges.ITS_RAINING_PHLEGM_HALLELUJAH, SACTags.RATCHET_CHALLENGE,
-        event_flag=0b00000001, event_address=0x206C3E,
-    ),
-    CaseStructure(
-        SACCases.THE_MESS_HALL, SACRatchetChallenges.MEATLOAF_TUESDAYS, SACTags.RATCHET_CHALLENGE,
-        event_flag=0b00000001, event_address=0x206C3F,
-    ),
-    CaseStructure(
-        SACCases.THE_MESS_HALL, SACRatchetChallenges.MEGA_CHALLENGE_CAFETERIA, SACTags.RATCHET_CHALLENGE,
-        event_flag=0b00000001, event_address=0x206C40,
-    ),
-
-    CaseStructure(
-        SACCases.THE_SHOWERS, SACRatchetChallenges.NO_GOOD_DEED_GOES_UNPUNISHED, SACTags.RATCHET_CHALLENGE,
-        event_flag=0b00000001, event_address=0x206C4C,
-    ),
-    CaseStructure(
-        SACCases.THE_SHOWERS, SACRatchetChallenges.COVER_YOUR_SHAME, SACTags.RATCHET_CHALLENGE,
-        event_flag=0b00000001, event_address=0x206C4D,
-    ),
-    CaseStructure(
-        SACCases.THE_SHOWERS, SACRatchetChallenges.DIDNT_NEED_TO_SEE_THAT, SACTags.RATCHET_CHALLENGE,
-        event_flag=0b00000001, event_address=0x206C4E,
-    ),
-    CaseStructure(
-        SACCases.THE_SHOWERS, SACRatchetChallenges.ITS_A_DRY_HEAT, SACTags.RATCHET_CHALLENGE,
-        event_flag=0b00000001, event_address=0x206C4F,
-    ),
-    CaseStructure(
-        SACCases.THE_SHOWERS, SACRatchetChallenges.MEGA_CHALLENGE_SHOWER, SACTags.RATCHET_CHALLENGE,
-        event_flag=0b00000001, event_address=0x206C50,
-    ),
-
-    CaseStructure(SACCases.MAX_SECURITY_CELLS, SACRatchetChallenges.KARMIC_BREAKDOWN, SACTags.RATCHET_CHALLENGE),
-    CaseStructure(SACCases.MAX_SECURITY_CELLS, SACRatchetChallenges.NO_SHELTER, SACTags.RATCHET_CHALLENGE),
-    CaseStructure(SACCases.MAX_SECURITY_CELLS, SACRatchetChallenges.PAST_DUE, SACTags.RATCHET_CHALLENGE),
-    CaseStructure(SACCases.MAX_SECURITY_CELLS, SACRatchetChallenges.SPEAK_SOFTLY_AND, SACTags.RATCHET_CHALLENGE),
-    CaseStructure(SACCases.MAX_SECURITY_CELLS, SACRatchetChallenges.MEGA_CHALLENGE_CELLBLOCK, SACTags.RATCHET_CHALLENGE),
-)
 
 
 @dataclass(frozen=True)
@@ -163,8 +37,40 @@ class SACRatchetChallengeLocations:
     MAX_SECURITY_CELLS_MEGA_CHALLENGE_CELLBLOCK = "Prison Planet (Ratchet) - Max-Security Cells: Mega Challenge: Cellblock"
 
 
-RATCHET_CHALLENGES: tuple[CaseStructure, ...] = with_display_names(
-    _RAW_RATCHET_CHALLENGES, SACRatchetChallengeLocations)
-
-# Case name -> its Ratchet Challenge location names, in native challenge order.
-RATCHET_CHALLENGES_BY_CASE: dict[str, tuple[str, ...]] = group_by_case(RATCHET_CHALLENGES)
+RATCHET_CHALLENGES_BY_CASE: dict[str, tuple[str, ...]] = {
+    SACCases.PRISON_BREAKOUT: (
+        SACRatchetChallengeLocations.PRISON_BREAKOUT_CATCH_AS_CATCH_CAN,
+        SACRatchetChallengeLocations.PRISON_BREAKOUT_AMOEBOID_ON_A_POLE,
+        SACRatchetChallengeLocations.PRISON_BREAKOUT_IRON_MAN,
+        SACRatchetChallengeLocations.PRISON_BREAKOUT_TRIPLE_THREAT,
+        SACRatchetChallengeLocations.PRISON_BREAKOUT_MEGA_CHALLENGE_BATTLE_ROYAL,
+    ),
+    SACCases.THE_EXERCISE_YARD: (
+        SACRatchetChallengeLocations.THE_EXERCISE_YARD_LAST_ONE_PICKED_FOR_DODGEBALL,
+        SACRatchetChallengeLocations.THE_EXERCISE_YARD_STEEL_IS_STEEL,
+        SACRatchetChallengeLocations.THE_EXERCISE_YARD_PUMPING_IRON_MOLTEN_IRON,
+        SACRatchetChallengeLocations.THE_EXERCISE_YARD_GREAT_BALLS_OF_FIRE,
+        SACRatchetChallengeLocations.THE_EXERCISE_YARD_MEGA_CHALLENGE_PRISON_YARD,
+    ),
+    SACCases.THE_MESS_HALL: (
+        SACRatchetChallengeLocations.THE_MESS_HALL_NAILS_FOR_BREAKFAST,
+        SACRatchetChallengeLocations.THE_MESS_HALL_TYHRRANOID_RECYCLING,
+        SACRatchetChallengeLocations.THE_MESS_HALL_ITS_RAINING_PHLEGM_HALLELUJAH,
+        SACRatchetChallengeLocations.THE_MESS_HALL_MEATLOAF_TUESDAYS,
+        SACRatchetChallengeLocations.THE_MESS_HALL_MEGA_CHALLENGE_CAFETERIA,
+    ),
+    SACCases.THE_SHOWERS: (
+        SACRatchetChallengeLocations.THE_SHOWERS_NO_GOOD_DEED_GOES_UNPUNISHED,
+        SACRatchetChallengeLocations.THE_SHOWERS_COVER_YOUR_SHAME,
+        SACRatchetChallengeLocations.THE_SHOWERS_DIDNT_NEED_TO_SEE_THAT,
+        SACRatchetChallengeLocations.THE_SHOWERS_ITS_A_DRY_HEAT,
+        SACRatchetChallengeLocations.THE_SHOWERS_MEGA_CHALLENGE_SHOWER,
+    ),
+    SACCases.MAX_SECURITY_CELLS: (
+        SACRatchetChallengeLocations.MAX_SECURITY_CELLS_KARMIC_BREAKDOWN,
+        SACRatchetChallengeLocations.MAX_SECURITY_CELLS_NO_SHELTER,
+        SACRatchetChallengeLocations.MAX_SECURITY_CELLS_PAST_DUE,
+        SACRatchetChallengeLocations.MAX_SECURITY_CELLS_SPEAK_SOFTLY_AND,
+        SACRatchetChallengeLocations.MAX_SECURITY_CELLS_MEGA_CHALLENGE_CELLBLOCK,
+    ),
+}

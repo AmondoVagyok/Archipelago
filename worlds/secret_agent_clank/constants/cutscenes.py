@@ -1,112 +1,7 @@
 """Cutscene locations, enabled by the All Cutscenes option."""
-
 from dataclasses import dataclass
 
-from .planets import SACCases
-from .types import CaseStructure, with_display_names
-
-
-@dataclass(frozen=True)
-class SACCutscenes:
-    """Short cutscene titles; CUTSCENES below assigns each a case, address and flag."""
-
-    ENTER_CUTSCENE = "Enter Cutscene"
-    COMPLETE_CASE_CUTSCENE = "Complete Case Cutscene"
-    RESCURE_CLANK_CUTSCENE = "Rescure Clank Cutscene"
-    GODZILLA_LAZER_BEAM = "Godzilla Lazer Beam"
-    COMPLETE_CUTSCENE = "Complete Cutscene"
-    ENTER_THE_MANSION = "Enter the mansion"
-    COMPLETE_DANCE_CUTSCENE = "Complete Dance Cutscene"
-    MEET_JACK_CUTSCENE = "Meet Jack Cutscene"
-    FINISH_GONDOLA_CUTSCENE = "Finish Gondola Cutscene"
-    DEFEAT_JACK_CUTSCENE = "Defeat Jack Cutscene"
-    OPEN_GREEN_DOOR_CUTSCENE = "Open Green Door Cutscene"
-    ENTERE_CUTSCENE = "Enter Cutscene"
-    MID_FIGHT_CUTSCENE_FOR_ROBO_RATCHET = "Mid Fight Cutscene for Robo Ratchet"
-    HIGH_IMPACT_GAMES_CUTSCENE_WITH_GIANT_CLANK = "High Impact Games Cutscene with Giant Clank"
-
-
-# Each cutscene's flag lives in the shared 0x206BE0-0x206BF4 bitmask region.
-_RAW_CUTSCENES: tuple[CaseStructure, ...] = (
-    CaseStructure(SACCases.BOLTAIRE_MUSEUM, SACCutscenes.ENTER_CUTSCENE, event_flag=0b00000001, event_address=0x206BE0),
-    CaseStructure(
-        SACCases.BOLTAIRE_GEM_WING, SACCutscenes.COMPLETE_CASE_CUTSCENE, event_flag=0b00000100, event_address=0x206BE0,
-    ),
-    CaseStructure(SACCases.MAX_SECURITY_CELLS, SACCutscenes.ENTER_CUTSCENE, event_flag=0b00001000, event_address=0x206BE0),
-    CaseStructure(SACCases.ROOFTOP_DEATHTRAP, SACCutscenes.ENTER_CUTSCENE, event_flag=0b00000001, event_address=0x206BE2),
-    CaseStructure(
-        SACCases.ROOFTOP_DEATHTRAP, SACCutscenes.RESCURE_CLANK_CUTSCENE, event_flag=0b00000010, event_address=0x206BE2,
-    ),
-    CaseStructure(SACCases.LARGER_THAN_LIFE, SACCutscenes.ENTER_CUTSCENE, event_flag=0b00001000, event_address=0x206BE2),
-    CaseStructure(
-        SACCases.LARGER_THAN_LIFE, SACCutscenes.GODZILLA_LAZER_BEAM, event_flag=0b00100000, event_address=0x206BE2,
-    ),
-    CaseStructure(SACCases.LARGER_THAN_LIFE, SACCutscenes.COMPLETE_CUTSCENE, event_flag=0b00010000, event_address=0x206BE2),
-    CaseStructure(SACCases.COUNTESS_VILLA, SACCutscenes.ENTER_THE_MANSION, event_flag=0b00000001, event_address=0x206BE4),
-    CaseStructure(
-        SACCases.COUNTESS_VILLA, SACCutscenes.COMPLETE_DANCE_CUTSCENE, event_flag=0b00000010, event_address=0x206BE4,
-    ),
-    CaseStructure(SACCases.THE_MESS_HALL, SACCutscenes.ENTER_CUTSCENE, event_flag=0b00000100, event_address=0x206BE4),
-    CaseStructure(SACCases.AZCOTAL_ALLEY, SACCutscenes.ENTER_CUTSCENE, event_flag=0b00000001, event_address=0x206BE6),
-    CaseStructure(SACCases.AZCOTAL_ALLEY, SACCutscenes.MEET_JACK_CUTSCENE, event_flag=0b00000010, event_address=0x206BE6),
-    CaseStructure(
-        SACCases.GONDOLA_ASCENT, SACCutscenes.FINISH_GONDOLA_CUTSCENE, event_flag=0b00000100, event_address=0x206BE6,
-    ),
-    CaseStructure(SACCases.SUCK_AND_JIVE, SACCutscenes.DEFEAT_JACK_CUTSCENE, event_flag=0b00010000, event_address=0x206BE6),
-    CaseStructure(SACCases.HIGH_ROLLERS_CASINO, SACCutscenes.ENTER_CUTSCENE, event_flag=0b00000001, event_address=0x206BE8),
-    CaseStructure(
-        SACCases.HIGH_ROLLERS_CASINO, SACCutscenes.COMPLETE_CUTSCENE, event_flag=0b00000011, event_address=0x206BE8,
-    ),
-    CaseStructure(SACCases.THE_EXERCISE_YARD, SACCutscenes.COMPLETE_CUTSCENE, event_flag=0b00000100, event_address=0x206BE8),
-    CaseStructure(SACCases.VENANTONIO_LABS, SACCutscenes.ENTER_CUTSCENE, event_flag=0b00000001, event_address=0x206BEA),
-    CaseStructure(
-        SACCases.VENANTONIO_LABS, SACCutscenes.OPEN_GREEN_DOOR_CUTSCENE, event_flag=0b00000010, event_address=0x206BEA,
-    ),
-    CaseStructure(SACCases.VENANTONIO_LABS, SACCutscenes.COMPLETE_CUTSCENE, event_flag=0b00000100, event_address=0x206BEA),
-    CaseStructure(
-        SACCases.VENANTONIO_CANALS, SACCutscenes.COMPLETE_CUTSCENE, event_flag=0b00001000, event_address=0x206BEA,
-    ),
-    CaseStructure(SACCases.MADAM_BUTTERQWARK, SACCutscenes.ENTER_CUTSCENE, event_flag=0b00010000, event_address=0x206BEA),
-    CaseStructure(
-        SACCases.MADAM_BUTTERQWARK, SACCutscenes.COMPLETE_CUTSCENE, event_flag=0b00100000, event_address=0x206BEA,
-    ),
-    CaseStructure(
-        SACCases.GALACTIC_BOLT_RESERVE, SACCutscenes.ENTER_CUTSCENE, event_flag=0b00000001, event_address=0x206BEC,
-    ),
-    CaseStructure(
-        SACCases.GALACTIC_BOLT_RESERVE, SACCutscenes.COMPLETE_CUTSCENE, event_flag=0b00000010, event_address=0x206BEC,
-    ),
-    CaseStructure(
-        SACCases.INSIDE_THE_A_EYE, SACCutscenes.COMPLETE_CUTSCENE, event_flag=0b00000100, event_address=0x206BEC,
-    ),
-    CaseStructure(SACCases.THE_SHOWERS, SACCutscenes.ENTER_CUTSCENE, event_flag=0b00001000, event_address=0x206BEC),
-    CaseStructure(
-        SACCases.SPACESHIP_GRAVEYARD, SACCutscenes.COMPLETE_CUTSCENE, event_flag=0b00000010, event_address=0x206BEE,
-    ),
-    CaseStructure(SACCases.SAINT_QWARK, SACCutscenes.ENTERE_CUTSCENE, event_flag=0b00000100, event_address=0x206BEE),
-    CaseStructure(SACCases.PRISON_BREAKOUT, SACCutscenes.ENTER_CUTSCENE, event_flag=0b00000001, event_address=0x206BF0),
-    CaseStructure(SACCases.DAMS_EDGE_HYDRANO, SACCutscenes.ENTER_CUTSCENE, event_flag=0b00000010, event_address=0x206BF0),
-    CaseStructure(
-        SACCases.DAMS_EDGE_HYDRANO, SACCutscenes.COMPLETE_CUTSCENE, event_flag=0b00000100, event_address=0x206BF0,
-    ),
-    CaseStructure(
-        SACCases.A_FICTION_FULL_OF_DOLLARS, SACCutscenes.ENTER_CUTSCENE, event_flag=0b00001000, event_address=0x206BF0,
-    ),
-    CaseStructure(
-        SACCases.A_FICTION_FULL_OF_DOLLARS, SACCutscenes.COMPLETE_CUTSCENE, event_flag=0b00010000, event_address=0x206BF0,
-    ),
-    CaseStructure(SACCases.BULKHEAD_LOCK, SACCutscenes.ENTER_CUTSCENE, event_flag=0b00000001, event_address=0x206BF2),
-    CaseStructure(SACCases.KLUNKS_LAIR, SACCutscenes.ENTERE_CUTSCENE, event_flag=0b00000010, event_address=0x206BF2),
-    CaseStructure(
-        SACCases.KLUNKS_LAIR, SACCutscenes.MID_FIGHT_CUTSCENE_FOR_ROBO_RATCHET, event_flag=0b00000100,
-        event_address=0x206BF2,
-    ),
-    CaseStructure(SACCases.KLUNKS_LAIR, SACCutscenes.COMPLETE_CUTSCENE, event_flag=0b00001000, event_address=0x206BF2),
-    CaseStructure(
-        SACCases.KLUNKS_LAIR, SACCutscenes.HIGH_IMPACT_GAMES_CUTSCENE_WITH_GIANT_CLANK, event_flag=0b00001100,
-        event_address=0x206BF4,
-    ),
-)
+from .types import EventFlag
 
 
 @dataclass(frozen=True)
@@ -153,7 +48,46 @@ class SACCutsceneLocations:
     KLUNKS_LAIR_HIGH_IMPACT_GAMES_CUTSCENE_WITH_GIANT_CLANK = "Hydrano (Clank) - Klunk's Lair: High Impact Games Cutscene with Giant Clank"
 
 
-CUTSCENES: tuple[CaseStructure, ...] = with_display_names(_RAW_CUTSCENES, SACCutsceneLocations)
-
-# Cutscene location name -> its case.
-CUTSCENE_TO_CASE: dict[str, str] = {str(entry): entry.case_name for entry in CUTSCENES}
+# Every cutscene's flag lives in the shared 0x206BE0-0x206BF4 bitmask region.
+CUTSCENE_FLAGS: dict[str, EventFlag] = {
+    SACCutsceneLocations.BOLTAIRE_MUSEUM_ENTER_CUTSCENE: EventFlag(0x206BE0, 0b00000001),
+    SACCutsceneLocations.BOLTAIRE_GEM_WING_COMPLETE_CASE_CUTSCENE: EventFlag(0x206BE0, 0b00000100),
+    SACCutsceneLocations.MAX_SECURITY_CELLS_ENTER_CUTSCENE: EventFlag(0x206BE0, 0b00001000),
+    SACCutsceneLocations.ROOFTOP_DEATHTRAP_ENTER_CUTSCENE: EventFlag(0x206BE2, 0b00000001),
+    SACCutsceneLocations.ROOFTOP_DEATHTRAP_RESCURE_CLANK_CUTSCENE: EventFlag(0x206BE2, 0b00000010),
+    SACCutsceneLocations.LARGER_THAN_LIFE_ENTER_CUTSCENE: EventFlag(0x206BE2, 0b00001000),
+    SACCutsceneLocations.LARGER_THAN_LIFE_GODZILLA_LAZER_BEAM: EventFlag(0x206BE2, 0b00100000),
+    SACCutsceneLocations.LARGER_THAN_LIFE_COMPLETE_CUTSCENE: EventFlag(0x206BE2, 0b00010000),
+    SACCutsceneLocations.COUNTESS_VILLA_ENTER_THE_MANSION: EventFlag(0x206BE4, 0b00000001),
+    SACCutsceneLocations.COUNTESS_VILLA_COMPLETE_DANCE_CUTSCENE: EventFlag(0x206BE4, 0b00000010),
+    SACCutsceneLocations.THE_MESS_HALL_ENTER_CUTSCENE: EventFlag(0x206BE4, 0b00000100),
+    SACCutsceneLocations.AZCOTAL_ALLEY_ENTER_CUTSCENE: EventFlag(0x206BE6, 0b00000001),
+    SACCutsceneLocations.AZCOTAL_ALLEY_MEET_JACK_CUTSCENE: EventFlag(0x206BE6, 0b00000010),
+    SACCutsceneLocations.GONDOLA_ASCENT_FINISH_GONDOLA_CUTSCENE: EventFlag(0x206BE6, 0b00000100),
+    SACCutsceneLocations.SUCK_AND_JIVE_DEFEAT_JACK_CUTSCENE: EventFlag(0x206BE6, 0b00010000),
+    SACCutsceneLocations.HIGH_ROLLERS_CASINO_ENTER_CUTSCENE: EventFlag(0x206BE8, 0b00000001),
+    SACCutsceneLocations.HIGH_ROLLERS_CASINO_COMPLETE_CUTSCENE: EventFlag(0x206BE8, 0b00000011),
+    SACCutsceneLocations.THE_EXERCISE_YARD_COMPLETE_CUTSCENE: EventFlag(0x206BE8, 0b00000100),
+    SACCutsceneLocations.VENANTONIO_LABS_ENTER_CUTSCENE: EventFlag(0x206BEA, 0b00000001),
+    SACCutsceneLocations.VENANTONIO_LABS_OPEN_GREEN_DOOR_CUTSCENE: EventFlag(0x206BEA, 0b00000010),
+    SACCutsceneLocations.VENANTONIO_LABS_COMPLETE_CUTSCENE: EventFlag(0x206BEA, 0b00000100),
+    SACCutsceneLocations.VENANTONIO_CANALS_COMPLETE_CUTSCENE: EventFlag(0x206BEA, 0b00001000),
+    SACCutsceneLocations.MADAM_BUTTERQWARK_ENTER_CUTSCENE: EventFlag(0x206BEA, 0b00010000),
+    SACCutsceneLocations.MADAM_BUTTERQWARK_COMPLETE_CUTSCENE: EventFlag(0x206BEA, 0b00100000),
+    SACCutsceneLocations.GALACTIC_BOLT_RESERVE_ENTER_CUTSCENE: EventFlag(0x206BEC, 0b00000001),
+    SACCutsceneLocations.GALACTIC_BOLT_RESERVE_COMPLETE_CUTSCENE: EventFlag(0x206BEC, 0b00000010),
+    SACCutsceneLocations.INSIDE_THE_A_EYE_COMPLETE_CUTSCENE: EventFlag(0x206BEC, 0b00000100),
+    SACCutsceneLocations.THE_SHOWERS_ENTER_CUTSCENE: EventFlag(0x206BEC, 0b00001000),
+    SACCutsceneLocations.SPACESHIP_GRAVEYARD_COMPLETE_CUTSCENE: EventFlag(0x206BEE, 0b00000010),
+    SACCutsceneLocations.SAINT_QWARK_ENTERE_CUTSCENE: EventFlag(0x206BEE, 0b00000100),
+    SACCutsceneLocations.PRISON_BREAKOUT_ENTER_CUTSCENE: EventFlag(0x206BF0, 0b00000001),
+    SACCutsceneLocations.DAMS_EDGE_HYDRANO_ENTER_CUTSCENE: EventFlag(0x206BF0, 0b00000010),
+    SACCutsceneLocations.DAMS_EDGE_HYDRANO_COMPLETE_CUTSCENE: EventFlag(0x206BF0, 0b00000100),
+    SACCutsceneLocations.A_FICTION_FULL_OF_DOLLARS_ENTER_CUTSCENE: EventFlag(0x206BF0, 0b00001000),
+    SACCutsceneLocations.A_FICTION_FULL_OF_DOLLARS_COMPLETE_CUTSCENE: EventFlag(0x206BF0, 0b00010000),
+    SACCutsceneLocations.BULKHEAD_LOCK_ENTER_CUTSCENE: EventFlag(0x206BF2, 0b00000001),
+    SACCutsceneLocations.KLUNKS_LAIR_ENTERE_CUTSCENE: EventFlag(0x206BF2, 0b00000010),
+    SACCutsceneLocations.KLUNKS_LAIR_MID_FIGHT_CUTSCENE_FOR_ROBO_RATCHET: EventFlag(0x206BF2, 0b00000100),
+    SACCutsceneLocations.KLUNKS_LAIR_COMPLETE_CUTSCENE: EventFlag(0x206BF2, 0b00001000),
+    SACCutsceneLocations.KLUNKS_LAIR_HIGH_IMPACT_GAMES_CUTSCENE_WITH_GIANT_CLANK: EventFlag(0x206BF4, 0b00001100),
+}

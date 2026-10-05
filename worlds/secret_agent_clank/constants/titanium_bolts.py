@@ -1,31 +1,5 @@
-"""Native titanium bolt IDs (one-based), from the USA game's count table."""
+"""Titanium bolt locations, keyed by the USA game's per-module count table."""
 from dataclasses import dataclass
-
-from .planets import SACCases
-from .types import CaseStructure, SACTags, with_display_names
-
-TITANIUM_BOLT_CASES = {
-    1: (SACCases.BOLTAIRE_MUSEUM, 2),
-    3: (SACCases.MAX_SECURITY_CELLS, 1),
-    4: (SACCases.ASYANICA_ROOFTOPS, 1),
-    9: (SACCases.THE_MESS_HALL, 1),
-    10: (SACCases.AZCOTAL_ALLEY, 3),
-    11: (SACCases.GONDOLA_ASCENT, 1),
-    13: (SACCases.HIGH_ROLLERS_CASINO, 1),
-    14: (SACCases.THE_EXERCISE_YARD, 1),
-    16: (SACCases.VENANTONIO_LABS, 2),
-    19: (SACCases.GALACTIC_BOLT_RESERVE, 3),
-    21: (SACCases.THE_SHOWERS, 1),
-    22: (SACCases.SPACESHIP_GRAVEYARD, 4),
-    25: (SACCases.PRISON_BREAKOUT, 1),
-    29: (SACCases.UNDERWATER_BUNKER, 1),
-}
-# AP names come from SACTitaniumBoltLocations below, paired in this (module, index) order.
-_RAW_TITANIUM_BOLT_ENTRIES = {
-    (module, index): CaseStructure(case, str(index), SACTags.TITANIUM_BOLT)
-    for module, (case, count) in TITANIUM_BOLT_CASES.items()
-    for index in range(1, count + 1)
-}
 
 
 @dataclass(frozen=True)
@@ -55,7 +29,20 @@ class SACTitaniumBoltLocations:
     UNDERWATER_BUNKER_1 = "Hydrano (Clank) - Underwater Bunker: T-Bolt: Omni-Key Room Before End of Level"
 
 
-TITANIUM_BOLT_ENTRIES: dict[tuple[int, int], CaseStructure] = dict(zip(
-    _RAW_TITANIUM_BOLT_ENTRIES.keys(),
-    with_display_names(tuple(_RAW_TITANIUM_BOLT_ENTRIES.values()), SACTitaniumBoltLocations),
-))
+# Native module ID -> its bolts, in native bolt-ID order (IDs are one-based).
+TITANIUM_BOLTS_BY_MODULE: dict[int, tuple[str, ...]] = {
+    1: (SACTitaniumBoltLocations.BOLTAIRE_MUSEUM_1, SACTitaniumBoltLocations.BOLTAIRE_MUSEUM_2),
+    3: (SACTitaniumBoltLocations.MAX_SECURITY_CELLS_1,),
+    4: (SACTitaniumBoltLocations.ASYANICA_ROOFTOPS_1,),
+    9: (SACTitaniumBoltLocations.THE_MESS_HALL_1,),
+    10: (SACTitaniumBoltLocations.AZCOTAL_ALLEY_1, SACTitaniumBoltLocations.AZCOTAL_ALLEY_2, SACTitaniumBoltLocations.AZCOTAL_ALLEY_3),
+    11: (SACTitaniumBoltLocations.GONDOLA_ASCENT_1,),
+    13: (SACTitaniumBoltLocations.HIGH_ROLLERS_CASINO_1,),
+    14: (SACTitaniumBoltLocations.THE_EXERCISE_YARD_1,),
+    16: (SACTitaniumBoltLocations.VENANTONIO_LABS_1, SACTitaniumBoltLocations.VENANTONIO_LABS_2),
+    19: (SACTitaniumBoltLocations.GALACTIC_BOLT_RESERVE_1, SACTitaniumBoltLocations.GALACTIC_BOLT_RESERVE_2, SACTitaniumBoltLocations.GALACTIC_BOLT_RESERVE_3),
+    21: (SACTitaniumBoltLocations.THE_SHOWERS_1,),
+    22: (SACTitaniumBoltLocations.SPACESHIP_GRAVEYARD_1, SACTitaniumBoltLocations.SPACESHIP_GRAVEYARD_2, SACTitaniumBoltLocations.SPACESHIP_GRAVEYARD_3, SACTitaniumBoltLocations.SPACESHIP_GRAVEYARD_4),
+    25: (SACTitaniumBoltLocations.PRISON_BREAKOUT_1,),
+    29: (SACTitaniumBoltLocations.UNDERWATER_BUNKER_1,),
+}

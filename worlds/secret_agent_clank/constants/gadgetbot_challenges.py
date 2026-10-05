@@ -1,61 +1,7 @@
-"""String constants for Gadgetbot Challenge locations."""
-
+"""Gadgetbot Challenge locations and their native completion flags."""
 from dataclasses import dataclass
 
-from .planets import SACCases
-from .types import CaseStructure, SACTags, group_by_case, with_display_names
-
-
-@dataclass(frozen=True)
-class SACGadgetbotChallenges:
-    """Short Gadgetbot Challenge titles; GADGETBOT_CHALLENGES below assigns each a case and address."""
-
-    RESCUE_CLANK = "Rescue Clank"
-    WORKING_DOWN = "Working Down"
-    GREAT_DIVIDE = "Great Divide"
-
-    VAULTBREAKERS = "Vaultbreakers"
-    DARK_HELMET = "Dark Helmet"
-    GO_LONG = "Go Long"
-
-    KNOCKIN_ON_KLUNKS_DOOR = "Knockin' on Klunk's Door"
-    MISSION_POSSIBLE = "Mission: Possible"
-
-
-_RAW_GADGETBOT_CHALLENGES: tuple[CaseStructure, ...] = (
-    CaseStructure(
-        SACCases.ROOFTOP_DEATHTRAP, SACGadgetbotChallenges.RESCUE_CLANK, SACTags.GADGETBOT_CHALLENGE,
-        event_flag=0b00000001, event_address=0x206C7A,
-    ),
-    CaseStructure(
-        SACCases.ROOFTOP_DEATHTRAP, SACGadgetbotChallenges.WORKING_DOWN, SACTags.GADGETBOT_CHALLENGE,
-        event_flag=0b00000001, event_address=0x206C7B,
-    ),
-    CaseStructure(
-        SACCases.ROOFTOP_DEATHTRAP, SACGadgetbotChallenges.GREAT_DIVIDE, SACTags.GADGETBOT_CHALLENGE,
-        event_flag=0b00000001, event_address=0x206C7C,
-    ),
-    CaseStructure(
-        SACCases.INSIDE_THE_A_EYE, SACGadgetbotChallenges.VAULTBREAKERS, SACTags.GADGETBOT_CHALLENGE,
-        event_flag=0b00000001, event_address=0x206C7F,
-    ),
-    CaseStructure(
-        SACCases.INSIDE_THE_A_EYE, SACGadgetbotChallenges.DARK_HELMET, SACTags.GADGETBOT_CHALLENGE,
-        event_flag=0b00000001, event_address=0x206C80,
-    ),
-    CaseStructure(
-        SACCases.INSIDE_THE_A_EYE, SACGadgetbotChallenges.GO_LONG, SACTags.GADGETBOT_CHALLENGE,
-        event_flag=0b00000001, event_address=0x206C81,
-    ),
-    CaseStructure(
-        SACCases.BULKHEAD_LOCK, SACGadgetbotChallenges.KNOCKIN_ON_KLUNKS_DOOR, SACTags.GADGETBOT_CHALLENGE,
-        event_flag=0b00000001, event_address=0x206C83,
-    ),
-    CaseStructure(
-        SACCases.BULKHEAD_LOCK, SACGadgetbotChallenges.MISSION_POSSIBLE, SACTags.GADGETBOT_CHALLENGE,
-        event_flag=0b00000001, event_address=0x206C84,
-    ),
-)
+from .types import EventFlag
 
 
 @dataclass(frozen=True)
@@ -70,8 +16,13 @@ class SACGadgetbotChallengeLocations:
     BULKHEAD_LOCK_MISSION_POSSIBLE = "Hydrano (Gadgetbots) - Bulkhead Lock: Mission: Possible"
 
 
-GADGETBOT_CHALLENGES: tuple[CaseStructure, ...] = with_display_names(
-    _RAW_GADGETBOT_CHALLENGES, SACGadgetbotChallengeLocations)
-
-# Case name -> its Gadgetbot Challenge location names, in declaration order.
-GADGETBOT_CHALLENGES_BY_CASE: dict[str, tuple[str, ...]] = group_by_case(GADGETBOT_CHALLENGES)
+GADGETBOT_CHALLENGE_FLAGS: dict[str, EventFlag] = {
+    SACGadgetbotChallengeLocations.ROOFTOP_DEATHTRAP_RESCUE_CLANK: EventFlag(0x206C7A, 0b00000001),
+    SACGadgetbotChallengeLocations.ROOFTOP_DEATHTRAP_WORKING_DOWN: EventFlag(0x206C7B, 0b00000001),
+    SACGadgetbotChallengeLocations.ROOFTOP_DEATHTRAP_GREAT_DIVIDE: EventFlag(0x206C7C, 0b00000001),
+    SACGadgetbotChallengeLocations.INSIDE_THE_A_EYE_VAULTBREAKERS: EventFlag(0x206C7F, 0b00000001),
+    SACGadgetbotChallengeLocations.INSIDE_THE_A_EYE_DARK_HELMET: EventFlag(0x206C80, 0b00000001),
+    SACGadgetbotChallengeLocations.INSIDE_THE_A_EYE_GO_LONG: EventFlag(0x206C81, 0b00000001),
+    SACGadgetbotChallengeLocations.BULKHEAD_LOCK_KNOCKIN_ON_KLUNKS_DOOR: EventFlag(0x206C83, 0b00000001),
+    SACGadgetbotChallengeLocations.BULKHEAD_LOCK_MISSION_POSSIBLE: EventFlag(0x206C84, 0b00000001),
+}

@@ -2,7 +2,7 @@ import struct
 import unittest
 from unittest.mock import Mock, patch
 
-from ..constants.alien_codes import ALIEN_CODE_MODULES
+from ..constants.alien_codes import ALIEN_CODES_BY_MODULE
 from ..constants.clank_gadgets import SACClankGadgets
 from ..constants.missions import MISSION_COMPLETE_NAME
 from ..constants.planets import SACCases
@@ -288,7 +288,6 @@ class AlienFlagTests(unittest.TestCase):
     def test_goal_catalog_has_every_code_and_card(self):
         self.assertEqual(len(ALIEN_CODE_LOCATIONS), 27)
         self.assertEqual(len(KEYCARD_LOCATIONS), 3)
-        self.assertEqual(len({entry.code for entry in ALIEN_CODE_LOCATIONS.values()}), 27)
 
     def test_chalice_collection_not_cards_or_door_completes_goal(self):
         p = Memory()
@@ -315,7 +314,7 @@ class AlienFlagTests(unittest.TestCase):
         inv = AlienCodeInventory(Memory())
         inv.valid = True
         data = bytearray(15)
-        for module in ALIEN_CODE_MODULES.values():
+        for module in ALIEN_CODES_BY_MODULE:
             data[(module - 1) // 2] |= 7 << (((module - 1) & 1) * 4)
         inv.flags.read = Mock(return_value=bytes(data))
         found = inv.check()

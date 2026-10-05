@@ -19,6 +19,11 @@ def read_module_counts(pine, function_address):
     return {i + 1: n for i, n in enumerate(counts) if n}
 
 
+def module_bit(data, module, bit):
+    """Read bit `bit` of a one-based module's nibble in a packed per-module flag array."""
+    return bool(data[(module - 1) // 2] & (1 << (((module - 1) & 1) * 4 + bit)))
+
+
 class GlobalFlags:
     def __init__(self, pine):
         self.pine = pine

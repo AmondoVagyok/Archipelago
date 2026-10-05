@@ -3,7 +3,7 @@ from types import SimpleNamespace
 
 from ..client.vendor_scouts import VendorScouts
 from ..constants.planets import SACCases
-from ..locations import BASE_VENDOR_LOCATIONS, MOD_VENDOR_LOCATIONS, TITAN_VENDOR_LOCATIONS
+from ..locations import BASE_VENDOR_LOCATIONS, LOCATION_NAME_TO_ID, MOD_VENDOR_LOCATIONS, TITAN_VENDOR_LOCATIONS
 
 
 class VendorScoutTests(unittest.TestCase):
@@ -52,6 +52,7 @@ class VendorScoutTests(unittest.TestCase):
 
     def test_every_generated_vendor_location_has_a_native_scout_row(self):
         definitions = {**BASE_VENDOR_LOCATIONS, **MOD_VENDOR_LOCATIONS, **TITAN_VENDOR_LOCATIONS}
-        scouts = VendorScouts({name: location.code for name, location in definitions.items()})
-        self.assertEqual(set(scouts.locations.values()), {loc.code for loc in definitions.values()})
+        ids = {name: LOCATION_NAME_TO_ID[name] for name in definitions}
+        scouts = VendorScouts(ids)
+        self.assertEqual(set(scouts.locations.values()), set(ids.values()))
         self.assertTrue(all(name.startswith("Vendor: ") for name in definitions))

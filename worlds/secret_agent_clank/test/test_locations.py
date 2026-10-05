@@ -1,22 +1,35 @@
 import unittest
 
 from ..constants import SACCases, SACPickups
-from ..constants.cutscenes import CUTSCENES
-from ..constants.planets import CASE_NAME_TO_PLANET
+from ..constants.cutscenes import CUTSCENE_FLAGS
+from ..constants.planets import ALL_CASES, CASE_NAME_TO_PLANET
 from ..constants.vendor import VENDOR_WEAPONS, vendor_location_name
 from ..constants.weapon_mods import CHALLENGE_MOD_IDS, WEAPON_MODS
-from ..locations import ALL_LOCATIONS, BASE_VENDOR_LOCATIONS, CASE_LOCATIONS, LOCATIONS, MOD_VENDOR_LOCATIONS
+from ..locations import (
+    ALL_LOCATIONS,
+    BASE_ID,
+    BASE_VENDOR_LOCATIONS,
+    CASE_LOCATIONS,
+    CASE_REGIONS,
+    LOCATION_NAME_TO_ID,
+    LOCATIONS,
+    MOD_VENDOR_LOCATIONS,
+)
 
 
 class LocationRecordTests(unittest.TestCase):
     def test_names_and_codes_are_unique(self):
         self.assertEqual(len(ALL_LOCATIONS), len(LOCATIONS))
-        self.assertEqual(len({location.code for location in LOCATIONS}), len(LOCATIONS))
+        self.assertEqual(list(LOCATION_NAME_TO_ID), [location.name for location in LOCATIONS])
+        self.assertEqual(sorted(LOCATION_NAME_TO_ID.values()),
+                         list(range(BASE_ID, BASE_ID + len(LOCATIONS))))
 
-    def test_case_locations_link_their_case_and_planet(self):
-        for location in CASE_LOCATIONS:
-            with self.subTest(location.name):
-                self.assertEqual(CASE_NAME_TO_PLANET[location.case], location.planet)
+    def test_every_case_has_exactly_one_region(self):
+        self.assertEqual(sorted(CASE_REGIONS), sorted(case.name for case in ALL_CASES))
+        for case_name, region in CASE_REGIONS.items():
+            self.assertEqual(region.planet, CASE_NAME_TO_PLANET[case_name])
+            for location in region.locations:
+                self.assertEqual(location.case, case_name)
 
     def test_vendor_sources_are_not_pickups(self):
         self.assertEqual(set(BASE_VENDOR_LOCATIONS), {vendor_location_name(name) for name in VENDOR_WEAPONS})
@@ -25,7 +38,7 @@ class LocationRecordTests(unittest.TestCase):
             self.assertEqual(mod.location in MOD_VENDOR_LOCATIONS, mod.mod_id not in CHALLENGE_MOD_IDS)
 
     def test_nonexistent_cutscenes_are_removed_from_polling_and_generation(self):
-        for name in ALL_LOCATIONS.keys() | {str(cutscene) for cutscene in CUTSCENES}:
+        for name in ALL_LOCATIONS.keys() | CUTSCENE_FLAGS.keys():
             self.assertFalse("Asyanica Rooftops: Enter Cutscene" in name)
             self.assertFalse("Spaceship Graveyard: Enter Cutscene" in name)
 

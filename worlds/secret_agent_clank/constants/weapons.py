@@ -1,8 +1,7 @@
-"""Equipment display names, their native WEAPON_ORDER names, and the case each is found in."""
+"""Equipment display names and their native WEAPON_ORDER names."""
 from dataclasses import dataclass
 
 from .clank_gadgets import SACClankGadgets, SACClankWeapons
-from .planets import SACCases
 from .weapon_order import WEAPON_ORDER, WeaponSlot
 
 
@@ -106,62 +105,4 @@ EQUIPMENT_INTERNAL_TO_DISPLAY = {
 CLANK_PICKUP_TO_INTERNAL = {
     SACClankGadgets.BLACK_OUT_PEN: "fountainpen",
     SACClankGadgets.THERM_OPTIC_SHADES: "sunglasses",
-}
-
-
-# Case -> the Ratchet weapons found there.
-# LOW CONFIDENCE: entries may move once each case is verified in-game.
-WEAPONS_BY_CASE: dict[str, tuple[str, ...]] = {
-    SACCases.BOLTAIRE_MUSEUM: (
-        SACRatchetWeapons.BLASTER,
-    ),
-    SACCases.MAX_SECURITY_CELLS: (
-        SACRatchetWeapons.SHARDGUN, SACRatchetWeapons.WALLOPER,
-    ),
-    SACCases.ASYANICA_ROOFTOPS: (
-        SACRatchetWeapons.MINELAUNCHER,
-    ),
-    SACCases.AZCOTAL_ALLEY: (
-        SACRatchetWeapons.BEEMINEGLOVE,
-    ),
-    SACCases.HIGH_ROLLERS_CASINO: (
-        SACRatchetWeapons.PORKBOMB,
-    ),
-    SACCases.VENANTONIO_LABS: (
-        SACRatchetWeapons.PLASMAWHIP, SACRatchetWeapons.KICKBLAST,
-    ),
-    SACCases.GALACTIC_BOLT_RESERVE: (
-        SACRatchetWeapons.SHOCKROCKET,
-    ),
-    SACCases.KLUNKS_LAIR: (
-        SACRatchetWeapons.RYNO,
-    ),
-}
-
-# Case -> the Clank equipment from the WEAPON_ORDER array found there.
-# LOW CONFIDENCE, like WEAPONS_BY_CASE.
-GADGETS_BY_CASE: dict[str, tuple[str, ...]] = {
-    SACCases.BOLTAIRE_MUSEUM: (
-        SACClankWeapons.THROWTIE, SACClankGadgets.JETBOOTS,
-        SACClankWeapons.HOLOKNUCKLES, SACClankWeapons.SUPERKICK,
-        SACClankGadgets.BLACK_OUT_PEN, SACClankGadgets.THERM_OPTIC_SHADES,
-    ),
-    SACCases.ASYANICA_ROOFTOPS: (
-        SACClankWeapons.CUFFLINK, SACClankGadgets.OMNIKEY,
-    ),
-    SACCases.AZCOTAL_ALLEY: (
-        SACClankWeapons.TANGLEVINE, SACClankGadgets.CLANKPDA,
-    ),
-    SACCases.HIGH_ROLLERS_CASINO: (
-        SACClankGadgets.HYPNOWATCH, SACClankGadgets.HOLOMONOCLE,
-    ),
-    SACCases.VENANTONIO_LABS: (
-        SACClankWeapons.FLAMETHROWERPEN, SACClankWeapons.LIGHTNINGUMBRELLA,
-    ),
-    SACCases.GALACTIC_BOLT_RESERVE: (
-        SACClankGadgets.BOLTGRABBER,
-    ),
-    SACCases.KLUNKS_LAIR: (
-        SACClankWeapons.KICKSPLOSION,
-    ),
 }

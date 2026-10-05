@@ -1,151 +1,7 @@
-"""String constants for skill point locations."""
-
+"""Skill point locations and their native completion flags (all 65 confirmed live)."""
 from dataclasses import dataclass
 
-from .planets import SACCases
-from .types import CaseStructure, SACTags, group_by_case, with_display_names
-
-
-@dataclass(frozen=True)
-class SACSkillPoints:
-    """Short skill point titles; SKILL_POINTS below assigns each a case and flag."""
-
-    FURIOUS_FISTS = "Furious Fists of Fury"
-    SILENT_NIGHT = "Silent Night"
-    PYRRHIC_VICTORY = "Pyrrhic Victory"
-    TRIPLE_PLATINUM = "Triple Platinum Record"
-    STAINLESS_STEEL = "Stainless Steel"
-    PLAYING_WITH_FIRE = "Playing With Fire"
-    SPEED_DEMON = "Speed Demon"
-    PERFECT_CHROME_FINISH = "Perfect Chrome Finish"
-    ROBOT_FINDS_NINJA = "Robot Finds Ninja"
-    BLACK_TIE_AFFAIR = "Black Tie Affair"
-    LIKE_THE_WIND = "Like The Wind"
-    INVERSE_NINJA_LAW = "Inverse Ninja Law"
-    BLASTER_OVERLOAD = "Blaster Overload"
-    PERFECT_TANGO = "Perfect Tango"
-    BLACK_DIAMOND = "Black Diamond"
-    SMOOTH_MOVES = "Smooth Moves"
-    RINGLEADER = "Ringleader"
-    EMPTY_THE_WARRENS = "Empty The Warrens"
-    ANTAEUS = "Antaeus"
-    MASTER_OF_DISGUISE = "Master of Disguise"
-    TRASH_TALK = "Trash Talk"
-    DEADLY_HANDS = "Deadly Hands"
-    STEEL_RAIN = "Steel Rain"
-    CARD_PICKUP = "52 Card Pickup"
-    DRESS_FOR_SUCCESS = "Dress For Success"
-    BEAT_THE_HOUSE = "Beat The House"
-    INDIAN_BURN = "Indian Burn"
-    LAW_CANT_TOUCH_ME = "The Law Can't Touch Me"
-    LUCKY_SEVENS = "Lucky Sevens"
-    GADGEBOT_STANDS_ALONE = "A Gadgebot Stands Alone"
-    ALL_SLIME_MUST_BURN = "All Slime Must Burn"
-    RAMMING_SPEED = "Ramming Speed!"
-    EVASIVE_MANEUVERS = "Evasive Maneuvers"
-    DEEP_SIX = "Deep Six"
-    WAKE_OF_DESTRUCTION = "Wake Of Destruction"
-    RINGMASTER = "Ringmaster"
-    TWINKLE_TOES = "Twinkle Toes"
-    MAGNUM_OPUS = "Magnum Opus"
-    SOLD_OUT = "Sold Out"
-    WITH_INTEREST = "With Interest"
-    ANDROIDS_IN_DISGUISE = "Androids In Disguise"
-    VAULT_VAULT = "Vault Vault"
-    DIA_DE_LOS_MUERTOS = "El Día de los Muertos"
-    RUBA_DUB_CLUB = "Ruba-Dub Club"
-    MODESTY = "Modesty"
-    DELICACY_SOMEWHERE = "It's A Delicacy Somewhere"
-    REVENANT = "Revenant"
-    PUNCHY = "Punchy"
-    SOUR_VICTORY = "Sour Victory"
-    MIN_MAXING = "Min Maxing"
-    KILL_THE_ROCK = "I Kill the Rock"
-    WHIP_IT_GOOD = "Whip It Good"
-    HANGING_JUDGE = "Hanging Judge"
-    YEEE_HAAAAAW = "Yeeee Haaaaaw!"
-    OFFENSIVE_DRIVER = "Offensive Driver"
-    SLIPPERY_SLOPE = "Slippery Slope"
-    RING_AROUND_THE_ROSIE = "Ring Around the Rosie"
-    CLEANS_POOLS_TOO = "He Cleans pools, Too!"
-    PERFECT_MIRROR = "Perfect Mirror"
-    CEREAL_DECODER_RING = "Cerial Decoder Rung"
-    LEET_HAXXOR = "I33t h4XX0r"
-    RUST_PROOF = "Rust Proof"
-    IM_NOT_THERE = "I'm not There"
-    TURN_THE_TABLES = "Turn The Tables"
-    PRETTY_GOOD_LIKENESS = "A Pretty Good Likeness"
-
-
-# In case_id order. Flags walk 0x206BF8-0x206C00 one bit at a time in this order.
-_RAW_SKILL_POINTS: tuple[CaseStructure, ...] = (
-    CaseStructure(SACCases.BOLTAIRE_MUSEUM, SACSkillPoints.FURIOUS_FISTS, SACTags.SKILL_POINT, event_flag=0b00000001, event_address=0x206BF8),
-    CaseStructure(SACCases.BOLTAIRE_MUSEUM, SACSkillPoints.SILENT_NIGHT, SACTags.SKILL_POINT, event_flag=0b00000010, event_address=0x206BF8),
-    CaseStructure(SACCases.BOLTAIRE_GEM_WING, SACSkillPoints.PYRRHIC_VICTORY, SACTags.SKILL_POINT, event_flag=0b00000100, event_address=0x206BF8),
-    CaseStructure(SACCases.BOLTAIRE_GEM_WING, SACSkillPoints.TRIPLE_PLATINUM, SACTags.SKILL_POINT, event_flag=0b00001000, event_address=0x206BF8),
-    CaseStructure(SACCases.MAX_SECURITY_CELLS, SACSkillPoints.STAINLESS_STEEL, SACTags.SKILL_POINT, event_flag=0b00010000, event_address=0x206BF8),
-    CaseStructure(SACCases.MAX_SECURITY_CELLS, SACSkillPoints.PLAYING_WITH_FIRE, SACTags.SKILL_POINT, event_flag=0b00100000, event_address=0x206BF8),
-    CaseStructure(SACCases.ROOFTOP_DEATHTRAP, SACSkillPoints.SPEED_DEMON, SACTags.SKILL_POINT, event_flag=0b01000000, event_address=0x206BF8),
-    CaseStructure(SACCases.ROOFTOP_DEATHTRAP, SACSkillPoints.PERFECT_CHROME_FINISH, SACTags.SKILL_POINT, event_flag=0b10000000, event_address=0x206BF8),
-    CaseStructure(SACCases.ASYANICA_ROOFTOPS, SACSkillPoints.ROBOT_FINDS_NINJA, SACTags.SKILL_POINT, event_flag=0b00000001, event_address=0x206BF9),
-    CaseStructure(SACCases.ASYANICA_ROOFTOPS, SACSkillPoints.BLACK_TIE_AFFAIR, SACTags.SKILL_POINT, event_flag=0b00000010, event_address=0x206BF9),
-    CaseStructure(SACCases.ASYANICA_ROOFTOPS, SACSkillPoints.LIKE_THE_WIND, SACTags.SKILL_POINT, event_flag=0b00000100, event_address=0x206BF9),
-    CaseStructure(SACCases.LARGER_THAN_LIFE, SACSkillPoints.INVERSE_NINJA_LAW, SACTags.SKILL_POINT, event_flag=0b00001000, event_address=0x206BF9),
-    CaseStructure(SACCases.LARGER_THAN_LIFE, SACSkillPoints.BLASTER_OVERLOAD, SACTags.SKILL_POINT, event_flag=0b00010000, event_address=0x206BF9),
-    CaseStructure(SACCases.COUNTESS_VILLA, SACSkillPoints.PERFECT_TANGO, SACTags.SKILL_POINT, event_flag=0b00100000, event_address=0x206BF9),
-    CaseStructure(SACCases.GLACIARA_SKI_SLOPES, SACSkillPoints.BLACK_DIAMOND, SACTags.SKILL_POINT, event_flag=0b01000000, event_address=0x206BF9),
-    CaseStructure(SACCases.GLACIARA_SKI_SLOPES, SACSkillPoints.SMOOTH_MOVES, SACTags.SKILL_POINT, event_flag=0b10000000, event_address=0x206BF9),
-    CaseStructure(SACCases.GLACIARA_SKI_SLOPES, SACSkillPoints.RINGLEADER, SACTags.SKILL_POINT, event_flag=0b00000001, event_address=0x206BFA),
-    CaseStructure(SACCases.THE_MESS_HALL, SACSkillPoints.EMPTY_THE_WARRENS, SACTags.SKILL_POINT, event_flag=0b00000010, event_address=0x206BFA),
-    CaseStructure(SACCases.THE_MESS_HALL, SACSkillPoints.ANTAEUS, SACTags.SKILL_POINT, event_flag=0b00000100, event_address=0x206BFA),
-    CaseStructure(SACCases.AZCOTAL_ALLEY, SACSkillPoints.MASTER_OF_DISGUISE, SACTags.SKILL_POINT, event_flag=0b00001000, event_address=0x206BFA),
-    CaseStructure(SACCases.AZCOTAL_ALLEY, SACSkillPoints.TRASH_TALK, SACTags.SKILL_POINT, event_flag=0b00010000, event_address=0x206BFA),
-    CaseStructure(SACCases.AZCOTAL_ALLEY, SACSkillPoints.DEADLY_HANDS, SACTags.SKILL_POINT, event_flag=0b00100000, event_address=0x206BFA),
-    CaseStructure(SACCases.GONDOLA_ASCENT, SACSkillPoints.STEEL_RAIN, SACTags.SKILL_POINT, event_flag=0b01000000, event_address=0x206BFA),
-    CaseStructure(SACCases.SUCK_AND_JIVE, SACSkillPoints.CARD_PICKUP, SACTags.SKILL_POINT, event_flag=0b10000000, event_address=0x206BFA),
-    CaseStructure(SACCases.SUCK_AND_JIVE, SACSkillPoints.DRESS_FOR_SUCCESS, SACTags.SKILL_POINT, event_flag=0b00000001, event_address=0x206BFB),
-    CaseStructure(SACCases.HIGH_ROLLERS_CASINO, SACSkillPoints.BEAT_THE_HOUSE, SACTags.SKILL_POINT, event_flag=0b00000010, event_address=0x206BFB),
-    CaseStructure(SACCases.THE_EXERCISE_YARD, SACSkillPoints.INDIAN_BURN, SACTags.SKILL_POINT, event_flag=0b00000100, event_address=0x206BFB),
-    CaseStructure(SACCases.THE_EXERCISE_YARD, SACSkillPoints.LAW_CANT_TOUCH_ME, SACTags.SKILL_POINT, event_flag=0b00001000, event_address=0x206BFB),
-    CaseStructure(SACCases.HIGH_STAKES_ROOM, SACSkillPoints.LUCKY_SEVENS, SACTags.SKILL_POINT, event_flag=0b00010000, event_address=0x206BFB),
-    CaseStructure(SACCases.HIGH_STAKES_ROOM, SACSkillPoints.GADGEBOT_STANDS_ALONE, SACTags.SKILL_POINT, event_flag=0b00100000, event_address=0x206BFB),
-    CaseStructure(SACCases.VENANTONIO_LABS, SACSkillPoints.ALL_SLIME_MUST_BURN, SACTags.SKILL_POINT, event_flag=0b01000000, event_address=0x206BFB),
-    CaseStructure(SACCases.VENANTONIO_LABS, SACSkillPoints.RAMMING_SPEED, SACTags.SKILL_POINT, event_flag=0b10000000, event_address=0x206BFB),
-    CaseStructure(SACCases.VENANTONIO_CANALS, SACSkillPoints.EVASIVE_MANEUVERS, SACTags.SKILL_POINT, event_flag=0b00000001, event_address=0x206BFC),
-    CaseStructure(SACCases.VENANTONIO_CANALS, SACSkillPoints.DEEP_SIX, SACTags.SKILL_POINT, event_flag=0b00000010, event_address=0x206BFC),
-    CaseStructure(SACCases.VENANTONIO_CANALS, SACSkillPoints.WAKE_OF_DESTRUCTION, SACTags.SKILL_POINT, event_flag=0b00000100, event_address=0x206BFC),
-    CaseStructure(SACCases.VENANTONIO_CANALS, SACSkillPoints.RINGMASTER, SACTags.SKILL_POINT, event_flag=0b00001000, event_address=0x206BFC),
-    CaseStructure(SACCases.MADAM_BUTTERQWARK, SACSkillPoints.TWINKLE_TOES, SACTags.SKILL_POINT, event_flag=0b00010000, event_address=0x206BFC),
-    CaseStructure(SACCases.MADAM_BUTTERQWARK, SACSkillPoints.MAGNUM_OPUS, SACTags.SKILL_POINT, event_flag=0b00100000, event_address=0x206BFC),
-    CaseStructure(SACCases.MADAM_BUTTERQWARK, SACSkillPoints.SOLD_OUT, SACTags.SKILL_POINT, event_flag=0b01000000, event_address=0x206BFC),
-    CaseStructure(SACCases.GALACTIC_BOLT_RESERVE, SACSkillPoints.WITH_INTEREST, SACTags.SKILL_POINT, event_flag=0b10000000, event_address=0x206BFC),
-    CaseStructure(SACCases.GALACTIC_BOLT_RESERVE, SACSkillPoints.ANDROIDS_IN_DISGUISE, SACTags.SKILL_POINT, event_flag=0b00000001, event_address=0x206BFD),
-    # Vault Vault is in Galactic Bolt Reserve (confirmed), not Inside the A-Eye.
-    CaseStructure(SACCases.GALACTIC_BOLT_RESERVE, SACSkillPoints.VAULT_VAULT, SACTags.SKILL_POINT, event_flag=0b00000010, event_address=0x206BFD),
-    CaseStructure(SACCases.INSIDE_THE_A_EYE, SACSkillPoints.DIA_DE_LOS_MUERTOS, SACTags.SKILL_POINT, event_flag=0b00000100, event_address=0x206BFD),
-    CaseStructure(SACCases.THE_SHOWERS, SACSkillPoints.RUBA_DUB_CLUB, SACTags.SKILL_POINT, event_flag=0b00001000, event_address=0x206BFD),
-    CaseStructure(SACCases.THE_SHOWERS, SACSkillPoints.MODESTY, SACTags.SKILL_POINT, event_flag=0b00010000, event_address=0x206BFD),
-    CaseStructure(SACCases.SPACESHIP_GRAVEYARD, SACSkillPoints.DELICACY_SOMEWHERE, SACTags.SKILL_POINT, event_flag=0b00100000, event_address=0x206BFD),
-    CaseStructure(SACCases.SPACESHIP_GRAVEYARD, SACSkillPoints.REVENANT, SACTags.SKILL_POINT, event_flag=0b01000000, event_address=0x206BFD),
-    CaseStructure(SACCases.SAINT_QWARK, SACSkillPoints.PUNCHY, SACTags.SKILL_POINT, event_flag=0b10000000, event_address=0x206BFD),
-    CaseStructure(SACCases.SAINT_QWARK, SACSkillPoints.SOUR_VICTORY, SACTags.SKILL_POINT, event_flag=0b00000001, event_address=0x206BFE),
-    CaseStructure(SACCases.THE_QUASAR_FIELDS, SACSkillPoints.MIN_MAXING, SACTags.SKILL_POINT, event_flag=0b00000010, event_address=0x206BFE),
-    CaseStructure(SACCases.THE_QUASAR_FIELDS, SACSkillPoints.KILL_THE_ROCK, SACTags.SKILL_POINT, event_flag=0b00000100, event_address=0x206BFE),
-    CaseStructure(SACCases.PRISON_BREAKOUT, SACSkillPoints.WHIP_IT_GOOD, SACTags.SKILL_POINT, event_flag=0b00001000, event_address=0x206BFE),
-    CaseStructure(SACCases.PRISON_BREAKOUT, SACSkillPoints.HANGING_JUDGE, SACTags.SKILL_POINT, event_flag=0b00010000, event_address=0x206BFE),
-    CaseStructure(SACCases.DAMS_EDGE_HYDRANO, SACSkillPoints.YEEE_HAAAAAW, SACTags.SKILL_POINT, event_flag=0b00100000, event_address=0x206BFE),
-    CaseStructure(SACCases.DAMS_EDGE_HYDRANO, SACSkillPoints.OFFENSIVE_DRIVER, SACTags.SKILL_POINT, event_flag=0b01000000, event_address=0x206BFE),
-    CaseStructure(SACCases.DAMS_EDGE_HYDRANO, SACSkillPoints.SLIPPERY_SLOPE, SACTags.SKILL_POINT, event_flag=0b10000000, event_address=0x206BFE),
-    CaseStructure(SACCases.DAMS_EDGE_HYDRANO, SACSkillPoints.RING_AROUND_THE_ROSIE, SACTags.SKILL_POINT, event_flag=0b00000001, event_address=0x206BFF),
-    CaseStructure(SACCases.A_FICTION_FULL_OF_DOLLARS, SACSkillPoints.CLEANS_POOLS_TOO, SACTags.SKILL_POINT, event_flag=0b00000010, event_address=0x206BFF),
-    CaseStructure(SACCases.A_FICTION_FULL_OF_DOLLARS, SACSkillPoints.PERFECT_MIRROR, SACTags.SKILL_POINT, event_flag=0b00000100, event_address=0x206BFF),
-    CaseStructure(SACCases.BULKHEAD_LOCK, SACSkillPoints.CEREAL_DECODER_RING, SACTags.SKILL_POINT, event_flag=0b00001000, event_address=0x206BFF),
-    CaseStructure(SACCases.UNDERWATER_BUNKER, SACSkillPoints.LEET_HAXXOR, SACTags.SKILL_POINT, event_flag=0b00010000, event_address=0x206BFF),
-    CaseStructure(SACCases.UNDERWATER_BUNKER, SACSkillPoints.RUST_PROOF, SACTags.SKILL_POINT, event_flag=0b00100000, event_address=0x206BFF),
-    CaseStructure(SACCases.UNDERWATER_BUNKER, SACSkillPoints.IM_NOT_THERE, SACTags.SKILL_POINT, event_flag=0b01000000, event_address=0x206BFF),
-    CaseStructure(SACCases.KLUNKS_LAIR, SACSkillPoints.TURN_THE_TABLES, SACTags.SKILL_POINT, event_flag=0b10000000, event_address=0x206BFF),
-    CaseStructure(SACCases.KLUNKS_LAIR, SACSkillPoints.PRETTY_GOOD_LIKENESS, SACTags.SKILL_POINT, event_flag=0b00000001, event_address=0x206C00),
-)
+from .types import EventFlag
 
 
 @dataclass(frozen=True)
@@ -217,7 +73,71 @@ class SACSkillPointLocations:
     KLUNKS_LAIR_PRETTY_GOOD_LIKENESS = "Hydrano (Clank) - Klunk's Lair: Skill Point: A Pretty Good Likeness"
 
 
-SKILL_POINTS: tuple[CaseStructure, ...] = with_display_names(_RAW_SKILL_POINTS, SACSkillPointLocations)
-
-# Case name -> its skill point location names.
-SKILL_POINTS_BY_CASE: dict[str, tuple[str, ...]] = group_by_case(SKILL_POINTS)
+# Flags walk 0x206BF8-0x206C00 one bit at a time, in case_id order.
+SKILL_POINT_FLAGS: dict[str, EventFlag] = {
+    SACSkillPointLocations.BOLTAIRE_MUSEUM_FURIOUS_FISTS: EventFlag(0x206BF8, 0b00000001),
+    SACSkillPointLocations.BOLTAIRE_MUSEUM_SILENT_NIGHT: EventFlag(0x206BF8, 0b00000010),
+    SACSkillPointLocations.BOLTAIRE_GEM_WING_PYRRHIC_VICTORY: EventFlag(0x206BF8, 0b00000100),
+    SACSkillPointLocations.BOLTAIRE_GEM_WING_TRIPLE_PLATINUM: EventFlag(0x206BF8, 0b00001000),
+    SACSkillPointLocations.MAX_SECURITY_CELLS_STAINLESS_STEEL: EventFlag(0x206BF8, 0b00010000),
+    SACSkillPointLocations.MAX_SECURITY_CELLS_PLAYING_WITH_FIRE: EventFlag(0x206BF8, 0b00100000),
+    SACSkillPointLocations.ROOFTOP_DEATHTRAP_SPEED_DEMON: EventFlag(0x206BF8, 0b01000000),
+    SACSkillPointLocations.ROOFTOP_DEATHTRAP_PERFECT_CHROME_FINISH: EventFlag(0x206BF8, 0b10000000),
+    SACSkillPointLocations.ASYANICA_ROOFTOPS_ROBOT_FINDS_NINJA: EventFlag(0x206BF9, 0b00000001),
+    SACSkillPointLocations.ASYANICA_ROOFTOPS_BLACK_TIE_AFFAIR: EventFlag(0x206BF9, 0b00000010),
+    SACSkillPointLocations.ASYANICA_ROOFTOPS_LIKE_THE_WIND: EventFlag(0x206BF9, 0b00000100),
+    SACSkillPointLocations.LARGER_THAN_LIFE_INVERSE_NINJA_LAW: EventFlag(0x206BF9, 0b00001000),
+    SACSkillPointLocations.LARGER_THAN_LIFE_BLASTER_OVERLOAD: EventFlag(0x206BF9, 0b00010000),
+    SACSkillPointLocations.COUNTESS_VILLA_PERFECT_TANGO: EventFlag(0x206BF9, 0b00100000),
+    SACSkillPointLocations.GLACIARA_SKI_SLOPES_BLACK_DIAMOND: EventFlag(0x206BF9, 0b01000000),
+    SACSkillPointLocations.GLACIARA_SKI_SLOPES_SMOOTH_MOVES: EventFlag(0x206BF9, 0b10000000),
+    SACSkillPointLocations.GLACIARA_SKI_SLOPES_RINGLEADER: EventFlag(0x206BFA, 0b00000001),
+    SACSkillPointLocations.THE_MESS_HALL_EMPTY_THE_WARRENS: EventFlag(0x206BFA, 0b00000010),
+    SACSkillPointLocations.THE_MESS_HALL_ANTAEUS: EventFlag(0x206BFA, 0b00000100),
+    SACSkillPointLocations.AZCOTAL_ALLEY_MASTER_OF_DISGUISE: EventFlag(0x206BFA, 0b00001000),
+    SACSkillPointLocations.AZCOTAL_ALLEY_TRASH_TALK: EventFlag(0x206BFA, 0b00010000),
+    SACSkillPointLocations.AZCOTAL_ALLEY_DEADLY_HANDS: EventFlag(0x206BFA, 0b00100000),
+    SACSkillPointLocations.GONDOLA_ASCENT_STEEL_RAIN: EventFlag(0x206BFA, 0b01000000),
+    SACSkillPointLocations.SUCK_AND_JIVE_CARD_PICKUP: EventFlag(0x206BFA, 0b10000000),
+    SACSkillPointLocations.SUCK_AND_JIVE_DRESS_FOR_SUCCESS: EventFlag(0x206BFB, 0b00000001),
+    SACSkillPointLocations.HIGH_ROLLERS_CASINO_BEAT_THE_HOUSE: EventFlag(0x206BFB, 0b00000010),
+    SACSkillPointLocations.THE_EXERCISE_YARD_INDIAN_BURN: EventFlag(0x206BFB, 0b00000100),
+    SACSkillPointLocations.THE_EXERCISE_YARD_LAW_CANT_TOUCH_ME: EventFlag(0x206BFB, 0b00001000),
+    SACSkillPointLocations.HIGH_STAKES_ROOM_LUCKY_SEVENS: EventFlag(0x206BFB, 0b00010000),
+    SACSkillPointLocations.HIGH_STAKES_ROOM_GADGEBOT_STANDS_ALONE: EventFlag(0x206BFB, 0b00100000),
+    SACSkillPointLocations.VENANTONIO_LABS_ALL_SLIME_MUST_BURN: EventFlag(0x206BFB, 0b01000000),
+    SACSkillPointLocations.VENANTONIO_LABS_RAMMING_SPEED: EventFlag(0x206BFB, 0b10000000),
+    SACSkillPointLocations.VENANTONIO_CANALS_EVASIVE_MANEUVERS: EventFlag(0x206BFC, 0b00000001),
+    SACSkillPointLocations.VENANTONIO_CANALS_DEEP_SIX: EventFlag(0x206BFC, 0b00000010),
+    SACSkillPointLocations.VENANTONIO_CANALS_WAKE_OF_DESTRUCTION: EventFlag(0x206BFC, 0b00000100),
+    SACSkillPointLocations.VENANTONIO_CANALS_RINGMASTER: EventFlag(0x206BFC, 0b00001000),
+    SACSkillPointLocations.MADAM_BUTTERQWARK_TWINKLE_TOES: EventFlag(0x206BFC, 0b00010000),
+    SACSkillPointLocations.MADAM_BUTTERQWARK_MAGNUM_OPUS: EventFlag(0x206BFC, 0b00100000),
+    SACSkillPointLocations.MADAM_BUTTERQWARK_SOLD_OUT: EventFlag(0x206BFC, 0b01000000),
+    SACSkillPointLocations.GALACTIC_BOLT_RESERVE_WITH_INTEREST: EventFlag(0x206BFC, 0b10000000),
+    SACSkillPointLocations.GALACTIC_BOLT_RESERVE_ANDROIDS_IN_DISGUISE: EventFlag(0x206BFD, 0b00000001),
+    SACSkillPointLocations.GALACTIC_BOLT_RESERVE_VAULT_VAULT: EventFlag(0x206BFD, 0b00000010),
+    SACSkillPointLocations.INSIDE_THE_A_EYE_DIA_DE_LOS_MUERTOS: EventFlag(0x206BFD, 0b00000100),
+    SACSkillPointLocations.THE_SHOWERS_RUBA_DUB_CLUB: EventFlag(0x206BFD, 0b00001000),
+    SACSkillPointLocations.THE_SHOWERS_MODESTY: EventFlag(0x206BFD, 0b00010000),
+    SACSkillPointLocations.SPACESHIP_GRAVEYARD_DELICACY_SOMEWHERE: EventFlag(0x206BFD, 0b00100000),
+    SACSkillPointLocations.SPACESHIP_GRAVEYARD_REVENANT: EventFlag(0x206BFD, 0b01000000),
+    SACSkillPointLocations.SAINT_QWARK_PUNCHY: EventFlag(0x206BFD, 0b10000000),
+    SACSkillPointLocations.SAINT_QWARK_SOUR_VICTORY: EventFlag(0x206BFE, 0b00000001),
+    SACSkillPointLocations.THE_QUASAR_FIELDS_MIN_MAXING: EventFlag(0x206BFE, 0b00000010),
+    SACSkillPointLocations.THE_QUASAR_FIELDS_KILL_THE_ROCK: EventFlag(0x206BFE, 0b00000100),
+    SACSkillPointLocations.PRISON_BREAKOUT_WHIP_IT_GOOD: EventFlag(0x206BFE, 0b00001000),
+    SACSkillPointLocations.PRISON_BREAKOUT_HANGING_JUDGE: EventFlag(0x206BFE, 0b00010000),
+    SACSkillPointLocations.DAMS_EDGE_HYDRANO_YEEE_HAAAAAW: EventFlag(0x206BFE, 0b00100000),
+    SACSkillPointLocations.DAMS_EDGE_HYDRANO_OFFENSIVE_DRIVER: EventFlag(0x206BFE, 0b01000000),
+    SACSkillPointLocations.DAMS_EDGE_HYDRANO_SLIPPERY_SLOPE: EventFlag(0x206BFE, 0b10000000),
+    SACSkillPointLocations.DAMS_EDGE_HYDRANO_RING_AROUND_THE_ROSIE: EventFlag(0x206BFF, 0b00000001),
+    SACSkillPointLocations.A_FICTION_FULL_OF_DOLLARS_CLEANS_POOLS_TOO: EventFlag(0x206BFF, 0b00000010),
+    SACSkillPointLocations.A_FICTION_FULL_OF_DOLLARS_PERFECT_MIRROR: EventFlag(0x206BFF, 0b00000100),
+    SACSkillPointLocations.BULKHEAD_LOCK_CEREAL_DECODER_RING: EventFlag(0x206BFF, 0b00001000),
+    SACSkillPointLocations.UNDERWATER_BUNKER_LEET_HAXXOR: EventFlag(0x206BFF, 0b00010000),
+    SACSkillPointLocations.UNDERWATER_BUNKER_RUST_PROOF: EventFlag(0x206BFF, 0b00100000),
+    SACSkillPointLocations.UNDERWATER_BUNKER_IM_NOT_THERE: EventFlag(0x206BFF, 0b01000000),
+    SACSkillPointLocations.KLUNKS_LAIR_TURN_THE_TABLES: EventFlag(0x206BFF, 0b10000000),
+    SACSkillPointLocations.KLUNKS_LAIR_PRETTY_GOOD_LIKENESS: EventFlag(0x206C00, 0b00000001),
+}

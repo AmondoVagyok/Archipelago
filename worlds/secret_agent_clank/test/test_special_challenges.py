@@ -1,6 +1,6 @@
 import unittest
 
-from ..constants.special_challenges import SPECIAL_CHALLENGES
+from ..constants.special_challenges import SPECIAL_CHALLENGE_FLAGS
 from ..core.inventories.special_challenges import SpecialChallengeInventory
 from .test_runtime import Memory
 
@@ -9,10 +9,10 @@ class SpecialChallengeTests(unittest.TestCase):
     def test_saved_canals_completions_survive_sync_and_retry(self):
         memory = Memory()
         tracker = SpecialChallengeInventory(memory)
-        canals = SPECIAL_CHALLENGES[:3]
-        for entry in canals:
-            memory.data[entry.event_address] = 1
-        expected = [str(entry) for entry in canals]
+        canals = list(SPECIAL_CHALLENGE_FLAGS.items())[:3]
+        for _, flag in canals:
+            memory.data[flag.address] = 1
+        expected = [name for name, _ in canals]
         tracker.sync()
         self.assertEqual(tracker.check(), expected)
         tracker.sync()
@@ -25,9 +25,9 @@ class SpecialChallengeTests(unittest.TestCase):
     def test_confirmed_checks_stay_confirmed_across_save_changes(self):
         memory = Memory()
         tracker = SpecialChallengeInventory(memory)
-        entry = SPECIAL_CHALLENGES[0]
-        tracker.confirm(str(entry))
+        name, flag = next(iter(SPECIAL_CHALLENGE_FLAGS.items()))
+        tracker.confirm(name)
         tracker.check()
-        memory.data[entry.event_address] = 1
+        memory.data[flag.address] = 1
         tracker.sync()
         self.assertEqual(tracker.check(), [])

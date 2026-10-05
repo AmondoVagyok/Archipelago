@@ -1,6 +1,8 @@
 """Persistent Alien Code bits, independently read from native save flags."""
-from ...constants.alien_codes import ALIEN_CODE_MODULES, ALIEN_CODES_BY_CASE
-from ..global_flags import GlobalFlags, read_module_counts
+from ...constants.alien_codes import ALIEN_CODES_BY_MODULE
+from ..global_flags import GlobalFlags, module_bit, read_module_counts
+
+_TOTAL = sum(map(len, ALIEN_CODES_BY_MODULE.values()))
 
 
 class AlienCodeInventory:
@@ -18,7 +20,8 @@ class AlienCodeInventory:
         get_count = symbols.get("GLOBALVARS_GetTotalAlienCodeCount__FUi")
         if get_count is None:
             return False
-        if read_module_counts(self.pine, get_count) != dict.fromkeys(ALIEN_CODE_MODULES.values(), 3):
+        expected = {module: len(names) for module, names in ALIEN_CODES_BY_MODULE.items()}
+        if read_module_counts(self.pine, get_count) != expected:
             return False
         self.valid = True
         return True
@@ -36,11 +39,8 @@ class AlienCodeInventory:
         data = self.flags.read(0x38, 15)
         if data is None:
             return []
-        self.found = set()
-        for case, module in ALIEN_CODE_MODULES.items():
-            for index, name in enumerate(ALIEN_CODES_BY_CASE[case]):
-                if data[(module - 1) // 2] & (1 << (((module - 1) & 1) * 4 + index)):
-                    self.found.add(name)
+        self.found = {name for module, names in ALIEN_CODES_BY_MODULE.items()
+                      for bit, name in enumerate(names) if module_bit(data, module, bit)}
         return sorted(self.found - self.reported)
 
     def confirm(self, name: str) -> None:
@@ -49,4 +49,4 @@ class AlienCodeInventory:
 
     @property
     def all_found(self):
-        return self.valid and len(self.found) == 27
+        return self.valid and len(self.found) == _TOTAL

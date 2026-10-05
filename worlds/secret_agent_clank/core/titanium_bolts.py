@@ -1,8 +1,8 @@
 """Read individual persistent titanium bolt flags, never the spendable total."""
 import struct
 
-from ..constants.titanium_bolts import TITANIUM_BOLT_CASES, TITANIUM_BOLT_ENTRIES
-from .global_flags import GlobalFlags, read_module_counts
+from ..constants.titanium_bolts import TITANIUM_BOLTS_BY_MODULE
+from .global_flags import GlobalFlags, module_bit, read_module_counts
 
 
 class TitaniumBoltState:
@@ -21,7 +21,7 @@ class TitaniumBoltState:
         if count_fn is None or found_fn is None:
             return False
         if read_module_counts(self.pine, count_fn) != {
-                module: count for module, (_, count) in TITANIUM_BOLT_CASES.items()}:
+                module: len(names) for module, names in TITANIUM_BOLTS_BY_MODULE.items()}:
             return False
         # Validate the native nibble/one-based ID calculation. The JAL's
         # relocated target varies between DLLs; all other words must match.
@@ -50,9 +50,9 @@ class TitaniumBoltState:
         flags = self.flags.read(0x28, 15)
         if flags is None:
             return []
-        found = {str(entry) for (module, index), entry in TITANIUM_BOLT_ENTRIES.items()
-                 if flags[(module - 1) // 2] &
-                 (1 << (((module - 1) & 1) * 4 + index - 1))}
+        # Native bolt IDs are one-based, so bolt ID n is bit n - 1.
+        found = {name for module, names in TITANIUM_BOLTS_BY_MODULE.items()
+                 for bit, name in enumerate(names) if module_bit(flags, module, bit)}
         return sorted(found - self.reported)
 
     def confirm(self, name: str) -> None:

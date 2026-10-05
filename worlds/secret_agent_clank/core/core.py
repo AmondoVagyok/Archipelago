@@ -2,7 +2,7 @@
 import logging
 from collections.abc import Callable, Sequence
 
-from ..constants.missions import CHAPTER_ENTRIES
+from ..constants.missions import CHAPTER_ENTRIES, MISSION_COMPLETE_NAME
 from ..constants.operatives import SACOperatives
 from ..constants.pickups import PICKUP_LOCATION_BY_INTERNAL
 from ..constants.planets import CASE_ID_TO_CASE, CASES_BY_OPERATIVE, SACCases
@@ -402,9 +402,9 @@ class Core:
 
     def _check_goal(self):
         complete = self.missions._reported
-        klunk = (f"{SACCases.KLUNKS_LAIR} Complete" in complete or
+        klunk = (MISSION_COMPLETE_NAME[SACCases.KLUNKS_LAIR] in complete or
                  self.missions.completed.get(CHAPTER_ENTRIES[SACCases.KLUNKS_LAIR][-1].name, False))
-        qwark = all(f"{case.name} Complete" in complete or
+        qwark = all(MISSION_COMPLETE_NAME[case.name] in complete or
                     (bool(CHAPTER_ENTRIES.get(case.name)) and
                      all(self.missions.completed.get(entry.name, False) for entry in CHAPTER_ENTRIES[case.name]))
                     for case in CASES_BY_OPERATIVE[SACOperatives.QWARK])

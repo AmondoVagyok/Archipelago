@@ -36,7 +36,7 @@ from .items import (
     TRAP_ITEM_TABLE,
     WEAPON_ITEM_TABLE,
 )
-from .locations import ALL_LOCATIONS
+from .locations import LOCATION_NAME_TO_ID
 from .options import Infobots, SecretAgentClankOptions, sac_option_groups
 from .regions import create_regions
 from .rules import set_rules
@@ -79,7 +79,7 @@ class SecretAgentClankWorld(World):
     options: SecretAgentClankOptions
 
     item_name_to_id: dict[str, int] = {name: data.code for name, data in ALL_ITEMS.items()}
-    location_name_to_id: dict[str, int] = {name: data.code for name, data in ALL_LOCATIONS.items()}
+    location_name_to_id: dict[str, int] = LOCATION_NAME_TO_ID
     dynamic_pine = _DYNAMIC_PINE_SPEC
 
     # Universal Tracker support (see universal_tracker.py). ut_can_gen_without_yaml

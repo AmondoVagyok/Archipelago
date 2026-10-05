@@ -24,6 +24,7 @@ def set_rules(world: "SecretAgentClankWorld") -> None:
     locations = {location.name: location for location in world.multiworld.get_locations(world.player)}
     for definition in CASE_LOCATIONS:
         location = locations.get(definition.name)
-        if location is not None and definition.rule is not None:
-            world.set_rule(location, definition.rule(world))
+        rule = definition.resolve_rule(world) if location is not None else None
+        if rule is not None:
+            world.set_rule(location, rule)
     set_vendor_rules(world)

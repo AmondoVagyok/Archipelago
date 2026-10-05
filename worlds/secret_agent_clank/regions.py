@@ -5,22 +5,19 @@ from BaseClasses import Region
 from Options import OptionError
 from rule_builder.rules import CanReachLocation, CanReachRegion, False_, Has, True_
 
-from .constants import (
-    ALIEN_CODES,
-    ALL_CASES,
-    CASE_NAME_TO_CASE,
-    CASES_BY_OPERATIVE,
-    KEYCARDS,
-    SACCases,
-    SACOperatives,
-)
+from .constants import ALL_CASES, CASE_NAME_TO_CASE, CASES_BY_OPERATIVE, SACCases, SACOperatives
 from .constants.clank_gadgets import SACClankGadgets
-from .constants.ratchet_challenges import RATCHET_CHALLENGES
 from .constants.weapon_mods import enabled_mods
 from .constants.weapon_progression import TITAN_LOCATIONS
 from .constants.weapons import EQUIPMENT_INTERNAL_TO_DISPLAY
 from .entities import SACLocation
-from .locations import BASE_VENDOR_LOCATIONS, CASE_LOCATIONS, MOD_VENDOR_LOCATIONS, TITAN_VENDOR_LOCATIONS
+from .locations import (
+    ALIEN_CODE_LOCATIONS,
+    BASE_VENDOR_LOCATIONS,
+    CASE_REGIONS,
+    KEYCARD_LOCATIONS,
+    RATCHET_CHALLENGE_LOCATIONS,
+)
 from .locations.nanotech import create_nanotech_locations
 from .locations.stealth import create_stealth_locations
 from .locations.weapon_levels import create_weapon_level_locations
@@ -30,10 +27,6 @@ from .rules.vendor_access import VENDOR_REQUIREMENTS
 
 if TYPE_CHECKING:
     from .world import SecretAgentClankWorld
-
-# Stable sort: within a case region, locations keep their case file's order per type.
-REGION_LOCATIONS = tuple(sorted(CASE_LOCATIONS, key=lambda location: location.region_order))
-
 
 def create_regions(world: "SecretAgentClankWorld") -> None:
     player = world.player
@@ -64,15 +57,15 @@ def create_regions(world: "SecretAgentClankWorld") -> None:
         for definition in BASE_VENDOR_LOCATIONS.values():
             if enabled_item(definition.name) and definition.available(world.options):
                 vendor_region.locations.append(SACLocation(
-                    player, definition.name, definition.code, vendor_region))
+                    player, definition.name, world.location_name_to_id[definition.name], vendor_region))
         for mod in world.weapon_mod_catalog:
             vendor_region.locations.append(SACLocation(
-                player, mod.location, MOD_VENDOR_LOCATIONS[mod.location].code, vendor_region))
+                player, mod.location, world.location_name_to_id[mod.location], vendor_region))
         if world.options.ng_plus.value:
             for internal, name in TITAN_LOCATIONS.items():
                 if enabled_item(EQUIPMENT_INTERNAL_TO_DISPLAY[internal]):
                     vendor_region.locations.append(SACLocation(
-                        player, name, TITAN_VENDOR_LOCATIONS[name].code, vendor_region))
+                        player, name, world.location_name_to_id[name], vendor_region))
         menu_region.connect(vendor_region)
         multiworld.regions.append(vendor_region)
     case_regions: dict[str, Region] = {
@@ -80,13 +73,11 @@ def create_regions(world: "SecretAgentClankWorld") -> None:
         for case in ALL_CASES if case.operative not in disabled
     }
 
-    for definition in REGION_LOCATIONS:
-        if not definition.available(world.options):
-            continue
-        region = case_regions.get(definition.case)
-        if region is None:
-            continue
-        region.locations.append(SACLocation(player, definition.name, definition.code, region))
+    for case_name, region in case_regions.items():
+        # Stable sort: locations of one type keep their case file's order.
+        for definition in sorted(CASE_REGIONS[case_name].locations, key=lambda location: location.region_order):
+            if definition.available(world.options):
+                region.locations.append(SACLocation(player, definition.name, world.location_name_to_id[definition.name], region))
 
     _create_victory(world, case_regions, disabled)
 
@@ -144,22 +135,19 @@ def _create_victory(
         region.locations.append(loc)
 
     if goal in (Goal.option_alien_codes, Goal.option_chalice_of_power):
-        entries = ALIEN_CODES if goal == Goal.option_alien_codes else KEYCARDS
+        alien_codes = goal == Goal.option_alien_codes
+        collectibles = tuple((ALIEN_CODE_LOCATIONS if alien_codes else KEYCARD_LOCATIONS).values())
+        locations_enabled = world.options.all_alien_codes if alien_codes else world.options.all_keycards
         rule = True_()
-        for entry in entries:
-            if entry.case_name not in case_regions:
-                raise OptionError(f"{player_name}: the selected goal requires disabled case {entry.case_name}.")
-            locations_enabled = (world.options.all_alien_codes if goal == Goal.option_alien_codes
-                                 else world.options.all_keycards)
-            if locations_enabled:
-                rule = rule & CanReachLocation(str(entry))
-            else:
-                # Native collectibles remain available without AP reward checks.
-                rule = rule & CanReachRegion(entry.case_name)
-        if goal == Goal.option_alien_codes:
+        for location in collectibles:
+            if location.case not in case_regions:
+                raise OptionError(f"{player_name}: the selected goal requires disabled case {location.case}.")
+            # Without AP reward checks, the native collectibles remain available in their case.
+            rule = rule & (CanReachLocation(location.name) if locations_enabled else CanReachRegion(location.case))
+        if alien_codes:
             rule = rule & Has(SACClankGadgets.THERM_OPTIC_SHADES)
-        title = "All Alien Codes" if goal == Goal.option_alien_codes else "Collect the Chalice of Power"
-        add_victory(f"Victory: {title}", case_regions[entries[0].case_name], rule)
+        title = "All Alien Codes" if alien_codes else "Collect the Chalice of Power"
+        add_victory(f"Victory: {title}", case_regions[collectibles[0].case], rule)
 
     if goal in (Goal.option_defeat_klunk, Goal.option_any) and not clank_disabled:
         case = CASE_NAME_TO_CASE[SACCases.KLUNKS_LAIR]
@@ -181,8 +169,6 @@ def _create_victory(
 
     if goal == Goal.option_ratchet_prison_escape and not ratchet_disabled:
         rule = True_()
-        for entry in RATCHET_CHALLENGES:
-            rule = rule & CanReachLocation(str(entry))
-        add_victory(
-            "Victory: Ratchet Prison Escape", case_regions[RATCHET_CHALLENGES[0].case_name], rule,
-        )
+        for name in RATCHET_CHALLENGE_LOCATIONS:
+            rule = rule & CanReachLocation(name)
+        add_victory("Victory: Ratchet Prison Escape", case_regions[SACCases.PRISON_BREAKOUT], rule)

@@ -9,7 +9,7 @@ from Utils import async_start
 from ..constants.weapons import EQUIPMENT_DISPLAY_TO_INTERNAL
 from ..core.core import Core
 from ..items import GADGET_ITEM_TABLE, TRAP_ITEM_TABLE, WEAPON_ITEM_TABLE
-from ..locations import ALL_LOCATIONS
+from ..locations import LOCATION_NAME_TO_ID
 from ..pypine import Pine
 from ..rules.vendor_access import VENDOR_REQUIREMENTS
 from .command_processor import SACCommandProcessor
@@ -51,7 +51,7 @@ class SACContext(PineMixin, DeathLinkMixin, CommonContext):
         self._pine_lock = asyncio.Lock()
         self.slot_data: dict[str, Any] = {}
 
-        self._location_name_to_id = {name: data.code for name, data in ALL_LOCATIONS.items()}
+        self._location_name_to_id = dict(LOCATION_NAME_TO_ID)
         self.vendor_scouts = VendorScouts(self._location_name_to_id)
         # Location ids already scouted this connection (see _maybe_scout_vendor()).
         self._scouted_location_ids: set[int] = set()

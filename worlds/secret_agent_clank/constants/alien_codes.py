@@ -1,100 +1,6 @@
 """27 Alien Codes: three each in nine native modules."""
 from dataclasses import dataclass
 
-from .planets import SACCases
-from .types import CaseStructure, SACTags, group_by_case, with_display_names
-
-
-@dataclass(frozen=True)
-class SACAlienCodes:
-    """Short Alien Code titles; ALIEN_CODES below assigns each to its case."""
-
-    THE_LEGENDS = "The Legends"
-    RONNS_SECRET = "Ronn's secret"
-    BENS_SECRET = "Ben's secret"
-    JHAIROS_SECRET = "Jhairo's secret"
-    GILBERTS_SECRET = "Gilbert's secret"
-    RICARDOS_SECRET = "Ricardo's secret"
-    LEVITICUS_SECRET = "Leviticus' secret"
-    CARLS_SECRET = "Carl's secret"
-    JESS_SECRET = "Jess' secret"
-    JONS_SECRET = "Jon's secret"
-    THE_3_JASONS_SECRET = "The 3 Jasons' secret"
-    TRAVIS_SECRET = "Travis' secret"
-    COLINS_SECRET = "Colin's secret"
-    SHANES_SECRET = "Shane's secret"
-    THE_PING_PONG_SECRET = "The Ping Pong Secret"
-    GERARDS_SECRET = "Gerard's secret"
-    ALEXS_SECRET = "Alex's secret"
-    HAROONS_SECRET = "Haroon's secret"
-    AVERYS_SECRET = "Avery's secret"
-    LESLEYS_SECRET = "Lesley's secret"
-    DAVES_SECRET = "Dave's secret"
-    MATTS_SECRET = "Matt's secret"
-    KENS_SECRET = "Ken's secret"
-    JAREDS_SECRET = "Jared's secret"
-    VESSUPS_SECRET = "Vessup's secret"
-    ADAMS_SECRET = "Adam's secret"
-    JEFFS_SECRET = "Jeff's secret"
-
-
-_RAW_ALIEN_CODES: tuple[CaseStructure, ...] = (
-    # Boltaire Museum -- confirmed.
-    CaseStructure(SACCases.BOLTAIRE_MUSEUM, SACAlienCodes.THE_LEGENDS, SACTags.ALIEN_CODE),
-    CaseStructure(SACCases.BOLTAIRE_MUSEUM, SACAlienCodes.RONNS_SECRET, SACTags.ALIEN_CODE),
-    CaseStructure(SACCases.BOLTAIRE_MUSEUM, SACAlienCodes.BENS_SECRET, SACTags.ALIEN_CODE),
-
-    # Asyanica Rooftops (case_id 5) -- source name doesn't match cleanly.
-    CaseStructure(SACCases.ASYANICA_ROOFTOPS, SACAlienCodes.JHAIROS_SECRET, SACTags.ALIEN_CODE),
-    CaseStructure(SACCases.ASYANICA_ROOFTOPS, SACAlienCodes.GILBERTS_SECRET, SACTags.ALIEN_CODE),
-    CaseStructure(SACCases.ASYANICA_ROOFTOPS, SACAlienCodes.RICARDOS_SECRET, SACTags.ALIEN_CODE),
-
-    CaseStructure(SACCases.GONDOLA_ASCENT, SACAlienCodes.LEVITICUS_SECRET, SACTags.ALIEN_CODE),
-    CaseStructure(SACCases.GONDOLA_ASCENT, SACAlienCodes.CARLS_SECRET, SACTags.ALIEN_CODE),
-    CaseStructure(SACCases.GONDOLA_ASCENT, SACAlienCodes.JESS_SECRET, SACTags.ALIEN_CODE),
-
-    # Listed under Rionosis, but planets.py files Azcotal Alley under Glaciara
-    # (LOW CONFIDENCE there). The case assignment is used as-is.
-    CaseStructure(SACCases.AZCOTAL_ALLEY, SACAlienCodes.JONS_SECRET, SACTags.ALIEN_CODE),
-    CaseStructure(SACCases.AZCOTAL_ALLEY, SACAlienCodes.THE_3_JASONS_SECRET, SACTags.ALIEN_CODE),
-    CaseStructure(SACCases.AZCOTAL_ALLEY, SACAlienCodes.TRAVIS_SECRET, SACTags.ALIEN_CODE),
-
-    # High-Rollers Casino and High Stakes Room, both on this planet.
-    CaseStructure(SACCases.HIGH_ROLLERS_CASINO, SACAlienCodes.COLINS_SECRET, SACTags.ALIEN_CODE),
-    CaseStructure(SACCases.HIGH_ROLLERS_CASINO, SACAlienCodes.SHANES_SECRET, SACTags.ALIEN_CODE),
-    CaseStructure(SACCases.HIGH_ROLLERS_CASINO, SACAlienCodes.THE_PING_PONG_SECRET, SACTags.ALIEN_CODE),
-
-    # Labos de Venantonio (= Venantonio Labs) -- confirmed.
-    CaseStructure(SACCases.VENANTONIO_LABS, SACAlienCodes.GERARDS_SECRET, SACTags.ALIEN_CODE),
-    CaseStructure(SACCases.VENANTONIO_LABS, SACAlienCodes.ALEXS_SECRET, SACTags.ALIEN_CODE),
-    CaseStructure(SACCases.VENANTONIO_LABS, SACAlienCodes.HAROONS_SECRET, SACTags.ALIEN_CODE),
-
-    # Listed under Fort Sprocket, but planets.py files Galactic Bolt Reserve under
-    # Venantonio (LOW CONFIDENCE there). The case assignment is used as-is.
-    CaseStructure(SACCases.GALACTIC_BOLT_RESERVE, SACAlienCodes.AVERYS_SECRET, SACTags.ALIEN_CODE),
-    CaseStructure(SACCases.GALACTIC_BOLT_RESERVE, SACAlienCodes.LESLEYS_SECRET, SACTags.ALIEN_CODE),
-    CaseStructure(SACCases.GALACTIC_BOLT_RESERVE, SACAlienCodes.DAVES_SECRET, SACTags.ALIEN_CODE),
-
-    CaseStructure(SACCases.SPACESHIP_GRAVEYARD, SACAlienCodes.MATTS_SECRET, SACTags.ALIEN_CODE),
-    CaseStructure(SACCases.SPACESHIP_GRAVEYARD, SACAlienCodes.KENS_SECRET, SACTags.ALIEN_CODE),
-    CaseStructure(SACCases.SPACESHIP_GRAVEYARD, SACAlienCodes.JAREDS_SECRET, SACTags.ALIEN_CODE),
-
-    # Underwater Bunker (case_id 29) -- source name doesn't match cleanly.
-    CaseStructure(SACCases.UNDERWATER_BUNKER, SACAlienCodes.VESSUPS_SECRET, SACTags.ALIEN_CODE),
-    CaseStructure(SACCases.UNDERWATER_BUNKER, SACAlienCodes.ADAMS_SECRET, SACTags.ALIEN_CODE),
-    CaseStructure(SACCases.UNDERWATER_BUNKER, SACAlienCodes.JEFFS_SECRET, SACTags.ALIEN_CODE),
-)
-
-
-# Native module IDs from GLOBALVARS_GetTotalAlienCodeCount, not catalog IDs.
-ALIEN_CODE_MODULES = {
-    SACCases.BOLTAIRE_MUSEUM: 1, SACCases.ASYANICA_ROOFTOPS: 4,
-    SACCases.AZCOTAL_ALLEY: 10, SACCases.GONDOLA_ASCENT: 11,
-    SACCases.HIGH_ROLLERS_CASINO: 13, SACCases.VENANTONIO_LABS: 16,
-    SACCases.GALACTIC_BOLT_RESERVE: 19, SACCases.SPACESHIP_GRAVEYARD: 22,
-    SACCases.UNDERWATER_BUNKER: 29,
-}
-
 
 @dataclass(frozen=True)
 class SACAlienCodeLocations:
@@ -127,10 +33,52 @@ class SACAlienCodeLocations:
     UNDERWATER_BUNKER_JEFFS_SECRET = "Hydrano (Clank) - Underwater Bunker: Alien Code: Jeff's secret"
 
 
-ALIEN_CODES: tuple[CaseStructure, ...] = with_display_names(_RAW_ALIEN_CODES, SACAlienCodeLocations)
-
-# Case name -> its Alien Code location names. Entries with an unassigned
-# ("TODO") case are skipped.
-ALIEN_CODES_BY_CASE: dict[str, tuple[str, ...]] = group_by_case(
-    tuple(entry for entry in ALIEN_CODES if entry.case_name != "TODO")
-)
+# Native module ID (from GLOBALVARS_GetTotalAlienCodeCount, not a catalog ID)
+# -> its Alien Codes, in flag-bit order.
+ALIEN_CODES_BY_MODULE: dict[int, tuple[str, ...]] = {
+    1: (
+        SACAlienCodeLocations.BOLTAIRE_MUSEUM_THE_LEGENDS,
+        SACAlienCodeLocations.BOLTAIRE_MUSEUM_RONNS_SECRET,
+        SACAlienCodeLocations.BOLTAIRE_MUSEUM_BENS_SECRET,
+    ),
+    4: (
+        SACAlienCodeLocations.ASYANICA_ROOFTOPS_JHAIROS_SECRET,
+        SACAlienCodeLocations.ASYANICA_ROOFTOPS_GILBERTS_SECRET,
+        SACAlienCodeLocations.ASYANICA_ROOFTOPS_RICARDOS_SECRET,
+    ),
+    10: (
+        SACAlienCodeLocations.AZCOTAL_ALLEY_JONS_SECRET,
+        SACAlienCodeLocations.AZCOTAL_ALLEY_THE_3_JASONS_SECRET,
+        SACAlienCodeLocations.AZCOTAL_ALLEY_TRAVIS_SECRET,
+    ),
+    11: (
+        SACAlienCodeLocations.GONDOLA_ASCENT_LEVITICUS_SECRET,
+        SACAlienCodeLocations.GONDOLA_ASCENT_CARLS_SECRET,
+        SACAlienCodeLocations.GONDOLA_ASCENT_JESS_SECRET,
+    ),
+    13: (
+        SACAlienCodeLocations.HIGH_ROLLERS_CASINO_COLINS_SECRET,
+        SACAlienCodeLocations.HIGH_ROLLERS_CASINO_SHANES_SECRET,
+        SACAlienCodeLocations.HIGH_ROLLERS_CASINO_THE_PING_PONG_SECRET,
+    ),
+    16: (
+        SACAlienCodeLocations.VENANTONIO_LABS_GERARDS_SECRET,
+        SACAlienCodeLocations.VENANTONIO_LABS_ALEXS_SECRET,
+        SACAlienCodeLocations.VENANTONIO_LABS_HAROONS_SECRET,
+    ),
+    19: (
+        SACAlienCodeLocations.GALACTIC_BOLT_RESERVE_AVERYS_SECRET,
+        SACAlienCodeLocations.GALACTIC_BOLT_RESERVE_LESLEYS_SECRET,
+        SACAlienCodeLocations.GALACTIC_BOLT_RESERVE_DAVES_SECRET,
+    ),
+    22: (
+        SACAlienCodeLocations.SPACESHIP_GRAVEYARD_MATTS_SECRET,
+        SACAlienCodeLocations.SPACESHIP_GRAVEYARD_KENS_SECRET,
+        SACAlienCodeLocations.SPACESHIP_GRAVEYARD_JAREDS_SECRET,
+    ),
+    29: (
+        SACAlienCodeLocations.UNDERWATER_BUNKER_VESSUPS_SECRET,
+        SACAlienCodeLocations.UNDERWATER_BUNKER_ADAMS_SECRET,
+        SACAlienCodeLocations.UNDERWATER_BUNKER_JEFFS_SECRET,
+    ),
+}

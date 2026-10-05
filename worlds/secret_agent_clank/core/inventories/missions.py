@@ -2,14 +2,7 @@
 import struct
 from typing import TYPE_CHECKING, NamedTuple
 
-from ...constants.missions import (
-    ALL_CHAPTER_ENTRIES,
-    CHAPTER_ENTRIES,
-    COMPLETE_NAME_TO_CASE,
-    DISPLAY_NAME_TO_CHAPTER_ENTRY,
-    MISSION_COMPLETE_NAME,
-    MissionFlag,
-)
+from ...constants.missions import CHAPTER_ENTRIES, MISSION_COMPLETE_NAME, MISSION_NAMES, MissionFlag
 from ...constants.planets import CASE_NAME_TO_CASE
 from ..case_menu import CASE_LABELS
 from ..symbols import RuntimeSymbols
@@ -25,11 +18,10 @@ if TYPE_CHECKING:
 _CHAPTER_TABLE_OFFSET = 0
 _CHAPTER_TABLE_SLOTS = 33
 _TASK_ENTRY_SIZE = 0x60        # bytes per task entry within a chapter's task array
+_TASK_STATE_OFFSET = 0xC       # state field within a task entry (1 byte, MissionFlag-valued)
 
-# Bookkeeping is keyed by native mission names; AP location names are only used
-# in check()'s results and confirm()/sync_from_ap()'s inputs.
-_TASK_STATE_OFFSET = 0xC       # state field within a task entry (same field CHAPTER_ENTRIES
-                                # addresses point at; 1 byte, MissionFlag-valued)
+# Every location this inventory reports: each mission, and each "<case> Complete".
+_REPORTABLE_NAMES = frozenset((*MISSION_NAMES, *MISSION_COMPLETE_NAME.values()))
 
 # Sanity limits for a chapter-table slot, so a stale or mid-transition read is ignored.
 _PLAUSIBLE_PTR_RANGE: tuple[int, int] = (0x00100000, 0x02000000)  # PS2 EE main RAM, roughly
@@ -76,20 +68,17 @@ class MissionInventory:
     def __init__(self, pine: "Pine") -> None:
         self.pine = pine
         self.table_base: int | None = None
-        self.completed: dict[str, bool] = dict.fromkeys((entry.name for _, entry in ALL_CHAPTER_ENTRIES), False)
+        self.completed: dict[str, bool] = dict.fromkeys(MISSION_NAMES, False)
         self._resolved_cases = None
         self._story_addresses = {}
-        self._reported = set()
+        self._reported: set[str] = set()
         self._resolved_title_ids = {}
 
     def sync_from_ap(self, checked_location_names: set[str]) -> None:
-        for case_name, complete_name in MISSION_COMPLETE_NAME.items():
-            if complete_name in checked_location_names:
-                self._reported.add(f"{case_name} Complete")
-        for _, entry in ALL_CHAPTER_ENTRIES:
-            if entry.display_name in checked_location_names:
-                self._reported.add(entry.name)
-                self.completed[entry.name] = True
+        for name in _REPORTABLE_NAMES & checked_location_names:
+            self._reported.add(name)
+            if name in self.completed:
+                self.completed[name] = True
 
     def invalidate_resolved_addresses(self) -> None:
         """Forget resolved addresses; call on every case transition."""
@@ -148,9 +137,9 @@ class MissionInventory:
         self._resolve_labels()
         if not all_missions:
             story = self._story_addresses.get(current_case.name, ())
-            internal_key = f"{current_case.name} Complete"
-            if story and internal_key not in self._reported and self.pine.read_int32(story[-1]) == 3:
-                return [MISSION_COMPLETE_NAME[current_case.name]]
+            complete_name = MISSION_COMPLETE_NAME[current_case.name]
+            if story and complete_name not in self._reported and self.pine.read_int32(story[-1]) == 3:
+                return [complete_name]
             return []
         entries = CHAPTER_ENTRIES.get(current_case.name)
         if not entries:
@@ -163,20 +152,14 @@ class MissionInventory:
             now = value == MissionFlag.UNLOCKED_COMPLETED
             flipped = now and entry.name not in self._reported
             self.completed[entry.name] = now or self.completed.get(entry.name, False)
-            if not flipped:
-                continue
-            newly.append(entry.display_name)
+            if flipped:
+                newly.append(entry.name)
         return newly
 
     def confirm(self, name: str) -> None:
         """Stop reporting `name`; call only once AP has accepted the check."""
-        case_name = COMPLETE_NAME_TO_CASE.get(name)
-        if case_name is not None:
-            self._reported.add(f"{case_name} Complete")
-            return
-        entry = DISPLAY_NAME_TO_CHAPTER_ENTRY.get(name)
-        if entry is not None:
-            self._reported.add(entry.name)
+        if name in _REPORTABLE_NAMES:
+            self._reported.add(name)
 
     def enforce_owned_first_missions(self, owned_cases: "set[str]") -> int:
         """Set each owned case's first mission back to UNLOCKED if it is disabled; returns the write count."""

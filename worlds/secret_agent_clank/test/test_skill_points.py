@@ -7,25 +7,22 @@ from ..constants.planets import SACCases
 from ..constants.skill_point_requirements import (
     EASY_SKILL_POINTS,
     HARD_SKILL_POINTS,
-    SKILL_POINT_REQUIREMENTS,
+    SKILL_POINT_DIFFICULTY,
 )
-from ..constants.skillpoints import SKILL_POINTS
+from ..constants.skillpoints import SKILL_POINT_FLAGS
 from ..constants.skillpoints import SACSkillPointLocations as Locations
-from ..locations import SKILL_POINT_LOCATIONS
+from ..locations import LOCATION_NAME_TO_ID, SKILL_POINT_LOCATIONS
 from ..options import SkillPoints
 from ..universal_tracker import setup_options_from_slot_data
 from ..world import SecretAgentClankWorld
 
 
 class SkillPointTests(unittest.TestCase):
-    def test_every_point_has_one_tier_and_matching_gameplay_case(self):
+    def test_every_point_has_one_tier_a_flag_and_a_location(self):
         self.assertFalse(EASY_SKILL_POINTS & HARD_SKILL_POINTS)
-        self.assertEqual(EASY_SKILL_POINTS | HARD_SKILL_POINTS,
-                         {point.event_name for point in SKILL_POINTS})
-        self.assertEqual(len(SKILL_POINT_REQUIREMENTS), 65)
-        self.assertEqual(SKILL_POINT_REQUIREMENTS.keys(), SKILL_POINT_LOCATIONS.keys())
-        for name, requirement in SKILL_POINT_REQUIREMENTS.items():
-            self.assertEqual(requirement.case, SKILL_POINT_LOCATIONS[name].case)
+        self.assertEqual(len(SKILL_POINT_DIFFICULTY), 65)
+        self.assertEqual(SKILL_POINT_DIFFICULTY.keys(), SKILL_POINT_FLAGS.keys())
+        self.assertEqual(SKILL_POINT_DIFFICULTY.keys(), SKILL_POINT_LOCATIONS.keys())
 
     def test_option_legacy_booleans_and_new_values(self):
         for value, expected in ((True, 2), (False, 0), ("true", 2), ("false", 0),
@@ -45,21 +42,21 @@ class SkillPointTests(unittest.TestCase):
                             "skill_points": tier, "operatives": enabled, "goal": "any",
                         })
                         actual = {loc.name for loc in mw.get_locations(1)} & SKILL_POINT_LOCATIONS.keys()
-                        expected = {name for name, req in SKILL_POINT_REQUIREMENTS.items()
-                                    if req.difficulty <= SkillPoints.from_any(tier).value
-                                    and disabled not in req.operatives}
+                        expected = {name for name, location in SKILL_POINT_LOCATIONS.items()
+                                    if SKILL_POINT_DIFFICULTY[name] <= SkillPoints.from_any(tier).value
+                                    and disabled not in location.operatives}
                         self.assertEqual(actual, expected)
 
     def test_mixed_mission_and_vault_ownership(self):
-        vault = SKILL_POINT_REQUIREMENTS[Locations.GALACTIC_BOLT_RESERVE_VAULT_VAULT]
+        vault = SKILL_POINT_LOCATIONS[Locations.GALACTIC_BOLT_RESERVE_VAULT_VAULT]
         self.assertEqual(vault.case, SACCases.INSIDE_THE_A_EYE)
         self.assertEqual(vault.operatives, {SACOperatives.GADGETBOTS})
-        casino = SKILL_POINT_REQUIREMENTS[Locations.HIGH_STAKES_ROOM_GADGEBOT_STANDS_ALONE]
+        casino = SKILL_POINT_LOCATIONS[Locations.HIGH_STAKES_ROOM_GADGEBOT_STANDS_ALONE]
         self.assertEqual(casino.operatives, {SACOperatives.SPECIAL_MISSIONS, SACOperatives.GADGETBOTS})
         mw = setup_multiworld(SecretAgentClankWorld, options={"skill_points": "hard"})
         location = mw.get_location(Locations.GALACTIC_BOLT_RESERVE_VAULT_VAULT, 1)
         self.assertEqual(location.parent_region.name, SACCases.INSIDE_THE_A_EYE)
-        self.assertEqual(location.address, 77_818_007)
+        self.assertEqual(location.address, LOCATION_NAME_TO_ID[Locations.GALACTIC_BOLT_RESERVE_VAULT_VAULT])
 
     def test_slot_data_preserves_tier_and_tracker_reads_legacy_booleans(self):
         for value, expected in (("off", 0), ("easy", 1), ("hard", 2), (True, 2), (False, 0)):

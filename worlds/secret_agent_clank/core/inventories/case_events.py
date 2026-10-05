@@ -1,46 +1,38 @@
-"""Shared tracker for CaseStructure locations that each have a completion bit."""
+"""Shared trackers for locations that each have a native completion check."""
+from collections.abc import Iterable
 from typing import TYPE_CHECKING
 
-from ...constants.types import CaseStructure
+from ...constants.types import EventFlag
 
 if TYPE_CHECKING:
     from ...pypine import Pine
 
 
-def read_flag(pine: "Pine", entry: CaseStructure) -> bool:
-    """Read an entry's completion bit; an unconfirmed entry (address 0) always reads as incomplete."""
-    if not entry.event_address:
-        return False
-    return entry.check_flag(pine.read_int8(entry.event_address))
-
-
 class CaseEventInventory:
+    """Reports each location name once get() reads it complete and AP has not confirmed it."""
 
-    def __init__(self, pine: "Pine", entries: tuple[CaseStructure, ...]) -> None:
+    def __init__(self, pine: "Pine", names: Iterable[str]) -> None:
         self.pine = pine
-        self.entries = entries
-        self.completed: dict[str, bool] = dict.fromkeys((str(entry) for entry in entries), False)
+        self.names: tuple[str, ...] = tuple(names)
+        self.completed: dict[str, bool] = dict.fromkeys(self.names, False)
 
-    def get(self, entry: CaseStructure) -> bool:
-        return read_flag(self.pine, entry)
+    def get(self, name: str) -> bool:
+        raise NotImplementedError
 
     def sync(self) -> None:
         """Baseline read without reporting anything as newly completed."""
-        self.completed = {str(entry): self.get(entry) for entry in self.entries}
+        self.completed = {name: self.get(name) for name in self.names}
 
     def sync_from_ap(self, checked_location_names: set[str]) -> None:
-        for entry in self.entries:
-            name = str(entry)
+        for name in self.names:
             if name in checked_location_names:
                 self.completed[name] = True
 
     def check(self) -> list[str]:
         """Location names that are complete but not yet confirmed, so rejected sends are retried."""
         newly: list[str] = []
-        for entry in self.entries:
-            name = str(entry)
-            now = self.get(entry)
-            if now:
+        for name in self.names:
+            if self.get(name):
                 if not self.completed.get(name, False):
                     newly.append(name)
             else:
@@ -53,4 +45,16 @@ class CaseEventInventory:
 
     def __repr__(self) -> str:
         seen = sum(self.completed.values())
-        return f"{type(self).__name__}(completed={seen}/{len(self.entries)})"
+        return f"{type(self).__name__}(completed={seen}/{len(self.names)})"
+
+
+class EventFlagInventory(CaseEventInventory):
+    """Locations whose completion is a bitmask in one byte of EE memory."""
+
+    def __init__(self, pine: "Pine", event_flags: dict[str, EventFlag]) -> None:
+        super().__init__(pine, event_flags)
+        self.event_flags = event_flags
+
+    def get(self, name: str) -> bool:
+        flag = self.event_flags[name]
+        return flag.is_set(self.pine.read_int8(flag.address))

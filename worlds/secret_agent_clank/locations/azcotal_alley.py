@@ -1,5 +1,5 @@
-"""Every location in Azcotal Alley, each carrying its planet, case and access rule."""
-from rule_builder.rules import Has, True_
+"""Azcotal Alley: the case region and every location in it, with its access rule."""
+from rule_builder.rules import Has
 
 from ..constants import (
     SACAlienCodeLocations,
@@ -8,142 +8,29 @@ from ..constants import (
     SACCutsceneLocations,
     SACMissionLocations,
     SACPickups,
-    SACPlanets,
     SACSkillPointLocations,
     SACTitaniumBoltLocations,
 )
-from .model import SACLocation, SACLocationType
+from .model import CaseRegion, SACLocation, SACLocationType
 
-_PLANET = SACPlanets.GLACIARA
-_CASE = SACCases.AZCOTAL_ALLEY
-
-LOCATIONS: tuple[SACLocation, ...] = (
-    SACLocation(
-        SACPickups.AZCOTAL_ALLEY_BEE_MINE_MK_II,
-        _PLANET,
-        _CASE,
-        SACLocationType.RATCHET_WEAPON,
-        77_809_000,
-        lambda world: True_(),
-    ),
-    SACLocation(
-        SACPickups.AZCOTAL_ALLEY_TANGLEVINE_CARNATION,
-        _PLANET,
-        _CASE,
-        SACLocationType.CLANK_WEAPON,
-        77_809_001,
-        lambda world: True_(),
-    ),
-    SACLocation(
-        SACTitaniumBoltLocations.AZCOTAL_ALLEY_1,
-        _PLANET,
-        _CASE,
-        SACLocationType.TITANIUM_BOLT,
-        77_809_901,
-        lambda world: True_(),
-    ),
-    SACLocation(
-        SACTitaniumBoltLocations.AZCOTAL_ALLEY_2,
-        _PLANET,
-        _CASE,
-        SACLocationType.TITANIUM_BOLT,
-        77_809_902,
-        lambda world: True_(),
-    ),
-    SACLocation(
-        SACTitaniumBoltLocations.AZCOTAL_ALLEY_3,
-        _PLANET,
-        _CASE,
-        SACLocationType.TITANIUM_BOLT,
-        77_809_903,
-        lambda world: True_(),
-    ),
-    SACLocation(
-        SACMissionLocations.AZCOTAL_ALLEY_COMPLETE,
-        _PLANET,
-        _CASE,
-        SACLocationType.CASE_COMPLETE,
-        77_809_003,
-        lambda world: True_(),
-    ),
-    SACLocation(
-        SACMissionLocations.AZCOTAL_ALLEY_THE_KINGPIN,
-        _PLANET,
-        _CASE,
-        SACLocationType.MISSION,
-        77_809_004,
-        lambda world: True_(),
-    ),
-    SACLocation(
-        SACMissionLocations.AZCOTAL_ALLEY_ALL_THE_KINGPIN_S_MEN,
-        _PLANET,
-        _CASE,
-        SACLocationType.MISSION,
-        77_809_005,
-        lambda world: True_(),
-    ),
-    SACLocation(
-        SACSkillPointLocations.AZCOTAL_ALLEY_MASTER_OF_DISGUISE,
-        _PLANET,
-        _CASE,
-        SACLocationType.SKILL_POINT,
-        77_809_008,
-        lambda world: True_(),
-    ),
-    SACLocation(
-        SACSkillPointLocations.AZCOTAL_ALLEY_TRASH_TALK,
-        _PLANET,
-        _CASE,
-        SACLocationType.SKILL_POINT,
-        77_809_009,
-        lambda world: True_(),
-    ),
-    SACLocation(
-        SACSkillPointLocations.AZCOTAL_ALLEY_DEADLY_HANDS,
-        _PLANET,
-        _CASE,
-        SACLocationType.SKILL_POINT,
-        77_809_010,
-        lambda world: True_(),
-    ),
-    SACLocation(
-        SACCutsceneLocations.AZCOTAL_ALLEY_ENTER_CUTSCENE,
-        _PLANET,
-        _CASE,
-        SACLocationType.CUTSCENE,
-        77_809_006,
-        lambda world: True_(),
-    ),
-    SACLocation(
-        SACCutsceneLocations.AZCOTAL_ALLEY_MEET_JACK_CUTSCENE,
-        _PLANET,
-        _CASE,
-        SACLocationType.CUTSCENE,
-        77_809_007,
-        lambda world: True_(),
-    ),
-    SACLocation(
-        SACAlienCodeLocations.AZCOTAL_ALLEY_JONS_SECRET,
-        _PLANET,
-        _CASE,
-        SACLocationType.ALIEN_CODE,
-        77_809_011,
-        lambda world: Has(SACClankGadgets.THERM_OPTIC_SHADES),
-    ),
-    SACLocation(
-        SACAlienCodeLocations.AZCOTAL_ALLEY_THE_3_JASONS_SECRET,
-        _PLANET,
-        _CASE,
-        SACLocationType.ALIEN_CODE,
-        77_809_012,
-        lambda world: Has(SACClankGadgets.THERM_OPTIC_SHADES),
-    ),
-    SACLocation(
-        SACAlienCodeLocations.AZCOTAL_ALLEY_TRAVIS_SECRET,
-        _PLANET,
-        _CASE,
-        SACLocationType.ALIEN_CODE,
-        77_809_013,
-        lambda world: Has(SACClankGadgets.THERM_OPTIC_SHADES),
-    ),
-)
+REGION = CaseRegion(SACCases.AZCOTAL_ALLEY, (
+    SACLocation(SACPickups.AZCOTAL_ALLEY_BEE_MINE_MK_II, SACLocationType.RATCHET_WEAPON),
+    SACLocation(SACPickups.AZCOTAL_ALLEY_TANGLEVINE_CARNATION, SACLocationType.CLANK_WEAPON),
+    SACLocation(SACTitaniumBoltLocations.AZCOTAL_ALLEY_1, SACLocationType.TITANIUM_BOLT),
+    SACLocation(SACTitaniumBoltLocations.AZCOTAL_ALLEY_2, SACLocationType.TITANIUM_BOLT),
+    SACLocation(SACTitaniumBoltLocations.AZCOTAL_ALLEY_3, SACLocationType.TITANIUM_BOLT),
+    SACLocation(SACMissionLocations.AZCOTAL_ALLEY_COMPLETE, SACLocationType.CASE_COMPLETE),
+    SACLocation(SACMissionLocations.AZCOTAL_ALLEY_THE_KINGPIN, SACLocationType.MISSION),
+    SACLocation(SACMissionLocations.AZCOTAL_ALLEY_ALL_THE_KINGPIN_S_MEN, SACLocationType.MISSION),
+    SACLocation(SACSkillPointLocations.AZCOTAL_ALLEY_MASTER_OF_DISGUISE, SACLocationType.SKILL_POINT),
+    SACLocation(SACSkillPointLocations.AZCOTAL_ALLEY_TRASH_TALK, SACLocationType.SKILL_POINT),
+    SACLocation(SACSkillPointLocations.AZCOTAL_ALLEY_DEADLY_HANDS, SACLocationType.SKILL_POINT),
+    SACLocation(SACCutsceneLocations.AZCOTAL_ALLEY_ENTER_CUTSCENE, SACLocationType.CUTSCENE),
+    SACLocation(SACCutsceneLocations.AZCOTAL_ALLEY_MEET_JACK_CUTSCENE, SACLocationType.CUTSCENE),
+    SACLocation(SACAlienCodeLocations.AZCOTAL_ALLEY_JONS_SECRET,
+                SACLocationType.ALIEN_CODE, Has(SACClankGadgets.THERM_OPTIC_SHADES)),
+    SACLocation(SACAlienCodeLocations.AZCOTAL_ALLEY_THE_3_JASONS_SECRET,
+                SACLocationType.ALIEN_CODE, Has(SACClankGadgets.THERM_OPTIC_SHADES)),
+    SACLocation(SACAlienCodeLocations.AZCOTAL_ALLEY_TRAVIS_SECRET,
+                SACLocationType.ALIEN_CODE, Has(SACClankGadgets.THERM_OPTIC_SHADES)),
+))
