@@ -252,3 +252,4 @@ existing seeds are supported. See [vendor tabs and controller research](vendor_t
 Hook planning measures all progression, multiplier, and stealth allocations together, then uses a largest-first search with backtracking inside verified code ranges. Final addresses are encoded only after the entire request set fits. The replacement vendor catalog shares its unused tail after reserving its complete row buffer, and releases the obsolete Titan offer reader. The watchdog shares only the space after its complete message. Manual weapon XP guards are split into small blocks so they can use these separate ranges. All plans are prepared before installation; allocation failures report requested bytes, total free bytes, and the largest free block.
 
 The complete installation/restore tests cover the available RAM captures with all progression modes, NG+ tiers, stealth checks, and 4x gain multipliers. Live PCSX2 validation of the revised allocation is still required.
+
