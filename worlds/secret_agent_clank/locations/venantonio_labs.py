@@ -1,5 +1,5 @@
 """Venantonio Labs: the case region and every location in it, with its access rule."""
-from rule_builder.rules import Has, HasAll
+from rule_builder.rules import Has, HasAll, HasAny
 
 from ..constants import (
     SACAlienCodeLocations,
@@ -18,6 +18,7 @@ _BASE = HasAll(SACClankWeapons.CUFFLINK, SACClankGadgets.OMNIKEY)
 _BRIEFCASE_PATH = HasAll(SACClankWeapons.FLAMETHROWERPEN, SACClankWeapons.CUFFLINK)
 _BRIEFCASE_JETBOOTS = _BRIEFCASE_PATH & Has(SACClankGadgets.JETBOOTS)
 _FINISH = _BRIEFCASE_PATH & HasAll(SACClankGadgets.OMNIKEY, SACClankGadgets.JETBOOTS)
+STEALTH_RULE = Has(SACClankWeapons.CUFFLINK) & HasAny(SACClankWeapons.FLAMETHROWERPEN, SACClankGadgets.OMNIKEY)
 
 REGION = CaseRegion(SACCases.VENANTONIO_LABS, (
     SACLocation(SACPickups.VENANTONIO_LABS_BLOWTORCH_BRIEFCASE, SACLocationType.CLANK_WEAPON, _BASE),
