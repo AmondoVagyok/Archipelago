@@ -123,7 +123,9 @@ class SkillPointCount(Range):
 
 
 class KeycardsAndAlienCodes(Toggle):
-    """Include the 3 keycard pickups and all 27 Alien Codes as AP location checks."""
+    """Include the 3 keycard pickups and all 27 Alien Codes as AP location checks.
+    If an Operative is excluded their location will not be included.
+    """
     display_name = "Keycards & Alien Codes"
 
 
@@ -167,10 +169,17 @@ class Operatives(OptionCounter):
 
 
 class Goal(Choice):
-    """Victory condition.
-    Qwark Opera completes Madam Butterqwark; These Are The Real Adventures Of Captain Qwark
-    completes every Qwark case. Any completes on whichever goal is finished first.
-    Pick and Mix requires every condition selected below.
+    """
+    Determines what the player needs to complete to achieve their goal.
+    - Defeat Klunk: Complete the showdown with Klunk in the Klunk's Lair case file.
+    - Qwark Opera: Complete the Madam Butterqwark case file.
+    - All Gadgetbots: Complete all Gadgetbot case files.
+    - Ratchet Prison Escape: Complete all Ratchet case files.
+    - These Are the Real Adventures of Captain Qwark: Complete all Qwark case files.
+    - Alien Codes: Scan all 27 alien codes.
+    - Chalice of Power: Obtain the Chalice of Power.
+    - Any: Complete any one of the objectives above.
+    - Pick and Mix: Complete every goal you select in Pick and Mix Goals.
     """
     display_name = "Goal"
     option_defeat_klunk    = 0
@@ -189,6 +198,8 @@ class Goal(Choice):
 class PickAndMixGoals(OptionSet):
     """Add or remove victory conditions. All selected conditions must be completed.
     At least one must be selected when Goal is Pick and Mix.
+    The valid options are: defeat_klunk, qwark_opera, all_gadgetbots, ratchet_prison_escape,
+    these_are_the_real_adventures_of_captain_qwark, alien_codes, chalice_of_power
     """
     display_name = "Pick and Mix Goals"
     valid_keys = {"defeat_klunk", "qwark_opera", "all_gadgetbots", "ratchet_prison_escape",
@@ -254,6 +265,15 @@ class StealthTakedownChecks(Range):
     number in every case that has stealth takedowns, capped at what the case offers.
     Takedowns add up across replays of a case. 0 turns them off.
     Adds nothing when Clank is disabled. Progress is tracked while the AP client is connected.
+    The locations included in this setting are:
+    - Boltaire (Clank) - Boltaire Museum
+    - Asyanica (Clank) - Asyanica Rooftops
+    - Rionosis (Clank) - Azcotal Alley
+    - The Paradis Des Tricheurs Casino (Clank) - High-Rollers Casino
+    - Venantonio (Clank) - Venantonio Labs
+    - Fort Sprocket (Clank) - Galactic Bolt Reserve
+    - Spaceship Graveyard (Clank) - Spaceship Graveyard
+    - Hydrano (Clank) - Underwater Bunker
     """
     display_name = "Stealth Takedown Checks"
     range_start = 0
