@@ -47,7 +47,7 @@ class SACSkillPointLocations:
     MADAM_BUTTERQWARK_SOLD_OUT = "Venantonio (Qwark) - Madam Butterqwark: Skill Point: Sold Out"
     GALACTIC_BOLT_RESERVE_WITH_INTEREST = "Fort Sprocket (Clank) - Galactic Bolt Reserve: Skill Point: With Interest"
     GALACTIC_BOLT_RESERVE_ANDROIDS_IN_DISGUISE = "Fort Sprocket (Clank) - Galactic Bolt Reserve: Skill Point: Androids In Disguise"
-    GALACTIC_BOLT_RESERVE_VAULT_VAULT = "Fort Sprocket (Clank) - Galactic Bolt Reserve: Skill Point: Vault Vault"
+    GALACTIC_BOLT_RESERVE_VAULT_VAULT = "Fort Sprocket (Gadgetbots) - Inside the A-Eye: Skill Point: Vault Vault"
     INSIDE_THE_A_EYE_DIA_DE_LOS_MUERTOS = "Fort Sprocket (Gadgetbots) - Inside the A-Eye: Skill Point: El Día de los Muertos"
     THE_SHOWERS_RUBA_DUB_CLUB = "Prison Planet (Ratchet) - The Showers: Skill Point: Ruba-Dub Club"
     THE_SHOWERS_MODESTY = "Prison Planet (Ratchet) - The Showers: Skill Point: Modesty"
