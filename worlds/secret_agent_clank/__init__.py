@@ -4,6 +4,7 @@ from worlds.LauncherComponents import (
     SuffixIdentifier,
     Type,
     components,
+    icon_paths,
     launch_subprocess,
 )
 from worlds.secret_agent_clank.world import (
@@ -24,4 +25,7 @@ components.append(Component(
     component_type=Type.CLIENT,
     file_identifier=SuffixIdentifier(".apsac"),
     description="Launch the Client for connecting to Secret Agent Clank",
+    icon="sac_icon",
 ))
+
+icon_paths["sac_icon"] = f"ap:{__name__}/icon/Secret_Agent_Clank_AP.png"

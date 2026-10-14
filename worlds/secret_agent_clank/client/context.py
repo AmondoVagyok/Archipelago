@@ -4,6 +4,7 @@ from typing import Any
 from CommonClient import logger
 from NetUtils import ClientStatus
 from Utils import async_start
+from ..world import SecretAgentClankWorld
 
 from ..constants.weapons import EQUIPMENT_DISPLAY_TO_INTERNAL
 from ..items import GADGET_ITEM_TABLE, TRAP_ITEM_TABLE, WEAPON_ITEM_TABLE
@@ -380,7 +381,9 @@ class SACContext(PineMixin, DeathLinkMixin, CommonContext):
 
     def make_gui(self):
         ui = super().make_gui()
-        ui.base_title = "Secret Agent Clank Client"
+        version = SecretAgentClankWorld.world_version.as_simple_string()
+        base_name = "SAC" if tracker_loaded and dynamicpine_loaded else "Secret Agent Clank"
+        ui.base_title = f"{base_name} v{version}"
         if dynamicpine_loaded:
             ui.base_title += f" | Dynamic Pine v{DYNAMIC_PINE_VERSION}"
         if tracker_loaded:
