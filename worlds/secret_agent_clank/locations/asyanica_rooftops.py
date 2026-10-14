@@ -31,7 +31,7 @@ REGION = CaseRegion(SACCases.ASYANICA_ROOFTOPS, (
     SACLocation(SACSkillPointLocations.ASYANICA_ROOFTOPS_LIKE_THE_WIND, SACLocationType.SKILL_POINT, _OMNIKEY),
     SACLocation(SACKeycardLocations.RED_KEYCARD, SACLocationType.KEYCARD, _OMNIKEY),
     SACLocation(SACAlienCodeLocations.ASYANICA_ROOFTOPS_JHAIROS_SECRET,
-                SACLocationType.ALIEN_CODE, Has(SACClankGadgets.THERM_OPTIC_SHADES) & _OMNIKEY),
+                SACLocationType.ALIEN_CODE, Has(SACClankGadgets.THERM_OPTIC_SHADES) & _BASE_RULE),
     SACLocation(SACAlienCodeLocations.ASYANICA_ROOFTOPS_GILBERTS_SECRET,
                 SACLocationType.ALIEN_CODE, Has(SACClankGadgets.THERM_OPTIC_SHADES) & _OMNIKEY),
     SACLocation(SACAlienCodeLocations.ASYANICA_ROOFTOPS_RICARDOS_SECRET,

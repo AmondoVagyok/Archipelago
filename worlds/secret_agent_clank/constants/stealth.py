@@ -6,12 +6,14 @@ STEALTH_MAX_PER_CASE = 10
 
 
 class SACStealth:
-    BOLTAIRE_MUSEUM = "Boltaire (Clank) - Boltaire Museum: Stealth Takedown: {count}"
-    ASYANICA_ROOFTOPS = "Asyanica (Clank) - Asyanica Rooftops: Stealth Takedown: {count}"
-    AZCOTAL_ALLEY = "Azcotal (Clank) - Azcotal Alley: Stealth Takedown: {count}"
-    HIGH_ROLLERS_CASINO = "High Rollers Casino (Clank) - High Rollers Casino: Stealth Takedown: {count}"
-    GALACTIC_BOLT_RESERVE = "Fort Sprocket (Clank) - Galactic Bolt Reserve: Stealth Takedown: {count}"
-    UNDERWATER_BUNKER = "Underwater Bunker (Clank) - Underwater Bunker: Stealth Takedown: {count}"
+    BOLTAIRE_MUSEUM = "Boltaire (Clank) - Boltaire Museum: Stealth Takedown {count}"
+    ASYANICA_ROOFTOPS = "Asyanica (Clank) - Asyanica Rooftops: Stealth Takedown {count}"
+    AZCOTAL_ALLEY = "Rionosis (Clank) - Azcotal Alley: Stealth Takedown {count}"
+    HIGH_ROLLERS_CASINO = "The Paradis Des Tricheurs Casino (Clank) - High-Rollers Casino: Stealth Takedown {count}"
+    VENANTONIO_LABS = "Venantonio (Clank) - Venantonio Labs: Stealth Takedown {count}"
+    GALACTIC_BOLT_RESERVE = "Fort Sprocket (Clank) - Galactic Bolt Reserve: Stealth Takedown {count}"
+    SPACESHIP_GRAVEYARD = "Spaceship Graveyard (Clank) - Spaceship Graveyard: Stealth Takedown {count}"
+    UNDERWATER_BUNKER = "Hydrano (Clank) - Underwater Bunker: Stealth Takedown {count}"
 
 
 # Clank cases with stealth takedowns -> location name template, each with enough
@@ -22,7 +24,9 @@ STEALTH_CASES: dict[str, str] = {
     SACCases.ASYANICA_ROOFTOPS: SACStealth.ASYANICA_ROOFTOPS,
     SACCases.AZCOTAL_ALLEY: SACStealth.AZCOTAL_ALLEY,
     SACCases.HIGH_ROLLERS_CASINO: SACStealth.HIGH_ROLLERS_CASINO,
+    SACCases.VENANTONIO_LABS: SACStealth.VENANTONIO_LABS,
     SACCases.GALACTIC_BOLT_RESERVE: SACStealth.GALACTIC_BOLT_RESERVE,
+    SACCases.SPACESHIP_GRAVEYARD: SACStealth.SPACESHIP_GRAVEYARD,
     SACCases.UNDERWATER_BUNKER: SACStealth.UNDERWATER_BUNKER,
 }
 

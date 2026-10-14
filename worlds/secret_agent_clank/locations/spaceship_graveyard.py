@@ -17,6 +17,7 @@ from .model import CaseRegion, SACLocation, SACLocationType
 _BASE = Has(SACClankGadgets.JETBOOTS) & HasProjectileWeapon()
 _OMNIKEY = _BASE & Has(SACClankGadgets.OMNIKEY)
 _TANGLE = _OMNIKEY & Has(SACClankWeapons.TANGLEVINE)
+STEALTH_RULE = _BASE
 
 REGION = CaseRegion(SACCases.SPACESHIP_GRAVEYARD, (
     SACLocation(SACTitaniumBoltLocations.SPACESHIP_GRAVEYARD_1, SACLocationType.TITANIUM_BOLT, _BASE),
