@@ -67,8 +67,8 @@ ALIEN_CODES_BY_MODULE: dict[int, tuple[str, ...]] = {
         SACAlienCodeLocations.VENANTONIO_LABS_HAROONS_SECRET,
     ),
     19: (
-        SACAlienCodeLocations.GALACTIC_BOLT_RESERVE_AVERYS_SECRET,
         SACAlienCodeLocations.GALACTIC_BOLT_RESERVE_LESLEYS_SECRET,
+        SACAlienCodeLocations.GALACTIC_BOLT_RESERVE_AVERYS_SECRET,
         SACAlienCodeLocations.GALACTIC_BOLT_RESERVE_DAVES_SECRET,
     ),
     22: (
