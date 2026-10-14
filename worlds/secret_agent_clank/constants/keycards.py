@@ -8,7 +8,7 @@ class SACKeycardLocations:
 
     RED_KEYCARD = "Asyanica (Clank) - Asyanica Rooftops: Red Keycard at the Second Set of Police Cars"
     BLUE_KEYCARD = "Fort Sprocket (Gadgetbots) - Inside the A-Eye: Blue Keycard during Vaultbreakers"
-    YELLOW_KEYCARD = "Spaceship Graveyard (Qwark) - Saint Qwark: Yellow Keycard after Cannon Save"
+    YELLOW_KEYCARD = "Spaceship Graveyard (Qwark) - Saint Qwark: Yellow Keycard before Cannon Save"
 
 
 KEYCARD_BITS: dict[str, int] = {
