@@ -7,7 +7,6 @@ from ..locations.venantonio_labs import STEALTH_RULE as VENANTONIO_LABS_STEALTH_
 from ..locations.galactic_bolt_reserve import STEALTH_RULE as GALACTIC_BOLT_RESERVE_STEALTH_RULE
 from ..locations.spaceship_graveyard import STEALTH_RULE as SPACESHIP_GRAVEYARD_STEALTH_RULE
 
-
 # Case -> extra items its stealth takedown enemies need. Unlisted cases only
 # need the case itself.
 STEALTH_CASE_RULES = {
