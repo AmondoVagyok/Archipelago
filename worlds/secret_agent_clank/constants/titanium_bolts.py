@@ -42,7 +42,7 @@ TITANIUM_BOLTS_BY_MODULE: dict[int, tuple[str, ...]] = {
     16: (SACTitaniumBoltLocations.VENANTONIO_LABS_1, SACTitaniumBoltLocations.VENANTONIO_LABS_2),
     19: (SACTitaniumBoltLocations.GALACTIC_BOLT_RESERVE_1, SACTitaniumBoltLocations.GALACTIC_BOLT_RESERVE_2, SACTitaniumBoltLocations.GALACTIC_BOLT_RESERVE_3),
     21: (SACTitaniumBoltLocations.THE_SHOWERS_1,),
-    22: (SACTitaniumBoltLocations.SPACESHIP_GRAVEYARD_1, SACTitaniumBoltLocations.SPACESHIP_GRAVEYARD_2, SACTitaniumBoltLocations.SPACESHIP_GRAVEYARD_3, SACTitaniumBoltLocations.SPACESHIP_GRAVEYARD_4),
+    22: (SACTitaniumBoltLocations.SPACESHIP_GRAVEYARD_1, SACTitaniumBoltLocations.SPACESHIP_GRAVEYARD_3, SACTitaniumBoltLocations.SPACESHIP_GRAVEYARD_2, SACTitaniumBoltLocations.SPACESHIP_GRAVEYARD_4),
     25: (SACTitaniumBoltLocations.PRISON_BREAKOUT_1,),
     29: (SACTitaniumBoltLocations.UNDERWATER_BUNKER_1,),
 }

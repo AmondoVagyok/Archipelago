@@ -37,8 +37,8 @@ class SACAlienCodeLocations:
 # -> its Alien Codes, in flag-bit order.
 ALIEN_CODES_BY_MODULE: dict[int, tuple[str, ...]] = {
     1: (
-        SACAlienCodeLocations.BOLTAIRE_MUSEUM_THE_LEGENDS,
         SACAlienCodeLocations.BOLTAIRE_MUSEUM_RONNS_SECRET,
+        SACAlienCodeLocations.BOLTAIRE_MUSEUM_THE_LEGENDS,
         SACAlienCodeLocations.BOLTAIRE_MUSEUM_BENS_SECRET,
     ),
     4: (
@@ -47,9 +47,9 @@ ALIEN_CODES_BY_MODULE: dict[int, tuple[str, ...]] = {
         SACAlienCodeLocations.ASYANICA_ROOFTOPS_RICARDOS_SECRET,
     ),
     10: (
+        SACAlienCodeLocations.AZCOTAL_ALLEY_TRAVIS_SECRET,
         SACAlienCodeLocations.AZCOTAL_ALLEY_JONS_SECRET,
         SACAlienCodeLocations.AZCOTAL_ALLEY_THE_3_JASONS_SECRET,
-        SACAlienCodeLocations.AZCOTAL_ALLEY_TRAVIS_SECRET,
     ),
     11: (
         SACAlienCodeLocations.GONDOLA_ASCENT_LEVITICUS_SECRET,
