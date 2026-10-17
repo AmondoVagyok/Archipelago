@@ -1,10 +1,9 @@
-"""Captured vendor insertion and restoration checks; no live PINE writes."""
 import struct
 import unittest
 from pathlib import Path
 
-from ..core.patches.vendor_offer_preview import VendorOfferPreview
-from ..core.symbols import RuntimeSymbols
+from ..core.patches import VendorOfferPreview
+from ..core import RuntimeSymbols
 from .test_native_capture_plans import CaptureMemory
 
 

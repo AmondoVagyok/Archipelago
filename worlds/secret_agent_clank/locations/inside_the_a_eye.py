@@ -1,4 +1,3 @@
-"""Inside the A-Eye: the case region and every location in it, with its access rule."""
 from ..constants import (
     SACCases,
     SACCutsceneLocations,
@@ -10,7 +9,6 @@ from ..constants import (
 from .model import CaseRegion, SACLocation, SACLocationType
 
 REGION = CaseRegion(SACCases.INSIDE_THE_A_EYE, (
-    # Preserve the AP name/ID and native flag; earned in Vaultbreakers.
     SACLocation(SACSkillPointLocations.GALACTIC_BOLT_RESERVE_VAULT_VAULT, SACLocationType.SKILL_POINT),
     SACLocation(SACGadgetbotChallengeLocations.INSIDE_THE_A_EYE_VAULTBREAKERS, SACLocationType.GADGETBOT_CHALLENGE),
     SACLocation(SACGadgetbotChallengeLocations.INSIDE_THE_A_EYE_DARK_HELMET, SACLocationType.GADGETBOT_CHALLENGE),

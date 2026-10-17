@@ -2,13 +2,11 @@ import unittest
 from unittest.mock import Mock
 
 from ..core.address_maps import BOLTS_ADDRESS
-from ..core.bolt_rewards import MAX_BOLTS, MAX_BOLTS_PER_PACK, BoltRewards, reward_balance
-from ..core.core import Core
+from ..core import MAX_BOLTS, MAX_BOLTS_PER_PACK, BoltRewards, Core, reward_balance
 from .test_runtime import Memory
 
 
 class FakeServerStorage:
-    """In-memory stand-in for the server's delivered/pending bolt storage keys."""
     def __init__(self):
         self.delivered = {"count": 0, "starting_delivered": False}
         self.pending = None
@@ -103,7 +101,7 @@ class BoltRewardTests(unittest.TestCase):
         self.assertEqual(self.p.read_int32(BOLTS_ADDRESS), 1440)
         r = BoltRewards(self.p, Mock(), on_state_changed=self.server.on_state_changed)
         r.configure(**self.server.configure_kwargs())
-        self.p.write_int32(BOLTS_ADDRESS, 500)  # Purchased something.
+        self.p.write_int32(BOLTS_ADDRESS, 500)
         r.received = 2
         r.deliver()
         self.assertEqual(self.p.read_int32(BOLTS_ADDRESS), 500)
@@ -120,7 +118,6 @@ class BoltRewardTests(unittest.TestCase):
         core.tick()
         self.assertEqual(self.r.received, 2)
         self.assertEqual(self.p.read_int32(BOLTS_ADDRESS), 1000)
-        # deliver() must not save anything before the runtime is ready.
         self.assertEqual(self.server.delivered, {"count": 0, "starting_delivered": False})
         self.assertIsNone(self.server.pending)
 
@@ -139,7 +136,6 @@ class BoltRewardTests(unittest.TestCase):
         self.assertEqual(self.server.delivered["count"], 1)
 
     def test_reconfigure_replaces_in_memory_state(self):
-        # Switching slots: configure() replaces the old slot's state entirely.
         self.r.received = 1
         self.r.deliver()
         other = FakeServerStorage()

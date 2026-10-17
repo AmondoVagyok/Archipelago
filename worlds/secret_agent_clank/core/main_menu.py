@@ -1,11 +1,8 @@
 """Resident title-module detection; CURRENT_CASE stays stale on the title screen."""
-from .patches.loader_gate import LoaderGate
+from .patches import LoaderGate
 
 
 def is_main_menu(pine):
-    # Verified on the title screen: loader target 0, finished loader state 5,
-    # completed relocation, no pending travel, and initialized game state.
-    # Read twice so crossing a transition cannot combine two different states.
     addresses = (LoaderGate.TARGET, LoaderGate.STATE, LoaderGate.STATUS,
                  0x206324, 0x206338)
     expected = [0, 5, 1, 0xFFFFFFFF, 3]

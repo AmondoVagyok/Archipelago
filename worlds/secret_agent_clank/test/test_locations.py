@@ -1,15 +1,21 @@
 import unittest
 
-from ..constants import SACCases, SACPickups
-from ..constants.cutscenes import CUTSCENE_FLAGS
-from ..constants.planets import ALL_CASES, CASE_NAME_TO_PLANET
-from ..constants.vendor import VENDOR_WEAPONS, vendor_location_name
-from ..constants.weapon_mods import CHALLENGE_MOD_IDS, WEAPON_MODS
+from ..constants import (
+    ALL_CASES,
+    CASE_NAME_TO_PLANET,
+    CHALLENGE_MOD_IDS,
+    CUTSCENE_FLAGS,
+    VENDOR_CASES,
+    VENDOR_WEAPONS,
+    WEAPON_MODS,
+    SACCases,
+    SACPickups,
+    vendor_location_name,
+)
 from ..locations import (
     ALL_LOCATIONS,
     BASE_ID,
     BASE_VENDOR_LOCATIONS,
-    CASE_LOCATIONS,
     CASE_REGIONS,
     LOCATION_NAME_TO_ID,
     LOCATIONS,
@@ -33,7 +39,8 @@ class LocationRecordTests(unittest.TestCase):
 
     def test_vendor_sources_are_not_pickups(self):
         self.assertEqual(set(BASE_VENDOR_LOCATIONS), {vendor_location_name(name) for name in VENDOR_WEAPONS})
-        self.assertFalse(set(BASE_VENDOR_LOCATIONS) & {loc.name for loc in CASE_LOCATIONS})
+        for name, location in BASE_VENDOR_LOCATIONS.items():
+            self.assertEqual(location.case, VENDOR_CASES[name])
         for mod in WEAPON_MODS:
             self.assertEqual(mod.location in MOD_VENDOR_LOCATIONS, mod.mod_id not in CHALLENGE_MOD_IDS)
 

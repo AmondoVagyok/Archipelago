@@ -1,7 +1,7 @@
 import unittest
 
-from ..constants.special_challenges import SPECIAL_CHALLENGE_FLAGS
-from ..core.inventories.special_challenges import SpecialChallengeInventory
+from ..constants import SPECIAL_CHALLENGE_FLAGS
+from ..core.inventories import SpecialChallengeInventory
 from .test_runtime import Memory
 
 

@@ -1,18 +1,17 @@
-"""Per-case unlock gate."""
 from enum import IntEnum
 from typing import TYPE_CHECKING
 
-from ...constants import CHARACTER_ITEM_NAME, PROGRESSIVE_CHARACTER_ITEM_NAME, SACOperatives
-from ...constants.planets import (
+from ...constants import (
     ALL_CASES,
-    CASE_ID_TO_CASE,
-    CASE_NAME_TO_INFOBOT,
     CASES_BY_OPERATIVE,
     CASES_BY_PLANET,
+    CASE_ID_TO_CASE,
+    CASE_NAME_TO_INFOBOT,
     PLANET_ACCESS_ITEM_NAME,
-    PLANET_NAMES,
+    PROGRESSIVE_CHARACTER_ITEM_NAME,
+    PROGRESSIVE_PLANET_ITEM_NAME,
+    SACOperatives,
 )
-from ...items import PROGRESSIVE_PLANET_ITEM_NAME
 from ..address_maps import (
     CASE_NAME_TO_UNLOCK_SLOT,
     CASE_UNLOCK_BASE_ADDRESSES,
@@ -30,7 +29,7 @@ class CaseUnlockState(IntEnum):
 
 
 def resolve_owned_cases(received_names: list[str], *, character_unlocks: bool = False,
-                        progressive_planets: list[str] | None = None) -> set[str]:
+                        planet_cases: dict[str, list[str]] | None = None) -> set[str]:
     """Every case name the player currently has logical access to, derived from received item names alone."""
     owned: set[str] = set()
 
@@ -42,17 +41,11 @@ def resolve_owned_cases(received_names: list[str], *, character_unlocks: bool = 
         if item in received_names:
             owned.update(case.name for case in CASES_BY_PLANET.get(planet, ()))
 
-    progressive_count = received_names.count(PROGRESSIVE_PLANET_ITEM_NAME)
-    if progressive_count:
-        planets = PLANET_NAMES[1:] if progressive_planets is None else progressive_planets
-        for planet in planets[:progressive_count]:
-            owned.update(case.name for case in CASES_BY_PLANET.get(planet, ()))
+    for planet, cases in (planet_cases or {}).items():
+        owned.update(cases[:received_names.count(PROGRESSIVE_PLANET_ITEM_NAME[planet])])
 
     if character_unlocks:
         owned.update(case.name for case in CASES_BY_OPERATIVE[SACOperatives.SPECIAL_MISSIONS])
-        for operative, item in CHARACTER_ITEM_NAME.items():
-            if item in received_names:
-                owned.update(case.name for case in CASES_BY_OPERATIVE[operative])
         for operative, item in PROGRESSIVE_CHARACTER_ITEM_NAME.items():
             owned.update(case.name for case in CASES_BY_OPERATIVE[operative][:received_names.count(item)])
     return owned

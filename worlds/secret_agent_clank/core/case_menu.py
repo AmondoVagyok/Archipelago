@@ -2,11 +2,8 @@
 import struct
 from dataclasses import dataclass
 
-from ..constants.planets import SACCases
+from ..constants import SACCases
 
-# Text IDs stored in mission+0x3C, grouped by operative in the USA table.
-# Catalog IDs are NOT loaded module IDs: Asyanica shares module 4 and Qwark's
-# Suck and Jive shares module 11; Countess's Villa uses module 7.
 CASE_LABELS = {
     5636: SACCases.HIGH_TREEHOUSE,
     **dict(zip(range(5606, 5611), (SACCases.MAX_SECURITY_CELLS, SACCases.THE_MESS_HALL,
@@ -102,8 +99,6 @@ class CaseMenu:
                 if kind == 1 and name in owned_cases and name not in first:
                     first[name] = (pointer + task + 12,
                                    struct.unpack_from("<I", tasks, task + 12)[0])
-        # A completion or module reload can happen while PINE reads the table.
-        # Never downgrade a mission that completed after the initial snapshot.
         if self.pine.read_bytes(self.mission_table, 33 * 8) != table:
             return set()
         changed = {name: address for name, (address, state) in first.items()
@@ -163,8 +158,6 @@ class CaseMenu:
             desired = int(name in owned_cases)
             if entry.selectable == desired and entry.visible == desired:
                 continue
-            # Check the row's identity again immediately before the write.
-            # Header addresses are rebound by CaseInventory after transitions.
             if (self.pine.read_int32(self.screen_address) != 14
                     or self.pine.read_int32(entry.node + 0xD0) != entry.mission
                     or self.pine.read_int32(entry.mission + 0x3C) != entry.case_label):
@@ -172,8 +165,6 @@ class CaseMenu:
             self.pine.batch_write_int8([(entry.node + 0xCC, desired),
                                         (entry.node + 0xCD, desired)])
 
-        # A row can become hidden while it is highlighted. Move the cursor to
-        # an owned row so confirmation cannot keep targeting the hidden case.
         if header is not None and self._header(self.child_header) == header:
             allowed = [entry.index for entry in entries
                        if CASE_LABELS.get(entry.case_label) in owned_cases]

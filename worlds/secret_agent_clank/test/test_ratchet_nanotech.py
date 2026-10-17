@@ -1,10 +1,10 @@
 import unittest
 from pathlib import Path
 
-from ..core.ratchet_nanotech import read_ratchet_nanotech
-from ..core.symbols import RuntimeSymbols
+from ..constants import SACOperatives
+from ..core import RuntimeSymbols, read_nanotech
 from .test_runtime import Memory
-from ..core.patches.progression import Progression
+from ..core.patches import Progression
 
 
 class RatchetNanotechTests(unittest.TestCase):
@@ -19,7 +19,7 @@ class RatchetNanotechTests(unittest.TestCase):
 
     def test_capture_is_read_only_and_separates_hud_from_xp(self):
         before = bytes(self.p.data)
-        data = read_ratchet_nanotech(self.p, self.symbols)
+        data = read_nanotech(self.p, self.symbols, SACOperatives.RATCHET)
         self.assertEqual((data['saved_xp'], data['xp_nanotech'], data['hud_max']), (0, 20, 20.0))
         self.assertEqual((data['ng_cap'], data['ng_plus_cap']), (60, 90))
         self.assertEqual(self.p.data, before)
@@ -31,12 +31,12 @@ class RatchetNanotechTests(unittest.TestCase):
                 self.p.write_int32(self.save + 0xED4, ng)
                 self.p.write_int32(self.save + 0x198FC, xp)
                 self.p.write_int32(self.save + 0x19930, 469200)
-                self.assertEqual(read_ratchet_nanotech(self.p, self.symbols)['xp_nanotech'], expected)
+                self.assertEqual(read_nanotech(self.p, self.symbols, SACOperatives.RATCHET)['xp_nanotech'], expected)
 
     def test_loading_rejected(self):
         self.p.write_int32(0x206324, 3)
         with self.assertRaisesRegex(ValueError, 'loading'):
-            read_ratchet_nanotech(self.p, self.symbols)
+            read_nanotech(self.p, self.symbols, SACOperatives.RATCHET)
 
     def test_location_reporting_uses_ratchet_xp_and_current_challenge_cap(self):
         progression = Progression(self.p)
@@ -60,7 +60,7 @@ class RatchetNanotechTests(unittest.TestCase):
     def test_changed_table_rejected(self):
         self.p.write_int32(self.symbols['g_LevelProgressionExperienceData_Ratchet'] + 8, 99)
         with self.assertRaisesRegex(ValueError, 'table changed'):
-            read_ratchet_nanotech(self.p, self.symbols)
+            read_nanotech(self.p, self.symbols, SACOperatives.RATCHET)
 
 
 class RatchetNanotechGenerationTests(unittest.TestCase):

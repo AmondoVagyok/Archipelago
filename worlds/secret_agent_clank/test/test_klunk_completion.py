@@ -1,9 +1,8 @@
 import unittest
 from pathlib import Path
 
-from ..constants.missions import CHAPTER_ENTRIES, MISSION_COMPLETE_NAME
-from ..constants.planets import SACCases
-from ..core.inventories.missions import MissionInventory
+from ..constants import CHAPTER_ENTRIES, MISSION_COMPLETE_NAME, SACCases
+from ..core.inventories import MissionInventory
 from .test_runtime import Memory
 
 
@@ -16,7 +15,6 @@ class KlunkCompletionTests(unittest.TestCase):
                 inv.table_base = 0x100000
                 mission = CHAPTER_ENTRIES[SACCases.KLUNKS_LAIR][0].name
                 expected = mission if all_missions else MISSION_COMPLETE_NAME[SACCases.KLUNKS_LAIR]
-                # Entry and mid-fight movies must not count as victory.
                 p.data[0x206BF2] = 0x06
                 self.assertEqual(inv.check_all(all_missions=all_missions), [])
                 p.data[0x206BF2] = 0x0E

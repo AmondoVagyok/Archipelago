@@ -1,7 +1,7 @@
 """Arena win counters resolved from the native arena table and current save."""
 import struct
 
-from ...constants.ratchet_challenges import RATCHET_CHALLENGES_BY_CASE
+from ...constants import RATCHET_CHALLENGES_BY_CASE
 from ..case_menu import CASE_LABELS, ee_pointer
 from ..global_flags import GlobalFlags
 from .case_events import CaseEventInventory
@@ -62,7 +62,6 @@ class RatchetChallengeInventory(CaseEventInventory):
         return value is not None and value[0] > 0
 
     def sync(self):
-        # Saved wins must be reported on connection/level entry, not baselined away.
         pass
 
     def check(self):

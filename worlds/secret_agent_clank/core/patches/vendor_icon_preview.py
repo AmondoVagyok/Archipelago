@@ -3,7 +3,8 @@ import struct
 
 from ..symbols import require
 from ..vendor import VendorState
-from .asm import Patch
+from ..batch_io import read_blocks, write_blocks
+from .asm import capture
 from .patch import PatchSet
 
 
@@ -29,10 +30,11 @@ class VendorIconPreview(PatchSet):
         row = self.vendor.selected_item()
         if selected_only and (row is None or row.icon != self.ICON_ID):
             raise RuntimeError("Highlight Shock Rocket for the verified icon test")
-        self.module = self.pine.read_int32(0x206328)
         lookup, invalidate = require(symbols, "GetIconTextureID__14DrawObjManagerUi",
                                      "aglPs2VramInvalidate__Fv")
-        w = struct.unpack("<6I", self.pine.read_bytes(lookup, 24))
+        module, lookup_code, invalidate_code = read_blocks(self.pine, [(0x206328, 4), (lookup, 24), (invalidate, 12)])
+        self.module, = struct.unpack("<I", module)
+        w = struct.unpack("<6I", lookup_code)
         if (w[0] & 0xFFFF0000 != 0x3C030000 or w[1] != 0x000420C0
                 or w[2] & 0xFFFF0000 != 0x24630000
                 or w[3:] != (0x00641821, 0x03E00008, 0x8C620004)):
@@ -53,20 +55,18 @@ class VendorIconPreview(PatchSet):
         clut = struct.unpack_from("<I", data, 0x98)[0]
         if not 0x100000 <= image < 0x1FFF800 or clut != image+1024:
             raise RuntimeError("Native icon pixel allocation changed")
-        w = struct.unpack("<3I", self.pine.read_bytes(invalidate, 12))
+        w = struct.unpack("<3I", invalidate_code)
         if w[0] & 0xFFFF0000 != 0x3C020000 or w[1] != 0x03E00008 or w[2] & 0xFFFF0000 != 0xAC400000:
             raise RuntimeError("VRAM invalidation routine changed")
         low = w[2] & 65535
         self.cache = ((w[0] & 65535) << 16) + (low-65536 if low & 32768 else low)
-        self.patches = [Patch(image, self.pine.read_bytes(image,1024), bytes(indices)),
-                        Patch(clut, self.pine.read_bytes(clut,1024), bytes(palette))]
+        self.patches = capture(self.pine, [(image, bytes(indices)), (clut, bytes(palette))])
         return self.patches
 
     def _check_context(self):
         if (self.pine.get_game_id() != "SCUS-97623"
-                or self.pine.read_int32(0x206328) != self.module
-                or self.pine.read_int32(0x206324) != 0xFFFFFFFF
-                or self.pine.read_int32(self.texture_slot) != self.texture):
+                or self.pine.batch_read_int32([0x206328, 0x206324, self.texture_slot])
+                != [self.module, 0xFFFFFFFF, self.texture]):
             raise RuntimeError("Icon preview context changed")
 
     def apply(self):
@@ -81,12 +81,11 @@ class VendorIconPreview(PatchSet):
         if not self.installed:
             return
         self._check_context()
-        for patch in self.patches:
-            if self.pine.read_bytes(patch.address,len(patch.replacement)) != patch.replacement:
-                raise RuntimeError("Icon pixels changed; refusing stale restoration")
-        for patch in reversed(self.patches):
-            self.pine.write_bytes(patch.address,patch.original)
-            if self.pine.read_bytes(patch.address,len(patch.original)) != patch.original:
-                raise RuntimeError("Icon restoration failed")
-        self.pine.write_int32(self.cache,0)
+        spans = [(patch.address, len(patch.replacement)) for patch in self.patches]
+        if read_blocks(self.pine, spans) != [patch.replacement for patch in self.patches]:
+            raise RuntimeError("Icon pixels changed; refusing stale restoration")
+        write_blocks(self.pine, [*((patch.address, patch.original) for patch in reversed(self.patches)),
+                                 (self.cache, bytes(4))])
+        if read_blocks(self.pine, spans) != [patch.original for patch in self.patches]:
+            raise RuntimeError("Icon restoration failed")
         self.installed = False

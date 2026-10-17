@@ -1,4 +1,3 @@
-"""Per-case cumulative Clank stealth takedown checks."""
 from .planets import SACCases
 
 STEALTH_MAX_PER_CASE = 10
@@ -16,9 +15,6 @@ class SACStealth:
     UNDERWATER_BUNKER = "Hydrano (Clank) - Underwater Bunker: Stealth Takedown {count}"
 
 
-# Clank cases with stealth takedowns -> location name template, each with enough
-# for the slider's maximum. Each gets stealth_takedown_checks checks. Location IDs
-# follow this order, so add any new case at the end.
 STEALTH_CASES: dict[str, str] = {
     SACCases.BOLTAIRE_MUSEUM: SACStealth.BOLTAIRE_MUSEUM,
     SACCases.ASYANICA_ROOFTOPS: SACStealth.ASYANICA_ROOFTOPS,
@@ -32,7 +28,6 @@ STEALTH_CASES: dict[str, str] = {
 
 
 def stealth_check_count(case, setting):
-    """Checks a case gets for the stealth_takedown_checks slider value."""
     return min(setting, STEALTH_MAX_PER_CASE) if case in STEALTH_CASES else 0
 
 

@@ -1,6 +1,7 @@
 """Native D-pad tabs, retaining the retail ammo builder and transaction paths."""
 import hashlib
 
+from ..batch_io import read_blocks
 from ..symbols import require
 from . import mips as m
 from .asm import Patch, jump, packed, words
@@ -163,9 +164,9 @@ class VendorTabs:
                 raise RuntimeError("Native vendor ammo call changed")
         if original[0x1B0:0x1B4] != original[0x1F8:0x1FC]:
             raise RuntimeError("Native vendor ammo conversion changed")
-        for (name, size, digest), calls in zip(self.STORAGE, self.STORAGE_CALLS):
-            address = require(symbols, name)
-            native = pine.read_bytes(address, size)
+        addresses = [require(symbols, name) for name, _, _ in self.STORAGE]
+        natives = read_blocks(pine, [(address, size) for address, (_, size, _) in zip(addresses, self.STORAGE)])
+        for address, native, (name, size, digest), calls in zip(addresses, natives, self.STORAGE, self.STORAGE_CALLS):
             normalized = packed([0x0C000000 if w >> 26 == 3 else w for w in words(native)])
             if hashlib.sha256(normalized).hexdigest() != digest:
                 raise RuntimeError(f"Vendor tab storage changed: {name}")
@@ -178,8 +179,12 @@ class VendorTabs:
             patches.append(Patch(address, native[:8], packed([m.jr(m.RA), 0])))
             ranges.append((address + 8, address + size))
 
+        known = list(zip(addresses, natives))
+
         def reserve(address, code):
-            patches.append(Patch(address, pine.read_bytes(address, len(code)), code))
+            start, data = next((start, data) for start, data in known
+                               if start <= address and address + len(code) <= start + len(data))
+            patches.append(Patch(address, data[address - start:address - start + len(code)], code))
             return address
 
         def allocate(code):
@@ -199,10 +204,13 @@ class VendorTabs:
         browse, init, pressed, analog = require(symbols, "SCRNVENDOR_UpdateBrowseState__Fv",
             "SCRNVENDOR_Init__Fv", "CONTROLLER_GetButtonsPressed__FUi",
             "CONTROLLER_GetButtonsPressedWithAnalog__FUi")
-        if (pine.read_bytes(browse + 0x18, 8) != packed([jump(analog, True), 0x240416C4])
-                or pine.read_bytes(init + 0x5C, 8) != packed([jump(builder, True), 0])):
+        browse_call, init_call, upper, lower = read_blocks(
+            pine, [(browse + 0x18, 8), (init + 0x5C, 8), (init + 0x2C, 4), (init + 0x38, 4)])
+        if (browse_call != packed([jump(analog, True), 0x240416C4])
+                or init_call != packed([jump(builder, True), 0])):
             raise RuntimeError("Vendor tab input/init call changed")
-        upper, lower = pine.read_int32(init + 0x2C), pine.read_int32(init + 0x38)
+        known += [(browse + 0x18, browse_call), (init + 0x5C, init_call)]
+        upper, lower = words(upper + lower)
         if upper & 0xFFFF0000 != m.lui(m.V1, 0) or lower & 0xFFFF0000 != m.sb(m.V0, 0, m.V1):
             raise RuntimeError("Vendor selection refresh flag changed")
         low = lower & 65535

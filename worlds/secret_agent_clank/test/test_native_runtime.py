@@ -2,19 +2,11 @@ import struct
 import unittest
 from unittest.mock import Mock, patch
 
-from ..constants.alien_codes import ALIEN_CODES_BY_MODULE
-from ..constants.clank_gadgets import SACClankGadgets
-from ..constants.missions import MISSION_COMPLETE_NAME
-from ..constants.planets import SACCases
-from ..core.case_menu import CASE_LABELS
-from ..core.core import Core
-from ..core.inventories.alien_codes import AlienCodeInventory
-from ..core.inventories.keycards import KeycardInventory
-from ..core.inventories.missions import MissionInventory
-from ..core.native_runtime import NativeRuntime
-from ..core.patches.loader_gate import LoaderBarrierLost, LoaderGate
-from ..core.patches import MARKER, LocationHooks
-from ..locations import ALIEN_CODE_LOCATIONS, KEYCARD_LOCATIONS
+from ..constants import MISSION_COMPLETE_NAME, SACCases, SACClankGadgets
+from ..core import CASE_LABELS, Core, NativeRuntime, module_counts
+from ..core.inventories import AlienCodeInventory, KeycardInventory, MissionInventory
+from ..core.patches import MARKER, LoaderBarrierLost, LoaderGate, LocationHooks
+from ..locations import ALIEN_CODE_FLAGS, ALIEN_CODE_LOCATIONS, KEYCARD_LOCATIONS
 from ..options import Goal
 from .test_runtime import Memory
 
@@ -27,7 +19,6 @@ class NativeRuntimeTests(unittest.TestCase):
         gate.arm()
         self.hooks.installed = True
         self.hooks.is_current.return_value = True
-        # Reproduce the reported signature during an in-flight level load.
         self.p.batch_write_int32([(gate.SITE, gate.ORIGINAL), (gate.STATE, 4),
                                  (gate.STATUS, 1), (gate.TARGET, 16),
                                  (gate.HANDLE, 0x200000)])
@@ -56,8 +47,6 @@ class NativeRuntimeTests(unittest.TestCase):
         self.runtime.gate.arm.assert_called_once()
         self.assertTrue(self.runtime.reload_requested)
         self.assertFalse(self.hooks.installed)
-        # Even if the request has been consumed, don't issue it again while
-        # waiting for the native loader to reach the installation barrier.
         self.p.write_int32(0x206324, 0xFFFFFFFF)
         self.p.writes.clear()
         self.assertFalse(self.runtime.service(set(), {}))
@@ -142,9 +131,9 @@ class NativeRuntimeTests(unittest.TestCase):
         self.hooks.installed = True
         self.hooks.is_current.return_value = True
         self.runtime.vendor_catalog = Mock()
-        self.runtime.owned_cases = frozenset({SACCases.THE_SHOWERS})
+        self.runtime.vendor_cases = frozenset({SACCases.THE_SHOWERS})
         self.assertTrue(self.runtime.service(set(), {}))
-        self.runtime.vendor_catalog.sync_cases.assert_called_once_with(self.runtime.owned_cases)
+        self.runtime.vendor_catalog.sync_cases.assert_called_once_with(self.runtime.vendor_cases)
         self.runtime.vendor_catalog.reset_mock()
         self.hooks.is_current.return_value = False
         self.runtime.service(set(), {})
@@ -260,6 +249,37 @@ class NativeRuntimeTests(unittest.TestCase):
         self.assertTrue(self.runtime.awaiting_start)
         self.hooks.is_current.assert_not_called()
         self.runtime.log.assert_not_called()
+
+    def test_startup_waits_for_every_intermediate_loader_state(self):
+        self.runtime.awaiting_start = True
+        for state in range(5):
+            with self.subTest(state=state):
+                self.p.write_int32(0x100, state)
+                self.assertFalse(self.runtime.service(set(), {}))
+                self.assertTrue(self.runtime.awaiting_start)
+                self.runtime.gate.arm.assert_not_called()
+                self.hooks.sync_entitlements.assert_not_called()
+
+    def test_changed_held_target_after_planning_prevents_install(self):
+        self.runtime.gate.held_module.side_effect = [1, 2]
+        with patch("worlds.secret_agent_clank.core.native_runtime.RuntimeSymbols"), \
+                patch("worlds.secret_agent_clank.core.native_runtime.VendorCatalog"), \
+                self.assertRaisesRegex(RuntimeError, "left the loader barrier"):
+            self.runtime.service(set(), {})
+        self.hooks.install_at_loader_gate.assert_not_called()
+        self.runtime.connection_warning.refresh.assert_not_called()
+        self.assertEqual(self.runtime.generation, 0)
+
+    def test_leaving_barrier_after_install_prevents_initialization_writes(self):
+        self.runtime.gate.held_module.side_effect = [1, 1, None]
+        with patch("worlds.secret_agent_clank.core.native_runtime.RuntimeSymbols"), \
+                patch("worlds.secret_agent_clank.core.native_runtime.VendorCatalog") as catalog, \
+                self.assertRaisesRegex(RuntimeError, "left the loader barrier"):
+            self.runtime.service(set(), {})
+        self.hooks.install_at_loader_gate.assert_called_once()
+        catalog.return_value.sync_cases.assert_not_called()
+        self.runtime.connection_warning.refresh.assert_not_called()
+        self.assertEqual(self.runtime.generation, 0)
 
     def test_inventory_waits_for_native_startup_to_finish(self):
         self.hooks.installed = True
@@ -403,7 +423,6 @@ class AlienFlagTests(unittest.TestCase):
         core._check_goal()
         core._check_goal()
         core.on_goal.assert_called_once()
-        # Any completes on whichever goal is finished first, the chalice included.
         core._goal_sent, core.goal = False, Goal.option_any
         core._check_goal()
         self.assertEqual(core.on_goal.call_count, 2)
@@ -412,7 +431,7 @@ class AlienFlagTests(unittest.TestCase):
         inv = AlienCodeInventory(Memory())
         inv.valid = True
         data = bytearray(15)
-        for module in ALIEN_CODES_BY_MODULE:
+        for module in module_counts(ALIEN_CODE_FLAGS):
             data[(module - 1) // 2] |= 7 << (((module - 1) & 1) * 4)
         inv.flags.read = Mock(return_value=bytes(data))
         found = inv.check()

@@ -5,8 +5,6 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True)
 class SACCheats:
-    """String constants for every vanilla cheat unlock."""
-
     BIG_HEADED_CLANK = "Big Headed Clank"
     BIG_HEADED_RATCHET = "Big Headed Ratchet"
     MIRRORED_LEVELS = "Mirrored Levels"
@@ -41,15 +39,12 @@ CHEAT_SKILL_POINT_THRESHOLD: dict[str, int] = {
 
 @dataclass(frozen=True)
 class SACTraps:
-    """Trap item names; each forces the vanilla cheats in TRAP_CHEATS on for its duration."""
-
     WEAPON_SWITCHING = "Weapon Switching Trap"
     MIRRORED_LEVELS = "Mirrored Levels Trap"
     BOLT_CONFUSION = "Bolt Confusion Trap"
     BIG_HEADED = "Big Headed Trap"
 
 
-# Trap item name -> the vanilla cheat(s) (SACCheats) it forces on.
 TRAP_CHEATS: dict[str, tuple[str, ...]] = {
     SACTraps.WEAPON_SWITCHING: (SACCheats.WEAPON_SWITCHING,),
     SACTraps.MIRRORED_LEVELS: (SACCheats.MIRRORED_LEVELS,),
@@ -57,5 +52,4 @@ TRAP_CHEATS: dict[str, tuple[str, ...]] = {
     SACTraps.BIG_HEADED: (SACCheats.BIG_HEADED_CLANK, SACCheats.BIG_HEADED_RATCHET),
 }
 
-# Default duration (seconds) each trap stays active once triggered.
 TRAP_DURATIONS: dict[str, int] = dict.fromkeys(TRAP_CHEATS, 30)

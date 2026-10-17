@@ -1,4 +1,3 @@
-"""SACLocation: one record per AP location, with its case, category and access rule; CaseRegion groups a case's."""
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass, replace
 from enum import Enum, auto
@@ -6,11 +5,15 @@ from typing import TYPE_CHECKING
 
 from rule_builder.rules import Rule
 
-from ..constants.pickups import CHALLENGE_MODE_PICKUP_LOCATIONS
-from ..constants.planets import CASE_NAME_TO_OPERATIVE, CASE_NAME_TO_PLANET
-from ..constants.skill_point_requirements import EXTRA_SKILL_POINT_OPERATIVES, SKILL_POINT_DIFFICULTY
-from ..constants.vendor import NG_PLUS_VENDOR_LOCATIONS
-from ..options import Missions
+from ..constants import (
+    CASE_NAME_TO_OPERATIVE,
+    CASE_NAME_TO_PLANET,
+    CHALLENGE_MODE_PICKUP_LOCATIONS,
+    EXTRA_SKILL_POINT_OPERATIVES,
+    NG_PLUS_VENDOR_LOCATIONS,
+    SKILL_POINT_DIFFICULTY,
+)
+from ..options import Missions, enabled_operatives
 
 if TYPE_CHECKING:
     from ..options import SecretAgentClankOptions
@@ -42,14 +45,13 @@ class SACLocationType(Enum):
     STEALTH_TAKEDOWN = auto()
 
 
-# Order of location types within a case region: pickups first, then missions and
-# each optional category.
 _REGION_TYPE_ORDER: tuple[SACLocationType, ...] = (
     SACLocationType.RATCHET_WEAPON, SACLocationType.CLANK_WEAPON, SACLocationType.CLANK_GADGET,
     SACLocationType.GADGET_PICKUP, SACLocationType.GADGETBOT_CHALLENGE, SACLocationType.SPECIAL_CHALLENGE,
     SACLocationType.RATCHET_CHALLENGE, SACLocationType.TITANIUM_BOLT, SACLocationType.CASE_COMPLETE,
     SACLocationType.MISSION, SACLocationType.SKILL_POINT, SACLocationType.CUTSCENE,
     SACLocationType.KEYCARD, SACLocationType.ALIEN_CODE,
+    SACLocationType.VENDOR, SACLocationType.MOD_VENDOR, SACLocationType.TITAN_VENDOR,
 )
 
 
@@ -57,11 +59,9 @@ _REGION_TYPE_ORDER: tuple[SACLocationType, ...] = (
 class SACLocation:
     name: str
     type: SACLocationType
-    # A fixed rule, or a function of the world for option-dependent rules; None means
-    # reachable with its region.
     rule: "Rule | Callable[[SecretAgentClankWorld], Rule] | None" = None
-    # SACCases constant, filled in by CaseRegion; None outside the case regions (vendor, levels, ...).
     case: str | None = None
+    flag_bit: int | None = None
 
     def resolve_rule(self, world: "SecretAgentClankWorld") -> "Rule | None":
         return self.rule if self.rule is None or isinstance(self.rule, Rule) else self.rule(world)
@@ -79,7 +79,7 @@ class SACLocation:
                 return options.all_missions.value == Missions.option_all
             case SACLocationType.SKILL_POINT:
                 return (options.skill_points.value >= SKILL_POINT_DIFFICULTY[self.name]
-                        and all(options.operatives.value.get(operative, 0) for operative in self.operatives))
+                        and self.operatives <= enabled_operatives(options))
             case SACLocationType.CUTSCENE:
                 return bool(options.all_cutscenes)
             case SACLocationType.KEYCARD:
@@ -89,8 +89,7 @@ class SACLocation:
         return True
 
     def operatives_enabled(self, options: "SecretAgentClankOptions") -> bool:
-        """Whether every operative this location needs is enabled."""
-        return all(options.operatives.value.get(operative, 0) for operative in self.operatives)
+        return self.operatives <= enabled_operatives(options)
 
     @property
     def operatives(self) -> frozenset[str]:
@@ -105,8 +104,6 @@ class SACLocation:
 
 
 class CaseRegion:
-    """One case's AP region: the case, and every location played in it."""
-
     def __init__(self, case: str, locations: Iterable[SACLocation]) -> None:
         self.case = case
         self.locations: tuple[SACLocation, ...] = tuple(replace(location, case=case) for location in locations)

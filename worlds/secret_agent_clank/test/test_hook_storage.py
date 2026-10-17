@@ -2,11 +2,8 @@ import unittest
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from ..constants.native_functions import NativeFunctions
-from ..core.patches.asm import Patch, jump
-from ..core.patches.progression import Progression
-from ..core.patches.storage import free_blocks, plan_storage, storage_address
-from ..core.patches.vendor_catalog import VendorCatalog
+from ..constants import NativeFunctions
+from ..core.patches import Patch, Progression, VendorCatalog, free_blocks, jump, plan_storage, storage_address
 from .mips_cpu import CPU
 from .test_native_capture_plans import CaptureMemory
 from .test_runtime import Memory
@@ -18,8 +15,6 @@ class HookStorageTests(unittest.TestCase):
         self.assertEqual(plan_storage(ranges, [], [4, 32]), [0x2000, 0x1000])
 
     def test_plan_backtracks_instead_of_stranding_final_hook(self):
-        # Greedy best fit puts 24 in 28 and 20 in 32, stranding the last 8.
-        # A complete plan puts 24+8 in 32 and 20+8 in 28.
         ranges = [(0x1000, 0x101C), (0x2000, 0x2020)]
         sizes = [24, 20, 8, 8]
         addresses = plan_storage(ranges, [], sizes)
@@ -79,8 +74,6 @@ class HookStorageTests(unittest.TestCase):
         hooks = SimpleNamespace(patches=[], locations={}, tables={}, extra_ranges=[])
         p.writes.clear()
         catalog = VendorCatalog(p)
-        # This fixture models only the catalog. Native tab code and storage
-        # signatures are exercised against real captures in test_vendor_tabs.
         with patch('worlds.secret_agent_clank.core.patches.vendor_catalog.VendorTabs.prepare',
                    return_value=([], bytes(8))):
             hooks.patches.extend(catalog.prepare(symbols, hooks))
@@ -88,7 +81,6 @@ class HookStorageTests(unittest.TestCase):
         self.assertEqual(hooks.extra_ranges,
                          [(builder + len(payload.replacement), builder + catalog.END)])
         self.assertEqual(payload.replacement[-41 * catalog.ROW_SIZE:], bytes(41 * catalog.ROW_SIZE))
-        # Manual XP wrappers need a contiguous block larger than a debug stub.
         address = storage_address(hooks.extra_ranges, hooks.patches, 120)
         self.assertEqual(address, builder + len(payload.replacement))
         self.assertLessEqual(address + 120, builder + catalog.END)

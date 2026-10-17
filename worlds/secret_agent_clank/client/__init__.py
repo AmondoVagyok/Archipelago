@@ -1,5 +1,6 @@
 """Archipelago client for Secret Agent Clank via PCSX2 PINE."""
 import asyncio
+import logging
 import sys
 from argparse import Namespace
 
@@ -10,8 +11,21 @@ from Utils import async_start, init_logging
 
 from .command_processor import SACCommandProcessor
 from .context import SACContext, tracker_loaded
+from .deathlink import DeathLinkMixin
+from .game_worker import GameRuntime
+from .vendor_scouts import VendorReward, VendorScouts
+from .worker_bridge import GameWorker
 
-__all__ = ["SACCommandProcessor", "SACContext", "run_client"]
+__all__ = [
+    "DeathLinkMixin",
+    "GameRuntime",
+    "GameWorker",
+    "SACCommandProcessor",
+    "SACContext",
+    "VendorReward",
+    "VendorScouts",
+    "run_client",
+]
 
 
 async def main(args: Namespace) -> None:
@@ -33,7 +47,6 @@ async def main(args: Namespace) -> None:
     graceful = await ctx._worker.close()
     await asyncio.gather(watcher, return_exceptions=True)
     if not graceful:
-        import logging
         logging.getLogger("CommonClient").warning("[SAC] Worker required forced shutdown. Restart the game if loading is held.")
     await ctx.shutdown()
 

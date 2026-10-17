@@ -1,7 +1,7 @@
 import struct
 import unittest
 
-from ..core.case_menu import CASE_LABELS, CaseMenu
+from ..core import CASE_LABELS, CaseMenu
 from .test_runtime import Memory
 
 
@@ -35,7 +35,6 @@ class CaseMenuTests(unittest.TestCase):
 
     def test_shared_case_unlock_uses_menu_label_not_catalog_id(self):
         self.menu.mission_table = 0x140000
-        # Module 11 contains separate Clank and Qwark cases.
         struct.pack_into('<2I', self.memory.data, 0x140000 + 11 * 8, 0x150000, 2)
         for i, label in enumerate((5614, 5622)):
             struct.pack_into('<I', self.memory.data, 0x150000 + i * 96, 1)

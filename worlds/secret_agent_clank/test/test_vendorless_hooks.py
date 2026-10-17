@@ -1,10 +1,17 @@
 import unittest
 from unittest.mock import patch
 
-from ..constants.native_functions import NativeFunctions as F
+from ..constants import NativeFunctions as F
+from ..core import read_blocks
 from ..core.patches import LocationHooks, jump, packed
 from .mips_cpu import CPU
 from .test_native_capture_plans import CaptureMemory
+
+
+def fake_storage(storage, original):
+    def triangle_storage(pine, symbols, extra=()):
+        return (storage, original, *read_blocks(pine, extra))
+    return triangle_storage
 
 
 class VendorlessHooksTests(unittest.TestCase):
@@ -23,7 +30,7 @@ class VendorlessHooksTests(unittest.TestCase):
         hooks = LocationHooks(self.p)
         before = bytes(self.p.data)
         with patch("worlds.secret_agent_clank.core.patches.equipment_only.triangle_storage",
-                   return_value=(storage, bytes(self.p.data[storage:storage + 352]))):
+                   side_effect=fake_storage(storage, bytes(self.p.data[storage:storage + 352]))):
             hooks.prepare(self.symbols, pickup_locations={}, vendor_locations={},
                           entitlements={2: True, 3: False}, vendor_enabled=False)
         self.assertEqual(bytes(self.p.data), before)

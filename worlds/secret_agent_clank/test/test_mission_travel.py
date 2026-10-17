@@ -2,9 +2,8 @@ import struct
 import unittest
 from pathlib import Path
 
-from ..core.patches import jump, packed
-from ..core.patches.mission_travel import MissionTravel
-from ..core.symbols import RuntimeSymbols
+from ..core.patches import MissionTravel, jump, packed
+from ..core import RuntimeSymbols
 from .test_runtime import Memory
 
 
@@ -34,7 +33,6 @@ class MissionTravelTests(unittest.TestCase):
                     self.assertEqual(p.read_bytes(edit.address, 4), edit.original)
                     self.assertEqual(edit.original, packed([jump(change, True)]))
                     self.assertEqual(edit.replacement, packed([jump(helper, True)]))
-                # A changed native layout must not be accepted as this route.
                 p.write_int32(edits[0].address, 0)
                 with self.assertRaisesRegex(RuntimeError, 'Story Continue travel'):
                     travel._prepare_story_routes(symbols, helper, change)
@@ -74,16 +72,11 @@ class MissionTravelTests(unittest.TestCase):
         self.assertEqual(changes[0].address, f)
         self.assertEqual(changes[0].replacement, packed([
             0x3C040020, 0x8C846328, jump(change), 0x24050001]))
-        # This loads a0 from CURRENT_CASE_ADDRESS, ignoring the caller's
-        # next-story-module argument. a1 requests a native reload, and the
-        # tail jump preserves the caller's return address and stack.
         for module in (1, 3, 4, 11, 16, 31):
             p.batch_write_int32([(0x206328, module), (0x206324, 29)])
             words = struct.unpack('<4I', changes[0].replacement)
             address = ((words[0] & 65535) << 16) + (words[1] & 65535)
             self.assertEqual(p.read_int32(address), module)
-        # The direct Continue path calls the reload helper then skips the
-        # challenge/quit handlers. The movie callback uses the same helper.
         direct = struct.unpack("<4I", changes[1].replacement)
         self.assertEqual(direct[:2], (jump(f, True), 0))
         self.assertEqual(update+0x194+(direct[2] & 65535)*4, update+0x228)

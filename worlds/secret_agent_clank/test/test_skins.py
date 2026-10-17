@@ -2,7 +2,7 @@ import struct
 import unittest
 from pathlib import Path
 
-from ..constants.skins import (
+from ..constants import (
     ALL_SKINS_MASK,
     CLANK_SKINS,
     QWARK_SKINS,
@@ -10,9 +10,8 @@ from ..constants.skins import (
     SKIN_OWNED_OFFSET,
     SKIN_SAVE_OFFSET,
 )
-from ..core.patches.asm import packed
-from ..core.skins import Skins
-from ..core.symbols import RuntimeSymbols
+from ..core.patches import packed
+from ..core import RuntimeSymbols, Skins
 from ..options import ClankSkin, QwarkSkin, RatchetSkin
 from .bases import SecretAgentClankTestBase
 from .mips_cpu import CPU
@@ -43,9 +42,6 @@ class SkinTests(unittest.TestCase):
             address = symbols.get("IsSkinUnlocked__F12SPHeroSkinId")
             if address is None:
                 continue
-            # Grant every prerequisite through call stubs, without changing
-            # retail control flow. Only deliberately unavailable skins should
-            # still return false; story/NG+/code locks are not missing assets.
             words = struct.unpack("<62I", p.read_bytes(address, 0xF8))
             def prerequisite_met(cpu):
                 cpu.r[2] = 1
@@ -199,7 +195,6 @@ class SkinTests(unittest.TestCase):
             self.assertEqual(p.data, before)
             for edit in edits:
                 p.write_bytes(edit.address, edit.replacement)
-            # The save can be created/relocated after preparation.
             p.write_int32(0x110000, 0x300000)
             for player_type in range(4):
                 cpu = CPU(p)
@@ -246,8 +241,6 @@ class SkinTests(unittest.TestCase):
             symbols = RuntimeSymbols.parse(p.data[:0x1000000], 0)
             if "IsSkinUnlocked__F12SPHeroSkinId" not in symbols:
                 continue
-            # Retail explicitly hides ID 7; AP must not expose unavailable
-            # assets simply because their names exist in the menu tables.
             cpu = CPU(p)
             cpu.r[4] = 7
             cpu.run(symbols["IsSkinUnlocked__F12SPHeroSkinId"])

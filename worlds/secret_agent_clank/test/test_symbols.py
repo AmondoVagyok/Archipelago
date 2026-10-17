@@ -1,6 +1,6 @@
 import unittest
 
-from ..core.symbols import RuntimeSymbols, forbid, require
+from ..core import RuntimeSymbols, forbid, require
 
 
 class RequireForbidTests(unittest.TestCase):

@@ -1,7 +1,7 @@
 import struct
 import unittest
 
-from ..core.vendor import VendorItem, VendorSnapshot, VendorState, purchased_base_item
+from ..core import VendorItem, VendorSnapshot, VendorState, purchased_base_item
 from .test_runtime import Memory
 
 
@@ -11,7 +11,6 @@ class NativeVendorTests(unittest.TestCase):
         self.vendor = VendorState(self.memory)
         self.symbols = {'g_PauseModeData': 0x654A00,
                         'SCRNVENDOR_ProcessPurchase__Fv': 0x3CFF10}
-        # Signature words observed in the case-10 purchase routine.
         for offset, word in ((8, 0x3C10006D), (24, 0x261043F8),
                              (72, 0x3C070059), (88, 0x8CE303D0),
                              (76, 0x3C080059), (104, 0xA10503D9)):

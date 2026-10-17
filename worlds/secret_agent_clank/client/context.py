@@ -6,13 +6,12 @@ from NetUtils import ClientStatus
 from Utils import async_start
 from ..world import SecretAgentClankWorld
 
-from ..constants.weapons import EQUIPMENT_DISPLAY_TO_INTERNAL
+from ..constants import EQUIPMENT_DISPLAY_TO_INTERNAL
 from ..items import GADGET_ITEM_TABLE, TRAP_ITEM_TABLE, WEAPON_ITEM_TABLE
 from ..locations import LOCATION_NAME_TO_ID
 from .command_processor import SACCommandProcessor
 from .constants import GAME_NAME
 from .deathlink import DeathLinkMixin
-from .item_names import canonical_item_name
 from .pine_mixin import PineMixin
 from .vendor_scouts import VendorScouts
 from .worker_bridge import GameWorker
@@ -37,8 +36,7 @@ class SACContext(PineMixin, DeathLinkMixin, CommonContext):
     game = GAME_NAME
     command_processor = SACCommandProcessor
     items_handling = 0b111
-    current_planet: str = "Galaxy"
-    # A real game client, so drop the "Tracker" tag UT's context would otherwise add.
+    current_planet: str = ""
     tags = CommonContext.tags - {"Tracker"}
 
     def __init__(self, server_address: str | None, password: str | None) -> None:
@@ -53,21 +51,17 @@ class SACContext(PineMixin, DeathLinkMixin, CommonContext):
 
         self._location_name_to_id = dict(LOCATION_NAME_TO_ID)
         self.vendor_scouts = VendorScouts(self._location_name_to_id)
-        # Location ids already scouted this connection (see _maybe_scout_vendor()).
         self._scouted_location_ids: set[int] = set()
         self._locally_checked_locations: set[int] = set()
-        # Rejected location names already logged; detectors retry them every tick.
         self._warned_missing_locations: set[str] = set()
 
         self._death_link_enabled = False
         self._last_death_link = 0.0
-        # None until _load_trap_state() has read the count from the server.
         self._processed_trap_count: int | None = None
         self._notification_count = None
         self._notification_slot = None
         self._stealth_identity = None
         self._stealth_load_task = None
-        # /debug: show the game worker's diagnostic messages.
         self.debug_logging = False
 
     def _worker_event(self, kind, value, identity=None):
@@ -86,12 +80,10 @@ class SACContext(PineMixin, DeathLinkMixin, CommonContext):
         elif kind == "bolts":
             self._save_bolt_state(*value)
         elif kind == "stealth":
-            # Per-case counts only rise; "update" merges just the cases sent.
             async_start(self.send_msgs([{"cmd": "Set", "key": self._stealth_key(),
                 "operations": [{"operation": "update", "value": value}]}]))
 
     def _debug_log(self, message):
-        """Diagnostic messages, shown only while /debug is on."""
         if self.debug_logging:
             logger.info(message)
 
@@ -110,8 +102,6 @@ class SACContext(PineMixin, DeathLinkMixin, CommonContext):
         if identity == self._notification_slot:
             counts = self.stored_data[key]
             if type(counts) is int and counts == 0:
-                # Older requests omitted the packet's default and created 0.
-                # This sentinel contains no progress; preserve actual dictionaries.
                 counts = {}
                 await self.send_msgs([{"cmd": "Set", "key": key,
                     "operations": [{"operation": "replace", "value": counts}]}])
@@ -142,7 +132,6 @@ class SACContext(PineMixin, DeathLinkMixin, CommonContext):
                 await self._teardown_pine_connection()
 
     def _bolt_storage_keys(self) -> tuple[str, str]:
-        """Server data-storage keys for this slot's delivered and pending bolt rewards."""
         return (f"secret_agent_clank_delivered_bolts_{self.team}_{self.slot}",
                 f"secret_agent_clank_pending_bolts_{self.team}_{self.slot}")
 
@@ -150,7 +139,6 @@ class SACContext(PineMixin, DeathLinkMixin, CommonContext):
         """Load bolt-reward state from the server, then enable delivery so rewards are never granted twice."""
         identity = self._notification_slot
         delivered_key, pending_key = self._bolt_storage_keys()
-        # Drop cached values from an earlier connection so the wait below sees fresh ones.
         self.stored_data.pop(delivered_key, None)
         self.stored_data.pop(pending_key, None)
         await self.send_msgs([
@@ -168,7 +156,6 @@ class SACContext(PineMixin, DeathLinkMixin, CommonContext):
             return
         delivered = self.stored_data[delivered_key]
         if not isinstance(delivered, dict):
-            # Older clients stored a bare count here.
             delivered = {"count": int(delivered), "starting_delivered": False}
         await self._worker.request("bolts", dict(
             starting_bolts=int(self.slot_data.get("starting_bolts", 0)),
@@ -178,7 +165,6 @@ class SACContext(PineMixin, DeathLinkMixin, CommonContext):
         ))
 
     def _save_bolt_state(self, delivered: dict, pending: "dict | None") -> None:
-        """Persist bolt-reward state to server data storage."""
         delivered_key, pending_key = self._bolt_storage_keys()
         async_start(self.send_msgs([
             {"cmd": "Set", "key": delivered_key, "operations": [{"operation": "replace", "value": delivered}]},
@@ -186,7 +172,6 @@ class SACContext(PineMixin, DeathLinkMixin, CommonContext):
         ]))
 
     def _trap_storage_key(self) -> str:
-        """Server data-storage key for how many received items have been processed for traps."""
         return f"secret_agent_clank_processed_traps_{self.team}_{self.slot}"
 
     async def _load_trap_state(self) -> None:
@@ -204,7 +189,6 @@ class SACContext(PineMixin, DeathLinkMixin, CommonContext):
         if identity != self._notification_slot:
             return
         self._processed_trap_count = self.stored_data[key]
-        # Traps are only applied on item events, so apply any that arrived while loading.
         async_start(self._apply_received_items())
 
     def _save_trap_state(self, count: int) -> None:
@@ -213,11 +197,10 @@ class SACContext(PineMixin, DeathLinkMixin, CommonContext):
         ))
 
     async def _apply_received_items(self) -> None:
-        """Pass every received item to Core, queue receipt notifications, then fire new traps."""
         if self.slot is None or not self.pine_connected:
             return
         received_names = [
-            canonical_item_name(self.item_names[self.game].get(network_item.item, ""))
+            self.item_names[self.game].get(network_item.item, "")
             for network_item in self.items_received
         ]
         ratchet = {
@@ -268,7 +251,6 @@ class SACContext(PineMixin, DeathLinkMixin, CommonContext):
         }
 
     def _maybe_scout_vendor(self) -> None:
-        """Scout the seed's vendor catalog once the shared shop is opened."""
         if self.slot is None or not self._game_state.get("vendor_active", False):
             return
         server_locations = getattr(self, "server_locations", None)
@@ -276,7 +258,7 @@ class SACContext(PineMixin, DeathLinkMixin, CommonContext):
             return
         request = self.vendor_scouts.request(
             server_locations, hint=bool(self.slot_data.get("send_scouted_locations", True)),
-            owned_cases=self._game_state.get("owned_cases", ()),
+            vendor_cases=self._game_state.get("vendor_cases", ()),
         )
         new_ids = [lid for lid in request["locations"] if lid not in self._scouted_location_ids]
         if not new_ids:
@@ -357,11 +339,14 @@ class SACContext(PineMixin, DeathLinkMixin, CommonContext):
             async_start(self._worker.request("scouts", dict(self.vendor_scouts.rewards)))
 
         if cmd == "ReceivedItems" and self._notification_count is None:
-            # Initial sync is historical inventory, not a burst of new receipts.
             self._notification_count = len(self.items_received)
 
         if cmd in ("ReceivedItems", "RoomUpdate"):
             self._resync_from_ap()
+            return
+
+        if cmd == "PrintJSON" and args.get("type") == "ItemSend":
+            self._notify_sent_item(args)
             return
 
         if cmd == "Bounced" and self._death_link_enabled and "DeathLink" in args.get("tags", []):
@@ -369,8 +354,16 @@ class SACContext(PineMixin, DeathLinkMixin, CommonContext):
             if data.get("source") != self.auth:
                 async_start(self._receive_death_link(data))
 
+    def _notify_sent_item(self, args: dict[str, Any]) -> None:
+        item, receiver = args["item"], args["receiving"]
+        # Self-finds already show as received.
+        if item.player != self.slot or receiver == self.slot:
+            return
+        name = self.item_names.lookup_in_slot(item.item, receiver)
+        player = self.player_names.get(receiver, f"Player {receiver}")
+        async_start(self._worker.request("sent", (name, player, bool(item.flags & 4))))
+
     def _resync_from_ap(self) -> None:
-        """Push AP's checked locations into the game, then re-apply received items."""
         checked = self._checked_location_names()
         async_start(self._worker.request("sync", checked))
         async_start(self._apply_received_items())

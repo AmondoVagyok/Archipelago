@@ -6,19 +6,19 @@ from BaseClasses import CollectionState
 from Fill import distribute_items_restrictive
 from test.general import setup_multiworld
 
-from ..constants import CASE_NAME_TO_INFOBOT, SACCases
-from ..constants.weapon_order import WEAPON_ORDER
-from ..constants.weapon_progression import (
+from ..constants import (
+    CASE_NAME_TO_INFOBOT,
+    EQUIPMENT_INTERNAL_TO_DISPLAY,
     LEVELLED_INTERNALS,
     PROGRESSIVE_TO_INTERNAL,
+    WEAPON_ORDER,
+    SACCases,
     checked_levels,
     level_location_name,
     max_level,
 )
-from ..constants.weapons import EQUIPMENT_INTERNAL_TO_DISPLAY
-from ..core.patches.asm import jump, packed
-from ..core.patches.progression import Progression
-from ..locations.weapon_levels import CLANK_WEAPON_LEVEL_CASES
+from ..core.patches import Progression, jump, packed
+from ..rules import CLANK_WEAPON_LEVEL_CASES
 from ..options import ProgressiveWeapons
 from ..universal_tracker import setup_options_from_slot_data
 from ..world import SecretAgentClankWorld
@@ -45,11 +45,9 @@ class WeaponLevelTests(unittest.TestCase):
         self.assertEqual(checked_levels("throwTie", 3, 0), (4,))
         self.assertEqual(checked_levels("throwTie", 3, 1), (4, 8))
 
-    def test_old_boolean_is_automatic_and_new_manual_survives_slot_data(self):
-        self.assertEqual(ProgressiveWeapons.from_any(True).value, 2)
-        self.assertEqual(ProgressiveWeapons.from_any("true").value, 2)
+    def test_progressive_modes_survive_slot_data(self):
         self.assertEqual(ProgressiveWeapons.from_any("manual").value, 1)
-        for mode, manual in ((True, False), (2, False), (1, True)):
+        for mode, manual in ((2, False), (1, True)):
             p = Progression(Memory())
             p.configure({"progressive_weapons": mode})
             self.assertTrue(p.enabled)
@@ -60,7 +58,7 @@ class WeaponLevelTests(unittest.TestCase):
             for ng in (0, 1, 2):
                 m = setup_multiworld(SecretAgentClankWorld, options={
                     "progressive_weapons": mode, "weapon_level_checks": "all", "ng_plus": ng,
-                    "all_missions": "all", "all_cutscenes": True, "skill_points": True,
+                    "all_missions": "all", "all_cutscenes": True, "skill_points": "hard",
                 })
                 checks = m.get_region("Weapon Levels", 1).locations
                 self.assertEqual(len(checks), 101 if ng else 42)
@@ -71,7 +69,7 @@ class WeaponLevelTests(unittest.TestCase):
                 distribute_items_restrictive(m)
                 self.assertTrue(m.fulfills_accessibility())
 
-    def test_tracker_round_trip_and_old_slot_defaults(self):
+    def test_tracker_round_trip(self):
         m = setup_multiworld(SecretAgentClankWorld, options={
             "progressive_weapons": "manual", "weapon_level_checks": "level_4"})
         world = m.worlds[1]
@@ -82,11 +80,6 @@ class WeaponLevelTests(unittest.TestCase):
         setup_options_from_slot_data(world)
         self.assertEqual(world.options.progressive_weapons.value, 1)
         self.assertEqual(world.options.weapon_level_checks.value, 1)
-        slot["progressive_weapons"] = True
-        del slot["weapon_level_checks"]
-        setup_options_from_slot_data(world)
-        self.assertEqual(world.options.progressive_weapons.value, 2)
-        self.assertEqual(world.options.weapon_level_checks.value, 0)
 
     def test_disabled_characters_and_ng_only_checks(self):
         for ng in (0, 1):
@@ -135,7 +128,6 @@ class WeaponLevelTests(unittest.TestCase):
                 ("blaster", SACCases.MAX_SECURITY_CELLS, SACCases.ASYANICA_ROOFTOPS),
                 ("throwTie", SACCases.ASYANICA_ROOFTOPS, SACCases.MAX_SECURITY_CELLS),
             ):
-                # Construct a state without the randomly precollected starting cases.
                 state = CollectionState(m)
                 state.prog_items[1].clear()
                 state.stale[1] = True
@@ -194,7 +186,6 @@ class WeaponLevelTests(unittest.TestCase):
         self.assertEqual(p.pine.read_int32(slot + 0x5C), 0)
 
     def test_native_manual_guard_blocks_cap_and_resumes_original(self):
-        # Execute actual emitted MIPS, stopping at the original body or caller.
         base, caps, xp, wrapper = 0x100000, 0x120000, 0x130000, 0x140000
         for internal in LEVELLED_INTERNALS:
             slot = WEAPON_ORDER.index(internal)

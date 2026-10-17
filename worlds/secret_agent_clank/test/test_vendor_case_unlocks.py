@@ -1,11 +1,8 @@
-"""Vendor checks are independent of case unlocks and gameplay ownership."""
 import unittest
 from unittest.mock import patch
 
-from ..constants.clank_gadgets import SACClankWeapons
-from ..constants.vendor import vendor_location_name
-from ..core.patches import MARKER, LocationHooks
-from ..core.patches.plan import PatchPlan
+from ..constants import SACClankWeapons, vendor_location_name
+from ..core.patches import MARKER, LocationHooks, PatchPlan
 from .test_runtime import Memory
 
 

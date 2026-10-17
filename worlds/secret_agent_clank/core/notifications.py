@@ -1,16 +1,34 @@
-"""Nonmodal AP receipt messages using SAC's native timed one-liner HUD."""
+"""Nonmodal AP sent/received messages using SAC's native timed one-liner HUD."""
 import struct
 from collections import deque
 
 
+def _clean(value, limit):
+    value = "".join(c if 32 <= ord(c) < 127 else "?" for c in str(value))
+    return (value[:limit - 3] + "...") if len(value) > limit else value
+
+
+def _item_text(verb, item, preposition, player, trap):
+    color = 3 if trap else 13
+    return (verb + b" " + bytes((0x90, color)) + _clean(item, 45).encode("ascii")
+            + b"\x90\x01\n" + preposition + b" \x90\x0b" + _clean(player, 30).encode("ascii") + b"\x90\x01\0")
+
+
 def receipt_text(item, sender, trap=False):
-    # Strip game control bytes/newlines from names before adding our own tags.
-    def clean(value, limit):
-        value = "".join(c if 32 <= ord(c) < 127 else "?" for c in str(value))
-        return (value[:limit - 3] + "...") if len(value) > limit else value
-    color = 3 if trap else 13  # native palette: red / purple; sender green
-    return (b"Received " + bytes((0x90, color)) + clean(item, 45).encode("ascii")
-            + b"\x90\x01\nfrom \x90\x0b" + clean(sender, 30).encode("ascii") + b"\x90\x01\0")
+    return _item_text(b"Received", item, b"from", sender, trap)
+
+
+def sent_text(item, receiver, trap=False):
+    return _item_text(b"Sent", item, b"to", receiver, trap)
+
+
+def death_text(source, cause):
+    return (b"DeathLink from \x90\x0b" + _clean(source, 30).encode("ascii") + b"\x90\x01\n"
+            + bytes((0x90, 3)) + _clean(cause, 45).encode("ascii") + b"\x90\x01\0")
+
+
+def death_sent_text(cause):
+    return b"DeathLink sent\n" + bytes((0x90, 3)) + _clean(cause, 45).encode("ascii") + b"\x90\x01\0"
 
 
 class ItemNotifications:
@@ -21,6 +39,15 @@ class ItemNotifications:
 
     def enqueue(self, item, sender, trap=False):
         self.queue.append(receipt_text(item, sender, trap))
+
+    def enqueue_sent(self, item, receiver, trap=False):
+        self.queue.append(sent_text(item, receiver, trap))
+
+    def enqueue_death(self, source, cause):
+        self.queue.append(death_text(source, cause))
+
+    def enqueue_death_sent(self, cause):
+        self.queue.append(death_sent_text(cause))
 
     def bind(self, symbols):
         self.binding = None
@@ -55,7 +82,6 @@ class ItemNotifications:
             right = address(render, 0xAC, 0xC4, 0x3C030000, 0x8C640000)
         except ValueError:
             return False
-        # Native bracket drawing explicitly treats icon ID -1 as hidden.
         call = p.read_int32(render + 0x98)
         if call >> 26 != 3 or p.read_int32(render + 0xD8) != call:
             return False
@@ -76,7 +102,6 @@ class ItemNotifications:
         if (p.read_int32(0x206324) != 0xFFFFFFFF or p.read_int32(0x206338) != 3
                 or p.read_int32(screen) != 0):
             return
-        # Respect native hints and let each receipt finish before the next.
         if p.read_int32(timer) or p.read_int32(cooldown):
             return
         text = self.queue[0]
@@ -84,7 +109,6 @@ class ItemNotifications:
         struct.pack_into("<4i", data, 0, 24, 186, 456, 254)
         struct.pack_into("<2h", data, 0x10, 8, 8)
         struct.pack_into("<I", data, 0x14, buffer)
-        # Native flag 0x40 skips the filled background rectangle.
         struct.pack_into("<I", data, 0x20, 0xC7)
         struct.pack_into("<I", data, 0x28, 0xA0302020)
         struct.pack_into("<I", data, 0x2C, 0xFFC0C0C0)
@@ -97,6 +121,5 @@ class ItemNotifications:
         p.write_int32(left, 0xFFFFFFFF)
         p.write_int32(right, 0xFFFFFFFF)
         p.write_bytes(blink, b"\0")
-        # Publish last. This native timer never changes pause/input state.
         p.write_int32(timer, 240)
         self.queue.popleft()

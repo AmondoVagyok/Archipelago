@@ -1,12 +1,11 @@
-"""Real spawned-process IPC tests, without opening an emulator connection."""
 import asyncio
 import os
 import time
 import unittest
 from unittest.mock import Mock, patch
 
-from ..client.game_worker import GameRuntime
-from ..client.worker_bridge import GameWorker
+from ..client import GameRuntime, GameWorker
+from ..core import death_sent_text, death_text
 from .test_runtime import Memory
 
 
@@ -103,7 +102,7 @@ class GameRuntimeTests(unittest.TestCase):
         self.pine.set_slot = Mock()
         self.pine.get_game_id = Mock(return_value='SCUS-97623')
         self.events = []
-        with patch('worlds.secret_agent_clank.pypine.Pine', return_value=self.pine) as factory:
+        with patch('worlds.secret_agent_clank.client.game_worker.Pine', return_value=self.pine) as factory:
             self.runtime = GameRuntime(lambda *event: self.events.append(event))
             factory.assert_called_once_with()
 
@@ -117,6 +116,16 @@ class GameRuntimeTests(unittest.TestCase):
         self.assertIs(self.runtime.pine, self.pine)
         self.assertEqual(calls, ['restore', 'disconnect', 'restore', 'disconnect'])
         self.assertEqual(self.pine.connect.call_count, 2)
+
+    def test_received_death_is_shown_on_the_hud(self):
+        self.runtime.dispatch('connect', 28011)
+        self.runtime.core.case.receive_death = Mock(return_value=True)
+        self.assertTrue(self.runtime.dispatch('death', ('Bob', 'Bob fell.')))
+        self.assertEqual(list(self.runtime.core.notifications.queue), [death_text('Bob', 'Bob fell.')])
+
+    def test_sent_death_is_shown_on_the_hud(self):
+        self.runtime.dispatch('death_sent', 'Me drowned on Hydrano.')
+        self.assertEqual(list(self.runtime.core.notifications.queue), [death_sent_text('Me drowned on Hydrano.')])
 
     def test_location_needs_host_confirmation(self):
         self.runtime.allowed = {'check'}
@@ -154,9 +163,10 @@ class GameRuntimeTests(unittest.TestCase):
         core.keycards.chalice_collected = True
         core.missions._reported.add(MISSION_COMPLETE_NAME[SACCases.KLUNKS_LAIR])
         core._check_goal()
-        core.send_deathlink(1)
+        core.send_deathlink('drowned')
         core.bolt_rewards.on_state_changed({'count': 1}, None)
         self.assertEqual([event[0] for event in self.events], ['goal', 'death', 'bolts'])
+        self.assertEqual(self.events[1][1]['cause'], 'drowned')
         self.assertTrue(all(event[2] == identity for event in self.events))
         self.runtime.dispatch('configure', (('another-seed', 0, 1), {}, set()))
         self.assertIsNot(self.runtime.core, core)

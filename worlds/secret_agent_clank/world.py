@@ -1,49 +1,48 @@
 from typing import Any
 
-from BaseClasses import CollectionState, ItemClassification, Tutorial
+from BaseClasses import CollectionState, Tutorial
 from Options import OptionError
+from rule_builder.rules import Has
 from worlds.AutoWorld import WebWorld, World
 
 from .constants import (
-    CASE_NAME_TO_INFOBOT,
+    ALL_CASES,
     CASES_BY_OPERATIVE,
-    CHARACTER_ITEM_NAME,
+    CASES_BY_PLANET,
+    CASE_NAME_TO_INFOBOT,
+    EQUIPMENT_DISPLAY_TO_INTERNAL,
     GADGETS_FROM_WEAPON_TABLE,
-    PLANET_NAMES,
-    PROGRESSIVE_CHARACTER_ITEM_NAME,
-    SACCases,
-    SACOperatives,
-)
-from .constants.challenge_mode import PROGRESSIVE_CHALLENGE_MODE
-from .constants.planets import ALL_CASES, PLANET_ACCESS_ITEM_NAME
-from .constants.vendor import NG_PLUS_VENDOR_ITEMS
-from .constants.weapon_mods import WeaponMod
-from .constants.weapon_progression import (
     LEVELLED_INTERNALS,
+    NG_PLUS_VENDOR_ITEMS,
+    PLANET_ACCESS_ITEM_NAME,
+    PLANET_NAMES,
+    PROGRESSIVE_CHALLENGE_MODE,
+    PROGRESSIVE_CHARACTER_ITEM_NAME,
+    PROGRESSIVE_PLANET_ITEM_NAME,
     PROGRESSIVE_TO_INTERNAL,
     PROGRESSIVE_TO_UNLOCK,
+    RATCHET_WEAPONS,
     UNLOCK_TO_PROGRESSIVE,
+    SACCases,
+    SACOperatives,
+    WeaponMod,
+    enabled_challenge_mods,
     max_level,
 )
-from .constants.weapons import EQUIPMENT_DISPLAY_TO_INTERNAL, RATCHET_WEAPONS
 from .entities import SACItem
 from .items import (
     ALL_ITEMS,
     FILLER_ITEM_NAME,
     GADGET_ITEM_TABLE,
     KEYCARD_ITEM_TABLE,
-    PROGRESSIVE_PLANET_ITEM_NAME,
     RATCHET_PACK_ITEM_TABLE,
     TRAP_ITEM_TABLE,
     WEAPON_ITEM_TABLE,
 )
-from .locations import LOCATION_NAME_TO_ID
-from .locations.stealth import stealth_case_counts
-from .options import Goal, Infobots, SecretAgentClankOptions, sac_option_groups
+from .locations import CASE_REGIONS, LOCATIONS, LOCATION_NAME_TO_ID, stealth_case_counts
+from .options import Infobots, SecretAgentClankOptions, enabled_operatives, sac_option_groups
 from .regions import create_regions
-from .rules import set_rules
-from .rules.rule_helpers import region_names
-from .rules.vendor_access import VENDOR_ONLY_ITEM_NAMES
+from .rules import VENDOR_ONLY_ITEM_NAMES, region_names, set_entrance_rules
 from .universal_tracker import setup_options_from_slot_data
 
 try:
@@ -55,6 +54,9 @@ try:
     )
 except ImportError:
     _DYNAMIC_PINE_SPEC = None
+
+
+MIN_START_ROOM = 4
 
 
 class SACWeb(WebWorld):
@@ -84,30 +86,22 @@ class SecretAgentClankWorld(World):
     location_name_to_id: dict[str, int] = LOCATION_NAME_TO_ID
     dynamic_pine = _DYNAMIC_PINE_SPEC
 
-    # Universal Tracker support (see universal_tracker.py). ut_can_gen_without_yaml
-    # lets UT regenerate this world from slot_data alone.
     using_ut: bool = False
     passthrough: dict[str, Any]
     ut_can_gen_without_yaml: bool = True
 
-    # Set by regions.py's create_regions().
     has_vendor: bool
     weapon_mod_catalog: tuple[WeaponMod, ...]
-    # Set by create_items().
     starting_case: str
-    second_starting_case: str | None
+    second_starting_case: str
 
     def create_item(self, name: str) -> SACItem:
         data = ALL_ITEMS[name]
         return SACItem(name, data.classification, data.code, self.player)
 
-    def create_event(self, name: str) -> SACItem:
-        return SACItem(name, ItemClassification.progression, None, self.player)
-
     def collect(self, state, item):
         changed = super().collect(state, item)
         if changed and item.name in PROGRESSIVE_TO_UNLOCK:
-            # Case rules check the base weapon, so a progressive copy also grants it in logic.
             state.add_item(PROGRESSIVE_TO_UNLOCK[item.name], self.player)
         return changed
 
@@ -124,26 +118,30 @@ class SecretAgentClankWorld(World):
         create_regions(self)
 
     @property
-    def progressive_planets(self) -> list[str]:
+    def planet_cases(self) -> dict[str, list[str]]:
         if self.using_ut:
-            return list(self.passthrough.get("progressive_planets", PLANET_NAMES[1:]))
+            return {planet: list(cases) for planet, cases in self.passthrough["planet_cases"].items()}
         regions = region_names(self)
-        active = {case.planet for case in ALL_CASES if case.name in regions}
-        return [planet for planet in PLANET_NAMES if planet in active]
+        cases = {planet: [case.name for case in CASES_BY_PLANET[planet] if case.name in regions]
+                 for planet in PLANET_NAMES}
+        return {planet: names for planet, names in cases.items() if names}
 
     def set_rules(self) -> None:
-        set_rules(self)
+        self.set_completion_rule(Has("Victory"))
+        set_entrance_rules(self)
+        locations = {location.name: location for location in self.multiworld.get_locations(self.player)}
+        for definition in LOCATIONS:
+            location = locations.get(definition.name)
+            rule = definition.resolve_rule(self) if location is not None else None
+            if rule is not None:
+                self.set_rule(location, rule)
 
     def generate_basic(self) -> None:
-        # Runs after every world's set_rules. With nothing reachable from the
-        # starting inventory, fill has nowhere to put the first progression
-        # item and fails with an unhelpful FillError, so reject the options here.
         if self.using_ut:
             return
         state = CollectionState(self.multiworld)
         if any(location.item is None for location in self.multiworld.get_reachable_locations(state, self.player)):
             return
-        # Other worlds' early locations can still hold this world's first items.
         if any(location.item is None for location in self.multiworld.get_reachable_locations(state)):
             return
         player_name = self.multiworld.get_player_name(self.player)
@@ -155,25 +153,60 @@ class SecretAgentClankWorld(World):
             "Weapon Level Checks, Clank Nanotech Locations or Ratchet Nanotech Locations)."
         )
 
-    def _start_is_viable(self, case) -> bool:
-        """Whether a location inside `case` is reachable from the precollected inventory and its Case File."""
-        from .locations import CASE_REGIONS
+    def _start_room(self, case) -> int:
+        """Locations inside `case` reachable from the precollected inventory and its Case File."""
         state = CollectionState(self.multiworld)
-        state.collect(self.create_item(CASE_NAME_TO_INFOBOT[case.name]), prevent_sweep=True)
+        for name in self._starting_items((case,)):
+            state.collect(self.create_item(name), prevent_sweep=True)
         existing = {location.name for location in self.multiworld.get_region(case.name, self.player).locations}
+        room = 0
         for definition in CASE_REGIONS[case.name].locations:
             if definition.name not in existing:
                 continue
             rule = definition.resolve_rule(self)
             if rule is None or rule.resolve(self)(state):
-                return True
-        return False
+                room += 1
+        return room
+
+    def _starting_items(self, cases) -> list[str]:
+        if self.options.infobots == Infobots.option_progressive_planet:
+            planet_cases = self.planet_cases
+            counts: dict[str, int] = {}
+            for case in cases:
+                order = planet_cases[case.planet]
+                counts[case.planet] = max(counts.get(case.planet, 0), order.index(case.name) + 1)
+            return [PROGRESSIVE_PLANET_ITEM_NAME[planet] for planet, count in counts.items() for _ in range(count)]
+        if self.options.infobots == Infobots.option_planets:
+            return list(dict.fromkeys(
+                PLANET_ACCESS_ITEM_NAME.get(case.planet, CASE_NAME_TO_INFOBOT[case.name]) for case in cases))
+        return [CASE_NAME_TO_INFOBOT[case.name] for case in cases]
+
+    def _choose_starting_cases(self, candidates):
+        """Two random distinct starting cases, at least one Clank's, preferring pairs that open
+        at least MIN_START_ROOM locations between them before any item is received."""
+        if self.options.infobots == Infobots.option_progressive_planet:
+            # A later case would also open every case before it on its planet,
+            # so start on cases that are first in their planet's unlock order.
+            planet_cases = self.planet_cases
+            firsts = [case for case in candidates if planet_cases[case.planet][0] == case.name]
+            if len(firsts) > 1 and any(case.operative == SACOperatives.CLANK for case in firsts):
+                candidates = firsts
+        room = {case.name: self._start_room(case) for case in candidates}
+        pairs = [(first, second) for first in candidates for second in candidates
+                 if first is not second and SACOperatives.CLANK in (first.operative, second.operative)]
+        roomy = [pair for pair in pairs if all(room[case.name] for case in pair)
+                 and sum(room[case.name] for case in pair) >= MIN_START_ROOM]
+        if not roomy:
+            best = max(sum(room[case.name] for case in pair) for pair in pairs)
+            roomy = [pair for pair in pairs if sum(room[case.name] for case in pair) == best]
+        return self.random.choice(roomy)
 
     def create_items(self) -> None:
         existing = region_names(self)
         active_cases = [case for case in ALL_CASES if case.name in existing]
         candidates = [case for case in active_cases
-                      if self.options.operatives.value.get(case.operative, 0)]
+                      if case.operative in enabled_operatives(self.options)
+                      and case.name != SACCases.KLUNKS_LAIR]
         if not candidates:
             raise OptionError("Secret Agent Clank requires at least one enabled operative")
         pool: list[str] = []
@@ -182,18 +215,13 @@ class SecretAgentClankWorld(World):
         if self.options.progressive_challenge_mode:
             pool += [PROGRESSIVE_CHALLENGE_MODE] * self.options.ng_plus.value
         pool += [mod.name for mod in self.weapon_mod_catalog]
-        ratchet_enabled = SACOperatives.RATCHET in self.options.operatives.value
-        clank_enabled = SACOperatives.CLANK in self.options.operatives.value
+        pool += [mod.name for mod in enabled_challenge_mods(enabled_operatives(self.options))]
+        ratchet_enabled = SACOperatives.RATCHET in enabled_operatives(self.options)
         if ratchet_enabled and self.options.progressive_wrench:
             pool += ["Progressive Wrench"] * 5
 
-        # WEAPON_ITEM_TABLE holds both Ratchet's weapons and Clank's WEAPON_ORDER
-        # equipment; skip whichever character is disabled.
         for name in WEAPON_ITEM_TABLE:
-            owned_by_clank = name.endswith("(Clank)")
-            if owned_by_clank and not clank_enabled:
-                continue
-            if not owned_by_clank and not ratchet_enabled:
+            if not name.endswith("(Clank)") and not ratchet_enabled:
                 continue
             if name in NG_PLUS_VENDOR_ITEMS and not self.options.ng_plus.value:
                 continue
@@ -204,14 +232,10 @@ class SecretAgentClankWorld(World):
                 pool += [progressive] * max_level(PROGRESSIVE_TO_INTERNAL[progressive], self.options.ng_plus.value)
             else:
                 pool.append(name)
-        if clank_enabled:
-            pool += list(GADGET_ITEM_TABLE)
+        pool += list(GADGET_ITEM_TABLE)
         if ratchet_enabled:
             pool += list(RATCHET_PACK_ITEM_TABLE)
 
-        # Choose once during generation so AP logic and every client agree.
-        # Remove one pooled copy (also for progressive weapons) rather than
-        # duplicating it; filler below replaces the freed location slot.
         starting_groups = (
             (SACOperatives.RATCHET, self.options.starting_weapons.value,
              [name for name in RATCHET_WEAPONS
@@ -220,7 +244,7 @@ class SecretAgentClankWorld(World):
              list(dict.fromkeys([*GADGETS_FROM_WEAPON_TABLE, *GADGET_ITEM_TABLE]))),
         )
         for character, count, eligible in starting_groups:
-            if character not in self.options.operatives.value:
+            if character not in enabled_operatives(self.options):
                 continue
             eligible = [UNLOCK_TO_PROGRESSIVE.get(name, name)
                         if self.options.progressive_weapons else name for name in eligible]
@@ -232,74 +256,39 @@ class SecretAgentClankWorld(World):
                 self.multiworld.push_precollected(self.create_item(name))
 
         if self.using_ut:
-            name = self.passthrough.get("starting_case", SACCases.BOLTAIRE_MUSEUM)
-            starting_case = next((case for case in active_cases if case.name == name), None)
-            if starting_case is None:
-                raise OptionError(f"Invalid starting case in slot data: {name}")
+            names = (self.passthrough["starting_case"], self.passthrough["second_starting_case"])
+            starting_case, second_starting_case = (
+                next(case for case in candidates if case.name == name) for name in names)
         else:
-            # Prefer a case whose own locations are reachable with the starting
-            # equipment; if none are, generate_basic reports the options error.
-            viable = [case for case in candidates if self._start_is_viable(case)]
-            starting_case = self.random.choice(viable or candidates)
+            starting_case, second_starting_case = self._choose_starting_cases(candidates)
         self.starting_case = starting_case.name
-        # The starting case's Case File opens it under every Infobots mode.
-        self.multiworld.push_precollected(
-            self.create_item(CASE_NAME_TO_INFOBOT[starting_case.name])
-        )
+        self.second_starting_case = second_starting_case.name
+        starting_items = self._starting_items((starting_case, second_starting_case))
+        for name in starting_items:
+            self.multiworld.push_precollected(self.create_item(name))
+        starting_cases = {self.starting_case, self.second_starting_case}
 
-        # With Infobots=cases a single starting case can leave too few early
-        # locations, so grant a second case when one is available.
-        second_starting_case = None
-        if self.options.infobots == Infobots.option_cases:
-            second_candidates = [case for case in candidates if case.name != starting_case.name]
-            if second_candidates:
-                if self.using_ut:
-                    name = self.passthrough.get("second_starting_case")
-                    second_starting_case = next(
-                        (case for case in second_candidates if case.name == name), None,
-                    )
-                else:
-                    second_starting_case = self.random.choice(second_candidates)
-                if second_starting_case is not None:
-                    self.multiworld.push_precollected(
-                        self.create_item(CASE_NAME_TO_INFOBOT[second_starting_case.name])
-                    )
-        self.second_starting_case = second_starting_case.name if second_starting_case else None
-
-        # Access items for the chosen Infobots mode (see rules/rule_helpers.py).
         if self.options.infobots == Infobots.option_progressive_planet:
-            planets = self.progressive_planets
-            starting_count = planets.index(starting_case.planet) + 1 if starting_case.planet in planets else 0
-            for _ in range(starting_count):
-                self.multiworld.push_precollected(self.create_item(PROGRESSIVE_PLANET_ITEM_NAME))
-            pool += [PROGRESSIVE_PLANET_ITEM_NAME] * (len(planets) - starting_count)
+            for planet, cases in self.planet_cases.items():
+                item = PROGRESSIVE_PLANET_ITEM_NAME[planet]
+                pool += [item] * (len(cases) - starting_items.count(item))
         elif self.options.infobots == Infobots.option_cases:
             pool += [
                 CASE_NAME_TO_INFOBOT[case.name] for case in active_cases
-                if case.name != starting_case.name and case.name != self.second_starting_case
+                if case.name not in starting_cases
             ]
         elif self.options.infobots == Infobots.option_planets:
             active_planets = {case.planet for case in active_cases}
-            pool += [item for planet, item in PLANET_ACCESS_ITEM_NAME.items() if planet in active_planets]
-            # Museum has no planet-access item. Its vendor stock still needs
-            # an obtainable case file when a different case starts the seed.
-            if clank_enabled and starting_case.name != SACCases.BOLTAIRE_MUSEUM:
+            pool += [item for planet, item in PLANET_ACCESS_ITEM_NAME.items()
+                     if planet in active_planets and item not in starting_items]
+            if CASE_NAME_TO_INFOBOT[SACCases.BOLTAIRE_MUSEUM] not in starting_items:
                 pool.append(CASE_NAME_TO_INFOBOT[SACCases.BOLTAIRE_MUSEUM])
 
-        # Character items, only for enabled operatives (disabled ones are absent from
-        # operatives.value).
         if self.options.infobots == Infobots.option_character_unlocks:
-            for character, item_name in CHARACTER_ITEM_NAME.items():
-                if character in self.options.operatives.value:
-                    pool.append(item_name)
             for character, item_name in PROGRESSIVE_CHARACTER_ITEM_NAME.items():
-                if character in self.options.operatives.value:
+                if character in enabled_operatives(self.options):
                     pool += [item_name] * len(CASES_BY_OPERATIVE.get(character, ()))
-            # The starting case alone can leave too few early locations, and the
-            # starting operative's item gates the rest of their cases; placing it
-            # early stops it landing behind a check needing many early items.
-            starting_character_item = (CHARACTER_ITEM_NAME.get(starting_case.operative)
-                                       or PROGRESSIVE_CHARACTER_ITEM_NAME.get(starting_case.operative))
+            starting_character_item = PROGRESSIVE_CHARACTER_ITEM_NAME.get(starting_case.operative)
             if starting_character_item:
                 self.multiworld.local_early_items[self.player][starting_character_item] = 1
 
@@ -310,7 +299,7 @@ class SecretAgentClankWorld(World):
                 f"Enable at least {len(pool) - unfilled} more optional locations (such as Missions: All, "
                 "All Cutscenes, Skill Points, Keycards or Alien Codes)."
                 + (" Progressive Weapons can also increase the required pool size."
-                   if self.options.progressive_weapons and (ratchet_enabled or clank_enabled) else "")
+                   if self.options.progressive_weapons else "")
             )
         filler_count = max(0, unfilled - len(pool))
         pool += [self.get_filler_item_name() for _ in range(filler_count)]
@@ -320,30 +309,24 @@ class SecretAgentClankWorld(World):
 
     def fill_slot_data(self) -> dict[str, Any]:
         return {
-            "progressive_planets": self.progressive_planets,
+            "planet_cases": self.planet_cases,
             "starting_case": self.starting_case,
             "second_starting_case": self.second_starting_case,
             "infobots": self.options.infobots.value,
-            "weapon_mods": self.passthrough.get("weapon_mods", False) if self.using_ut else True,
             "weapon_mod_ids": [mod.mod_id for mod in self.weapon_mod_catalog],
-            "operatives": dict(self.options.operatives.value),
+            "operatives": dict.fromkeys(sorted(enabled_operatives(self.options)), 1),
             "death_link": bool(self.options.death_link.value),
             "death_amnesty": self.options.death_amnesty.value,
-            # 0 = level_completion, 1 = all
             "all_missions": self.options.all_missions.value,
             "all_cutscenes": bool(self.options.all_cutscenes.value),
             "skill_points": self.options.skill_points.value,
-            "skill_point_tiers_version": 2,
             "random_skill_points": bool(self.options.random_skill_points),
             "skill_point_count": self.options.skill_point_count.value,
             "selected_skill_points": sorted(self.selected_skill_points),
             "keycard_hunt": bool(self.options.keycard_hunt),
             "keycards_and_alien_codes": bool(self.options.keycards_and_alien_codes),
-            "all_keycards": self.options.keycard_checks_enabled,
-            "all_alien_codes": self.options.alien_code_checks_enabled,
             "send_scouted_locations": bool(self.options.send_scouted_locations.value),
             "goal": self.options.goal.value,
-            "pick_and_mix": self.options.goal.value == Goal.option_pick_and_mix,
             "pick_and_mix_goals": sorted(self.options.pick_and_mix_goals.value),
             "progressive_wrench": bool(self.options.progressive_wrench.value),
             "progressive_weapons": self.options.progressive_weapons.value,

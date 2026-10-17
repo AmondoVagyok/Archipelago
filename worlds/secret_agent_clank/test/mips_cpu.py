@@ -68,7 +68,7 @@ class CPU:
                 if self.r[rs] == self.r[rt]: delayed = pc + 4 + signed * 4
             elif op == 5:
                 if self.r[rs] != self.r[rt]: delayed = pc + 4 + signed * 4
-            elif op in (20, 21):  # beql/bnel annul the delay slot when not taken.
+            elif op in (20, 21):
                 taken = (self.r[rs] == self.r[rt]) if op == 20 else (self.r[rs] != self.r[rt])
                 if taken:
                     delayed = pc + 4 + signed * 4

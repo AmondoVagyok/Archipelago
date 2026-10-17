@@ -1,6 +1,6 @@
 """SCUS-97623 new-save launch override, confined to the frontend DLL."""
-from ...constants.native_modules import CASE_MODULES
-from ...constants.planets import ALL_CASES, SACCases
+from ...constants import ALL_CASES, CASE_MODULES, SACCases
+from ..batch_io import read_blocks, write_blocks
 from .asm import Patch, jump, packed, words
 from .debug_stubs import DEBUG_STUBS
 from .patch import PatchSet
@@ -32,12 +32,16 @@ class StartingCase(PatchSet):
         self.case_name = name
 
     def is_frontend(self):
+        return self._frontend_screen() is not None
+
+    def _frontend_screen(self):
         p = self.pine
-        return (p.read_int32(0x1AAE78) == 0
-                and p.read_int32(0x1AAE3C) == 5
-                and p.read_int32(0x206324) == 0xFFFFFFFF
-                and p.read_bytes(0x3652C0, len(self.FRONT_SIGNATURE)) == self.FRONT_SIGNATURE
-                and p.get_game_id() == "SCUS-97623")
+        travel, state, loading, screen, signature = read_blocks(
+            p, [(0x1AAE78, 4), (0x1AAE3C, 4), (0x206324, 4), (0x42DE34, 4), (0x3652C0, len(self.FRONT_SIGNATURE))])
+        if ((travel, state, loading) != (packed([0]), packed([5]), packed([0xFFFFFFFF]))
+                or signature != self.FRONT_SIGNATURE or p.get_game_id() != "SCUS-97623"):
+            return None
+        return int.from_bytes(screen, "little")
 
     def prepare(self, name):
         self.patches = []
@@ -77,19 +81,21 @@ class StartingCase(PatchSet):
             edits.append(Patch(address - 4,
                                packed([0x24040001, jump(self.CHANGE_LEVEL, True), 0x24050001]),
                                packed([0x24040001, jump(travel, True), 0x24050001])))
-        for edit in edits:
-            if self.pine.read_bytes(edit.address, len(edit.original)) != edit.original:
+        current = read_blocks(self.pine, [(edit.address, len(edit.original)) for edit in edits])
+        for edit, data in zip(edits, current):
+            if data != edit.original:
                 raise RuntimeError(f"New-game launch layout changed at {edit.address:#x}")
         self.patches = edits
         return edits
 
     def apply(self):
-        if not self.is_frontend() or self.pine.read_int32(0x42DE34) not in (6, 8, 12, 46, 47):
+        if self._frontend_screen() not in (6, 8, 12, 46, 47):
             raise RuntimeError("New-game patches require the idle frontend")
         super().apply()
 
     def service(self):
-        if not self.is_frontend():
+        screen = self._frontend_screen()
+        if screen is None:
             # DLL storage has been unloaded; never restore stale addresses.
             self.patches.clear()
             self.installed_case = None
@@ -97,7 +103,7 @@ class StartingCase(PatchSet):
         if self.installed_case == self.case_name:
             return True
         # Install on the menu/intro, before either new-save path runs.
-        if self.pine.read_int32(0x42DE34) not in (6, 8, 12, 46, 47):
+        if screen not in (6, 8, 12, 46, 47):
             return True
         self.close()
         if self.case_name is not None:
@@ -114,11 +120,11 @@ class StartingCase(PatchSet):
     def close(self):
         if self.patches and self.is_frontend():
             # Remove call sites before reclaiming their bodies.
-            for edit in reversed(self.patches):
-                actual = self.pine.read_bytes(edit.address, len(edit.replacement))
-                if actual == edit.replacement:
-                    self.pine.write_bytes(edit.address, edit.original)
-                elif actual != edit.original:
-                    raise RuntimeError("New-game hook changed; refusing to overwrite it")
+            edits = list(reversed(self.patches))
+            current = read_blocks(self.pine, [(edit.address, len(edit.replacement)) for edit in edits])
+            if any(actual not in (edit.replacement, edit.original) for edit, actual in zip(edits, current)):
+                raise RuntimeError("New-game hook changed; refusing to overwrite it")
+            write_blocks(self.pine, [(edit.address, edit.original)
+                                     for edit, actual in zip(edits, current) if actual == edit.replacement])
         self.patches.clear()
         self.installed_case = None

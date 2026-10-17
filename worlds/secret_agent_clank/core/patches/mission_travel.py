@@ -1,6 +1,6 @@
 """Return mission completion to the current level, including Ratchet movies."""
-from ...constants.native_functions import NativeFunctions as Functions
-from ...constants.missions import NATIVE_FINISH_CASES
+from ...constants import NATIVE_FINISH_CASES, NativeFunctions as Functions
+from ..batch_io import read_blocks
 from ..symbols import require
 from .asm import Patch, branch, jump, packed
 from .patch import PatchSet
@@ -27,6 +27,10 @@ class TravelLayout:
 
 
 class MissionTravel(PatchSet):
+    def __init__(self, pine):
+        super().__init__(pine)
+        self._expected = []
+
     def prepare(self, symbols, *, module=None):
         self.patches = []
         self.completion_mailbox = None
@@ -34,10 +38,10 @@ class MissionTravel(PatchSet):
             symbols, Functions.UPDATE_CHANGE_TO_LEVEL_OR_MAP_IF_ALREADY_COMPLETED,
             Functions.SCRNGALACTICMAP_SET_LEVEL_ENDER)
         change = require(symbols, Functions.UPDATE_CHANGE_TO_LEVEL)
-        helper_patch = self._prepare_current_level_route(helper, map_ender, change)
+        helper_code = self._prepare_current_level_route(helper, map_ender, change)
         arena_patches = self._prepare_arena_routes(symbols, helper)
-        self.patches = [helper_patch, *arena_patches]
-        self.patches.extend(self._prepare_story_routes(symbols, helper, change))
+        story_patches = self._prepare_story_routes(symbols, helper, change)
+        extra = []
         if module in NATIVE_FINISH_CASES:
             # These task predicates are the *next* case's intro flag. Record
             # the actual finish here and let the host capture it before reload
@@ -45,11 +49,12 @@ class MissionTravel(PatchSet):
             mailbox = helper + 0x70
             self._expect(helper + 0x68, (0xDFBF0008, 0x03E00008, 0x27BD0010),
                          "Mission completion mailbox")
-            code = packed([*m.li32(m.T0, mailbox), m.addiu(m.T1, m.ZERO, 1),
-                           m.sw(m.T1, 0, m.T0), m.jr(m.RA), m.addiu(m.V0, m.ZERO, 1)])
-            self.patches[0] = Patch(helper, self.pine.read_bytes(helper, len(code)), code)
-            self.patches.append(Patch(mailbox, packed([0x27BD0010]), packed([0])))
+            helper_code = packed([*m.li32(m.T0, mailbox), m.addiu(m.T1, m.ZERO, 1),
+                                  m.sw(m.T1, 0, m.T0), m.jr(m.RA), m.addiu(m.V0, m.ZERO, 1)])
+            extra.append(Patch(mailbox, packed([0x27BD0010]), packed([0])))
             self.completion_mailbox = mailbox
+        helper_original, = self._verify([(helper, len(helper_code))])
+        self.patches = [Patch(helper, helper_original, helper_code), *arena_patches, *story_patches, *extra]
         return self.patches
 
     def _prepare_story_routes(self, symbols, helper, change):
@@ -92,12 +97,19 @@ class MissionTravel(PatchSet):
                          "Story movie completion travel")
             edits.append(Patch(movie + 12, packed([jump(change, True)]),
                                packed([jump(helper, True)])))
+        self._verify()
         return edits
 
     def _expect(self, address, instructions, label):
-        expected = packed(instructions)
-        if self.pine.read_bytes(address, len(expected)) != expected:
-            raise RuntimeError(f"{label} layout changed at {address:#x}")
+        self._expected.append((address, packed(instructions), label))
+
+    def _verify(self, extra=()):
+        expected, self._expected = self._expected, []
+        current = read_blocks(self.pine, [*((address, len(data)) for address, data, _ in expected), *extra])
+        for (address, data, label), actual in zip(expected, current):
+            if actual != data:
+                raise RuntimeError(f"{label} layout changed at {address:#x}")
+        return current[len(expected):]
 
     def _prepare_current_level_route(self, helper, map_ender, change):
         layout = TravelLayout
@@ -109,13 +121,12 @@ class MissionTravel(PatchSet):
         )
         for offset, expected in checks:
             self._expect(helper + offset, expected, "Mission-end travel")
+        self._verify()
         # Tail-call the native reload with the resident current module, not the
         # story destination passed by the caller or left by SetNextLevel.
         # Do not call SetLevelEnder: its mandatory map exit can travel onward.
         # The shared-module operative flags are left intact.
-        replacement = packed([0x3C040020, 0x8C846328,
-                              jump(change), 0x24050001])
-        return Patch(helper, self.pine.read_bytes(helper, len(replacement)), replacement)
+        return packed([0x3C040020, 0x8C846328, jump(change), 0x24050001])
 
     def _prepare_arena_routes(self, symbols, helper):
         update, exit_screen, next_level, set_next, change = require(
@@ -137,6 +148,7 @@ class MissionTravel(PatchSet):
         for address, expected in checks:
             self._expect(address, expected, "Ratchet completion travel")
         self._validate_registered_callback(update, callback)
+        self._verify()
         return [
             Patch(direct, packed(original_direct), packed([
                 jump(helper, True), 0, branch(direct + 8, update + layout.CONTINUE_END), 0])),

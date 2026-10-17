@@ -57,11 +57,13 @@ def checked_levels(internal, mode, ng_plus):
     return tuple(level for level in candidates if level <= cap)
 
 
+WEAPON_LEVEL_NAME = "Weapon: {weapon_name} Level: {level}"
+
+
 def level_location_name(internal, level):
-    return f"{EQUIPMENT_INTERNAL_TO_DISPLAY[internal]} Level {level}"
+    return WEAPON_LEVEL_NAME.format(weapon_name=EQUIPMENT_INTERNAL_TO_DISPLAY[internal], level=level)
 
 
-# Preserve Ratchet-then-Clank order: legacy Titan item IDs depend on it.
 _TITAN_EQUIPMENT = tuple(
     (EQUIPMENT_DISPLAY_TO_INTERNAL[unlock], titan)
     for base, upgraded in (

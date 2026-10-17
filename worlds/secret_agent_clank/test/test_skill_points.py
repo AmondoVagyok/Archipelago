@@ -5,20 +5,21 @@ from Options import OptionError
 
 from test.general import setup_multiworld
 
-from ..constants.operatives import ALL_OPERATIVES, SACOperatives
-from ..constants.planets import SACCases
-from ..constants.skill_point_requirements import (
+from ..constants import (
     EASY_SKILL_POINTS,
     HARD_SKILL_POINTS,
     NORMAL_SKILL_POINTS,
+    OPTIONAL_OPERATIVES,
     SKILL_POINT_DIFFICULTY,
+    SKILL_POINT_FLAGS,
+    SACCases,
+    SACOperatives,
+    SACSkillPointLocations as Locations,
 )
-from ..constants.skillpoints import SKILL_POINT_FLAGS
-from ..constants.skillpoints import SACSkillPointLocations as Locations
 from ..locations import LOCATION_NAME_TO_ID, SKILL_POINT_LOCATIONS
+from ..regions import select_skill_points
 from ..options import SkillPoints
-from ..locations.skill_points import select_skill_points
-from ..core.skill_points import SkillPointState
+from ..core import SkillPointState
 from .test_runtime import Memory
 from ..universal_tracker import setup_options_from_slot_data
 from ..world import SecretAgentClankWorld
@@ -38,18 +39,6 @@ class SkillPointTests(unittest.TestCase):
         tracker.confirm(selected)
         self.assertEqual(tracker.check(), [])
 
-    def test_old_hard_slot_is_still_hard(self):
-        mw = setup_multiworld(SecretAgentClankWorld, options={"skill_points": "hard"})
-        world = mw.worlds[1]
-        slot = world.fill_slot_data()
-        slot.pop("skill_point_tiers_version")
-        slot["skill_points"] = 2
-        for name in ("random_skill_points", "skill_point_count", "selected_skill_points"):
-            slot.pop(name)
-        mw.re_gen_passthrough = {world.game: slot}
-        setup_options_from_slot_data(world)
-        self.assertEqual(world.options.skill_points.value, SkillPoints.option_hard)
-        self.assertEqual(len(select_skill_points(world)), 65)
 
     def test_random_count_within_cumulative_tier(self):
         for tier, allowed in (("easy", EASY_SKILL_POINTS),
@@ -70,7 +59,7 @@ class SkillPointTests(unittest.TestCase):
 
     def test_insufficient_eligible_points_is_an_options_error(self):
         for overrides in ({"skill_points": "easy", "skill_point_count": 13},
-                          {"skill_points": "hard", "skill_point_count": 30,
+                          {"skill_points": "easy", "skill_point_count": 30,
                            "operatives": {"Qwark": 1}, "goal": "qwark_opera"}):
             with self.assertRaisesRegex(OptionError, 'only .* available'):
                 setup_multiworld(SecretAgentClankWorld, options={"random_skill_points": True, **overrides})
@@ -99,18 +88,16 @@ class SkillPointTests(unittest.TestCase):
         self.assertEqual(SKILL_POINT_DIFFICULTY.keys(), SKILL_POINT_FLAGS.keys())
         self.assertEqual(SKILL_POINT_DIFFICULTY.keys(), SKILL_POINT_LOCATIONS.keys())
 
-    def test_option_legacy_booleans_and_new_values(self):
-        for value, expected in ((True, 3), (False, 0), ("true", 3), ("false", 0),
-                                ("off", 0), ("easy", 1), ("hard", 3), ("normal", 2), (1, 1), (2, 2), (3, 3)):
+    def test_option_values(self):
+        for value, expected in (("off", 0), ("easy", 1), ("hard", 3), ("normal", 2), (1, 1), (2, 2), (3, 3)):
             with self.subTest(value=value):
                 self.assertEqual(SkillPoints.from_any(value).value, expected)
 
     def test_generation_tiers_and_each_disabled_operative(self):
         for tier in ("off", "easy", "normal", "hard"):
-            for disabled in (None, *ALL_OPERATIVES):
-                # Exercise both omitted keys and explicit YAML zeroes.
+            for disabled in (None, *OPTIONAL_OPERATIVES):
                 for explicit_zero in (False, True):
-                    enabled = {op: int(op != disabled) for op in ALL_OPERATIVES
+                    enabled = {op: int(op != disabled) for op in OPTIONAL_OPERATIVES
                                if op != disabled or explicit_zero}
                     with self.subTest(tier=tier, disabled=disabled, zero=explicit_zero):
                         mw = setup_multiworld(SecretAgentClankWorld, options={
@@ -133,16 +120,14 @@ class SkillPointTests(unittest.TestCase):
         self.assertEqual(location.parent_region.name, SACCases.INSIDE_THE_A_EYE)
         self.assertEqual(location.address, LOCATION_NAME_TO_ID[Locations.GALACTIC_BOLT_RESERVE_VAULT_VAULT])
 
-    def test_slot_data_preserves_tier_and_tracker_reads_legacy_booleans(self):
-        for value, expected in (("off", 0), ("easy", 1), ("hard", 3), (True, 3), (False, 0)):
+    def test_slot_data_preserves_tier_and_tracker_restores_it(self):
+        for value, expected in (("off", 0), ("easy", 1), ("hard", 3)):
             with self.subTest(value=value):
                 mw = setup_multiworld(SecretAgentClankWorld, options={"skill_points": value})
                 world = mw.worlds[1]
                 slot = world.fill_slot_data()
                 self.assertIs(type(slot["skill_points"]), int)
                 self.assertEqual(slot["skill_points"], expected)
-                if isinstance(value, bool):
-                    slot["skill_points"] = value
                 mw.re_gen_passthrough = {world.game: slot}
                 world.options.skill_points.value = -1
                 setup_options_from_slot_data(world)

@@ -1,12 +1,15 @@
 """Build the shared shop from AP transaction flags, not the native save roster."""
 import struct
 
-from ...constants.challenge_mode import CHALLENGE_VENDOR_LOCATIONS
-from ...constants.native_functions import NativeFunctions
-from ...constants.vendor_unlocks import VENDOR_CASES
-from ...constants.weapon_mods import WEAPON_MODS
-from ...constants.weapons import EQUIPMENT_DISPLAY_TO_INTERNAL
-from ..inventories.weapons import WEAPON_ORDER
+from ...constants import (
+    CHALLENGE_VENDOR_LOCATIONS,
+    EQUIPMENT_DISPLAY_TO_INTERNAL,
+    VENDOR_CASES,
+    WEAPON_MODS,
+    WEAPON_ORDER,
+    NativeFunctions,
+)
+from ..batch_io import read_blocks
 from ..symbols import require
 from . import mips as m
 from .asm import Patch, branch, jump, packed, words
@@ -63,11 +66,12 @@ class VendorCatalog(PatchSet):
         if getattr(self, "_synced_cases", None) == state:
             return
         writes = []
-        for address, case, unchecked in self.case_descriptors:
+        current = self.pine.batch_read_int8([address for address, _, _ in self.case_descriptors])
+        for (address, case, unchecked), value in zip(self.case_descriptors, current):
             allowed = case in owned_cases and (state[1] > 0 or
                 address not in getattr(self, "challenge_descriptors", set()))
             desired = unchecked if allowed else 255
-            if self.pine.read_int8(address) != desired:
+            if value != desired:
                 writes.append((address, desired))
         if writes:
             self.pine.batch_write_int8(writes)
@@ -83,13 +87,13 @@ class VendorCatalog(PatchSet):
         if call >> 26 != 3:
             raise RuntimeError("Vendor rebuild call changed")
         builder = (call & 0x3FFFFFF) << 2
-        original = p.read_bytes(builder, self.END)
+        original, end_call = read_blocks(p, [(builder, self.END), (builder + 0x740, 4)])
         w = words(original)
         guards = {0: 0x27BDFF70, 0x4C: jump(begin, True), 0x54: 0x27A20010,
                   0x70: 0x24020011, 0x300: jump(add, True), 0x43C: jump(add, True),
                   0x4DC: jump(add, True), 0x660: jump(add, True), 0x6FC: jump(add, True)}
         if (any(w[offset // 4] != value for offset, value in guards.items())
-                or p.read_int32(builder + 0x740) != jump(end, True)
+                or end_call != packed([jump(end, True)])
                 or w[0x24 // 4] & 0xFFFF0000 != 0x24840000
                 or w[0x58 // 4] & 0xFFFF0000 != 0x3C030000
                 or w[0x60 // 4] & 0xFFFF0000 != 0x3C020000

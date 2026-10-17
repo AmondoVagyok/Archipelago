@@ -49,6 +49,11 @@ class SACCommandProcessor(ClientCommandProcessor):
         async_start(self._worker_command("diagnostic", ("sac_info",)))
         return True
 
+    def _cmd_toggle_deathlink(self) -> bool:
+        """Turn DeathLink on or off for this session."""
+        async_start(self.ctx._set_death_link_enabled(not self.ctx._death_link_enabled))
+        return True
+
     def _cmd_enable_deathlink(self) -> bool:
         """Enable DeathLink for this session."""
         async_start(self.ctx._set_death_link_enabled(True))

@@ -1,16 +1,16 @@
 import unittest
 
-from ..constants.planets import (
+from ..constants import (
+    CASES_BY_PLANET,
     CASE_ID_TO_CASE,
     CASE_NAME_TO_INFOBOT,
-    CASES_BY_PLANET,
     PLANET_ACCESS_ITEM_NAME,
     PLANET_NAMES,
+    PROGRESSIVE_PLANET_ITEM_NAME,
     SACCases,
 )
 from ..core.address_maps import CASE_UNLOCK_BASE_ADDRESSES, CASE_UNLOCK_TABLE_OFFSETS, CASE_UNLOCK_TABLE_SLOT_TO_CASE
-from ..core.inventories.case_unlocks import CaseUnlockInventory, CaseUnlockState, resolve_owned_cases
-from ..items import PROGRESSIVE_PLANET_ITEM_NAME
+from ..core.inventories import CaseUnlockInventory, CaseUnlockState, resolve_owned_cases
 
 
 class TestCaseUnlockState(unittest.TestCase):
@@ -22,10 +22,7 @@ class TestCaseUnlockState(unittest.TestCase):
 
 
 class TestCaseUnlockResolveTable(unittest.TestCase):
-    """_resolve_table() derives every case's address from the anchor case via CASE_UNLOCK_TABLE_OFFSETS."""
-
     def test_every_confirmed_case_resolves_to_its_own_anchor(self):
-        # A case resolved from its own anchor is exactly its base address.
         inventory = CaseUnlockInventory(pine=None)
         for case_id, case in CASE_ID_TO_CASE.items():
             anchor = CASE_UNLOCK_BASE_ADDRESSES.get(case.name)
@@ -35,9 +32,6 @@ class TestCaseUnlockResolveTable(unittest.TestCase):
             self.assertEqual(anchor, table.get(case.name), f"case_id {case_id} ({case.name})")
 
     def test_resolves_every_other_case_relative_to_the_current_anchor(self):
-        # Anchored on Boltaire Museum (case_id 1, slot 2, offset 0x000),
-        # Boltaire Gem Wing (case_id 2, slot 3, offset 0x060) must resolve
-        # exactly 0x060 above the anchor.
         inventory = CaseUnlockInventory(pine=None)
         table = inventory._resolve_table(1)
         anchor = CASE_UNLOCK_BASE_ADDRESSES[SACCases.BOLTAIRE_MUSEUM]
@@ -47,28 +41,22 @@ class TestCaseUnlockResolveTable(unittest.TestCase):
         self.assertEqual(31, len(CASE_UNLOCK_TABLE_OFFSETS))
 
     def test_slot_is_case_id_plus_one_for_every_case(self):
-        # Confirmed live for 28 of 30 cases; the other two are assumed to follow suit.
         for case_id, case in CASE_ID_TO_CASE.items():
             self.assertEqual(case.name, CASE_UNLOCK_TABLE_SLOT_TO_CASE[case_id + 1])
 
     def test_resolving_a_case_not_the_current_anchor_does_not_reuse_its_own_stale_address(self):
-        # The table moves on every case transition, so another case's address must
-        # come from the current anchor, not from that case's own base address.
         inventory = CaseUnlockInventory(pine=None)
         larger_than_life_own_anchor = CASE_UNLOCK_BASE_ADDRESSES[SACCases.LARGER_THAN_LIFE]
         resolved_from_boltaire = inventory._resolve_table(1)[SACCases.LARGER_THAN_LIFE]
         self.assertNotEqual(larger_than_life_own_anchor, resolved_from_boltaire)
-        # It IS still anchored correctly off Boltaire's own resolved position.
-        boltaire_offset = CASE_UNLOCK_TABLE_OFFSETS[1]  # slot 2
-        larger_than_life_offset = CASE_UNLOCK_TABLE_OFFSETS[5]  # slot 6
+        boltaire_offset = CASE_UNLOCK_TABLE_OFFSETS[1]
+        larger_than_life_offset = CASE_UNLOCK_TABLE_OFFSETS[5]
         boltaire_anchor = CASE_UNLOCK_BASE_ADDRESSES[SACCases.BOLTAIRE_MUSEUM]
         expected = boltaire_anchor + (larger_than_life_offset - boltaire_offset)
         self.assertEqual(expected, resolved_from_boltaire)
 
 
 class _FakePine:
-    """Fake PINE with canned int8 reads and a log of writes."""
-
     def __init__(self, values_by_address: dict[int, int]) -> None:
         self._values = dict(values_by_address)
         self.writes: dict[int, int] = {}
@@ -89,11 +77,9 @@ class TestCaseUnlockApplyAllSkipsGarbageReadback(unittest.TestCase):
         return inventory._resolve_table(anchor_case_id)
 
     def test_garbage_readback_is_left_untouched(self):
-        table = self._table_addresses(1)  # anchor on Boltaire Museum
+        table = self._table_addresses(1)
         boltaire_museum_addr = table[SACCases.BOLTAIRE_MUSEUM]
         boltaire_gem_wing_addr = table[SACCases.BOLTAIRE_GEM_WING]
-        # Boltaire Museum reads a legit LOCKED byte; Boltaire Gem Wing
-        # reads 192 -- an in-flux/garbage value, not 0/2/3.
         values = dict.fromkeys(table.values(), 0)
         values[boltaire_gem_wing_addr] = 192
         pine = _FakePine(values)
@@ -142,7 +128,6 @@ class TestCaseUnlockApplyAllSkipsGarbageReadback(unittest.TestCase):
 class TestResolveOwnedCases(unittest.TestCase):
 
     def test_no_received_items_owns_nothing(self):
-        # The starting case is a precollected item, so receiving nothing owns nothing.
         owned = resolve_owned_cases([])
         self.assertEqual(set(), owned)
 
@@ -164,9 +149,9 @@ class TestResolveOwnedCases(unittest.TestCase):
         for case in CASES_BY_PLANET[planet]:
             self.assertIn(case.name, owned)
 
-    def test_progressive_planet_unlocks_in_order(self):
-        owned = resolve_owned_cases([PROGRESSIVE_PLANET_ITEM_NAME])
-        first_cases = {case.name for case in CASES_BY_PLANET[PLANET_NAMES[1]]}
-        self.assertTrue(first_cases <= owned)
-        second_cases = {case.name for case in CASES_BY_PLANET[PLANET_NAMES[2]]}
-        self.assertFalse(second_cases <= owned)
+    def test_progressive_planet_unlocks_that_planets_cases_in_order(self):
+        planet = PLANET_NAMES[0]
+        order = [case.name for case in CASES_BY_PLANET[planet]]
+        item = PROGRESSIVE_PLANET_ITEM_NAME[planet]
+        self.assertEqual(resolve_owned_cases([item], planet_cases={planet: order}), {order[0]})
+        self.assertEqual(resolve_owned_cases([item, item], planet_cases={planet: order}), set(order))

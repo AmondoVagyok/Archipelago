@@ -1,9 +1,9 @@
 """Native keycard bits and the actual keycard door opening in Treehouse."""
 import struct
 
-from ...constants.keycards import KEYCARD_BITS
+from ...constants import KEYCARD_BITS
 from ..global_flags import GlobalFlags
-from ..patches.keycard_hunt import KeycardHunt
+from ..patches import KeycardHunt
 
 
 class KeycardInventory:
@@ -65,7 +65,6 @@ class KeycardInventory:
             return False
         matches = []
         type_cache = {}
-        # Read in bounded PINE messages; find only the door configured to need cards.
         for offset in range(0, count * 0x80, 0x10000):
             data = p.read_bytes(start + offset, min(0x10000, count * 0x80 - offset))
             for i in range(0, len(data), 0x80):

@@ -1,6 +1,6 @@
 import unittest
 
-from ..core.patches.gameFlags import GameFlags
+from ..core.patches import GameFlags
 
 
 class Memory:
@@ -14,6 +14,13 @@ class Memory:
     def write_bytes(self, address, data):
         self.writes.append((address, data))
         self.data[address:address+len(data)] = data
+
+    def batch_read(self, reads):
+        return [int.from_bytes(self.read_bytes(address, size), "little") for size, address in reads]
+
+    def batch_write(self, writes):
+        for _size, address, data in writes:
+            self.write_bytes(address, data)
 
 
 class GameFlagsTests(unittest.TestCase):

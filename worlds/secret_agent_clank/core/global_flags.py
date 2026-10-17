@@ -1,5 +1,6 @@
 """Resolve the current save's flag bytes from GLOBAL_GetFlag, read-only."""
 import struct
+from collections import Counter
 
 
 def read_module_counts(pine, function_address):
@@ -17,6 +18,10 @@ def read_module_counts(pine, function_address):
     table = ((w[1] & 0xFFFF) << 16) + (low - 0x10000 if low & 0x8000 else low)
     counts = struct.unpack("<30I", pine.read_bytes(table, 120))
     return {i + 1: n for i, n in enumerate(counts) if n}
+
+
+def module_counts(flags):
+    return dict(Counter(module for module, _ in flags.values()))
 
 
 def module_bit(data, module, bit):

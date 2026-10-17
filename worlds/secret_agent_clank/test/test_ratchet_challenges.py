@@ -1,12 +1,10 @@
-"""Arena save-counter regressions using the captured Max-Security module."""
 import struct
 import unittest
 from pathlib import Path
 
-from ..constants.planets import SACCases
-from ..constants.ratchet_challenges import RATCHET_CHALLENGES_BY_CASE
-from ..core.inventories.ratchet_challenges import RatchetChallengeInventory
-from ..core.symbols import RuntimeSymbols
+from ..constants import RATCHET_CHALLENGES_BY_CASE, SACCases
+from ..core.inventories import RatchetChallengeInventory
+from ..core import RuntimeSymbols
 from .test_runtime import Memory
 
 

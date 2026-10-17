@@ -1,4 +1,3 @@
-"""The Quasar Fields: the case region and every location in it, with its access rule."""
 from ..constants import SACCases, SACMissionLocations, SACSkillPointLocations
 from .model import CaseRegion, SACLocation, SACLocationType
 

@@ -1,7 +1,7 @@
 """Location patch plan for modules with a vendor but no WeaponPickup code, such as High Impact Treehouse."""
-from ...constants.native_functions import NativeFunctions
+from ...constants import NativeFunctions
 from ..symbols import forbid, require
-from .asm import MARKER, Patch, branch, jump, packed, words
+from .asm import MARKER, branch, capture, jump, packed, words
 from .entitlements import Entitlements
 from .gameFlags import GameFlags
 from .patch import PatchSet
@@ -19,14 +19,15 @@ class VendorOnly(PatchSet):
             NativeFunctions.GADGET_IS_SELLABLE,
             NativeFunctions.SCRNVENDOR_PROCESS_PURCHASE,
         )
-        assert p.read_int32(sell + 12) == jump(get, True)
-        assert p.read_int32(buy + 0x1EC) == jump(put, True)
-        assert words(p.read_bytes(buy + 0x1F4, 8)) == [0x8E430010, 0x24020026]
-        call = p.read_int32(buy + 0x338)
+        module, sellable_gate, purchase_grant, *purchase_tail, call = p.batch_read_int32([
+            0x206328, sell + 12, buy + 0x1EC, buy + 0x1F4, buy + 0x1F8, buy + 0x338])
+        assert sellable_gate == jump(get, True)
+        assert purchase_grant == jump(put, True)
+        assert purchase_tail == [0x8E430010, 0x24020026]
         assert call >> 26 == 3
         builder = (call & 0x3FFFFFF) << 2
-        assert p.read_int32(builder) == 0x27BDFF70
         body = words(p.read_bytes(builder, 0x800))
+        assert body[0] == 0x27BDFF70
         sites = [builder + i * 4 for i, w in enumerate(body) if w == jump(get, True)
                  and next((body[j] for j in range(i - 1, max(-1, i - 7), -1)
                            if body[j] >> 26 == 3), None) == jump(sell, True)]
@@ -67,9 +68,9 @@ class VendorOnly(PatchSet):
             data.extend(Entitlements(p).prepare(
                 address=routine, table=entitlement_table, gadget_base=base,
                 fallback=init).replacement)
-            for site in (load + 0x2F0, restart + 0x12C):
-                assert words(p.read_bytes(site, 8)) == [jump(init, True), 0]
-                init_edits.append((site, packed([jump(routine, True)])))
+            sites_words = p.batch_read_int32([load + 0x2F0, load + 0x2F4, restart + 0x12C, restart + 0x130])
+            assert sites_words == [jump(init, True), 0] * 2
+            init_edits = [(site, packed([jump(routine, True)])) for site in (load + 0x2F0, restart + 0x12C)]
         assert arena + len(data) <= buy + 0x338
         edits = [(buy + 0x1F4, packed([branch(buy + 0x1F4, buy + 0x338), 0])),
                  (arena, bytes(data))]
@@ -78,10 +79,9 @@ class VendorOnly(PatchSet):
                           (sell + 12, packed([jump(getter, True)]))))
             edits.extend((site, packed([jump(getter, True)])) for site in sites)
         edits.extend(init_edits)
-        patches = [Patch(a, p.read_bytes(a, len(b)), b) for a, b in edits]
         plan = PatchPlan(
-            patches=patches, locations=plan_locations, tables=tables, reported=reported,
-            marker_address=arena, module=p.read_int32(0x206328), entitlement_table=entitlement_table,
+            patches=capture(p, edits), locations=plan_locations, tables=tables, reported=reported,
+            marker_address=arena, module=module, entitlement_table=entitlement_table,
         )
         self.patches = plan.patches
         self.plan = plan

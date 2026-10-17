@@ -2,24 +2,29 @@
 import logging
 import traceback
 
+from rule_builder.rules import False_
+
+from ..constants import CASE_ID_TO_CASE
+from ..core import Core
+from ..locations import LOCATION_NAME_TO_ID
+from ..options import Goal
+from ..pypine import Pine
+from ..rules import VENDOR_REQUIREMENTS
+from .constants import EXPECTED_GAME_ID
+from .vendor_scouts import VendorScouts
+
 
 class GameRuntime:
     def __init__(self, emit):
-        from ..pypine import Pine
         self.emit = emit
         self.identity = None
         self.connected = False
         self.allowed = set()
         self.data = {}
-        self.pine = Pine()  # Never constructed in the UI process.
+        self.pine = Pine()
         self._make_core()
 
     def _make_core(self):
-        from ..core.core import Core
-        from ..locations import LOCATION_NAME_TO_ID
-        from ..rules.vendor_access import VENDOR_REQUIREMENTS
-        from rule_builder.rules import False_
-        from .vendor_scouts import VendorScouts
         self.core = Core(self.pine, log=lambda message: self.event('log', message),
                          debug=lambda message: self.event('debug', message))
         self.scouts = VendorScouts(LOCATION_NAME_TO_ID)
@@ -28,8 +33,8 @@ class GameRuntime:
             name for name, rule in VENDOR_REQUIREMENTS.items() if not isinstance(rule, False_))
         self.core.wire(
             send_location=self.location,
-            send_deathlink=lambda cause: self.event('death', cause),
-            death_amnesty=lambda: int(self.data.get('death_amnesty', 1)),
+            send_deathlink=lambda cause: self.event('death', {'cause': cause, 'planet': self._planet_name()}),
+            death_amnesty=lambda: int(self.data.get('death_amnesty', 0)),
             death_link_enabled=lambda: bool(self.data.get('death_link', False)),
             on_goal=lambda: self.event('goal', None),
             missions_all=lambda: self.data.get('all_missions', 0) == 1,
@@ -40,11 +45,13 @@ class GameRuntime:
     def event(self, kind, value):
         self.emit(kind, value, self.identity)
 
+    def _planet_name(self):
+        case = CASE_ID_TO_CASE.get(self.core.case.case_id)
+        return case.planet if case else None
+
     def location(self, name):
         if name in self.allowed:
             self.event('location', name)
-        # Confirmation arrives in the next tick's checked-location snapshot.
-        # A broken IPC connection must never silently confirm a check.
         return False
 
     def disconnect(self):
@@ -58,7 +65,6 @@ class GameRuntime:
     def dispatch(self, command, payload):
         w = self.core
         if command == 'configure':
-            from ..options import Goal
             identity, data, allowed = payload
             changed = identity != self.identity
             if changed and self.identity is not None:
@@ -78,18 +84,17 @@ class GameRuntime:
             w.skins.configure(data)
             w.weapon_mods.configure(data)
             w.wrench.enabled = bool(data.get('progressive_wrench', False))
-            w.progressive_planets = data.get('progressive_planets')
+            w.planet_cases = data.get('planet_cases')
             w.character_unlocks = int(data.get('infobots', 1)) == 3
             w.traps.durations.update(data.get('trap_duration', {}))
             w.goal = int(data.get('goal', 0))
             w.pick_and_mix_goals = (tuple(Goal.from_any(name).value for name in data.get('pick_and_mix_goals', ()))
-                                    if w.goal == Goal.option_pick_and_mix or data.get('pick_and_mix', False) else None)
+                                    if w.goal == Goal.option_pick_and_mix else None)
             w._goal_sent = False
             w.native_runtime.vendor_locations = self.allowed
             w.skill_points.allowed_locations = self.allowed
             return {"connected": self.connected}
         elif command == 'connect':
-            from .constants import EXPECTED_GAME_ID
             if self.connected:
                 return self.pine.get_game_id()
             self.pine.set_slot(payload)
@@ -106,7 +111,6 @@ class GameRuntime:
         elif command in ('disconnect', 'shutdown'):
             self.disconnect()
         elif command == 'tick':
-            from .constants import EXPECTED_GAME_ID
             if not self.connected:
                 raise ConnectionError('PINE is not connected')
             if self.pine.get_game_id() != EXPECTED_GAME_ID:
@@ -114,7 +118,7 @@ class GameRuntime:
                 raise ConnectionError('PCSX2 changed games; reconnect after loading Secret Agent Clank')
             w.sync_from_ap(set(payload))
             w.tick()
-            return {'vendor_active': w.vendor.active, 'owned_cases': tuple(w.owned_cases),
+            return {'vendor_active': w.vendor.active, 'vendor_cases': tuple(w.vendor_cases),
                     'case_id': w.case.case_id}
         elif command == 'sync':
             w.sync_from_ap(set(payload))
@@ -123,11 +127,17 @@ class GameRuntime:
             w.apply_inventory(**inventory)
             for notification in notifications:
                 w.notifications.enqueue(*notification)
+        elif command == 'sent':
+            w.notifications.enqueue_sent(*payload)
         elif command == 'trap':
             return w.activate_trap(payload) if self.connected else False
         elif command == 'death':
-            if self.connected and w.case.is_ready:
-                w.case.ratchet.health = 0.0
+            if not self.connected:
+                return False
+            w.notifications.enqueue_death(*payload)
+            return w.case.receive_death()
+        elif command == 'death_sent':
+            w.notifications.enqueue_death_sent(payload)
         elif command == 'death_enabled':
             self.data['death_link'] = payload
         elif command == 'ap_connected':

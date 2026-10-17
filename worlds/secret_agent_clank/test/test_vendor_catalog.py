@@ -2,14 +2,19 @@ import struct
 import unittest
 from pathlib import Path
 
-from ..constants.planets import SACCases as C
-from ..core.patches import PICKUP_LOCATIONS, VENDOR_LOCATIONS, LocationHooks, packed
-from ..core.patches.asm import jump
-from ..core.patches.progression import Progression
-from ..core.patches.titan_vendor import TitanOffers, TitanPrice, TitanVendor
-from ..core.patches.vendor_catalog import VendorCatalog
-from ..core.patches.weapon_mods import WeaponMods
-from ..core.symbols import RuntimeSymbols
+from ..constants import PICKUP_LOCATIONS, VENDOR_LOCATIONS, WEAPON_MODS, SACCases as C
+from ..core.patches import (
+    LocationHooks,
+    Progression,
+    TitanOffers,
+    TitanPrice,
+    TitanVendor,
+    VendorCatalog,
+    WeaponMods,
+    jump,
+    packed,
+)
+from ..core import RuntimeSymbols
 from .mips_cpu import CPU
 from .test_native_capture_plans import CaptureMemory
 
@@ -37,7 +42,6 @@ class VendorCatalogTests(unittest.TestCase):
                 self.assertEqual(c.r[4], header)
                 rows.append(tuple(c.r[5:11]))
                 p.write_int32(header + 0x54, len(rows))
-                # A native call can clobber all caller-saved registers.
                 for reg in range(2, 16):
                     c.r[reg] = 0xBAD
             cpu.run(start, stop=tail, stubs={add: append})
@@ -110,11 +114,11 @@ class VendorCatalogTests(unittest.TestCase):
             hooks = LocationHooks(p)
             hooks.prepare(symbols, pickup_locations=PICKUP_LOCATIONS, vendor_locations=VENDOR_LOCATIONS, entitlements={})
             mods = WeaponMods(p)
-            mods.configure({'weapon_mods': True, 'operatives': {'Clank': 1, 'Ratchet': 1}, 'ng_plus': ng})
+            mods.configure({'operatives': {'Clank': 1, 'Ratchet': 1}, 'ng_plus': ng, 'weapon_mod_ids': [mod.mod_id for mod in WEAPON_MODS]})
             hooks.patches.extend(mods.prepare(symbols, hooks, 3, set(), True))
             hooks.patches.extend(TitanVendor(p).prepare(symbols, hooks, set()) if ng else TitanOffers(p).prepare(symbols))
             progression = Progression(p)
-            progression.configure({'ng_plus': ng, 'progressive_weapons': True})
+            progression.configure({'ng_plus': ng, 'progressive_weapons': 2})
             hooks.patches.extend(VendorCatalog(p).prepare(symbols, hooks))
             hooks.patches.extend(progression.prepare(symbols, hooks, 3))
             spans = sorted((p.address, p.address + len(p.replacement)) for p in hooks.patches)
@@ -128,7 +132,6 @@ class VendorCatalogTests(unittest.TestCase):
                 self.assertEqual(p.data, raw)
 
     def check_purchase_paths(self, p, symbols, hooks):
-        """Execute captured purchase code and our builder, stubbing UI/library calls."""
         p.write_int32 = lambda a, v: p.batch_write_int32([(a, v)])
         p.write_int8 = lambda a, v: p.batch_write_int8([(a, v)])
         buy = symbols['SCRNVENDOR_ProcessPurchase__Fv']

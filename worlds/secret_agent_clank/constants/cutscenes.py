@@ -1,4 +1,3 @@
-"""Cutscene locations, enabled by the All Cutscenes option."""
 from dataclasses import dataclass
 
 from .types import EventFlag
@@ -48,7 +47,6 @@ class SACCutsceneLocations:
     KLUNKS_LAIR_HIGH_IMPACT_GAMES_CUTSCENE_WITH_GIANT_CLANK = "Hydrano (Clank) - Klunk's Lair: High Impact Games Cutscene with Giant Clank"
 
 
-# Every cutscene's flag lives in the shared 0x206BE0-0x206BF4 bitmask region.
 CUTSCENE_FLAGS: dict[str, EventFlag] = {
     SACCutsceneLocations.BOLTAIRE_MUSEUM_ENTER_CUTSCENE: EventFlag(0x206BE0, 0b00000001),
     SACCutsceneLocations.BOLTAIRE_GEM_WING_COMPLETE_CASE_CUTSCENE: EventFlag(0x206BE0, 0b00000100),

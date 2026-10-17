@@ -2,6 +2,7 @@
 import hashlib
 import struct
 
+from ..batch_io import read_blocks, write_blocks
 from ..notifications import ItemNotifications
 from ..symbols import require
 from . import mips as m
@@ -10,19 +11,19 @@ from .patch import PatchSet
 from .vendor_text_preview import VendorTextPreview
 
 
-def triangle_storage(pine, symbols):
+def triangle_storage(pine, symbols, extra=()):
     # Retail DrawTriangle only transforms local stack vertices and sets a
     # local color; it never submits geometry. Guard its complete body,
     # including every instruction except relocated JAL destinations.
     storage = require(symbols, "DEBUGDRAW_DrawTriangle__FPC4VEC3N20UiPC7MATRIX4")
-    storage_original = pine.read_bytes(storage, 352)
+    storage_original, *rest = read_blocks(pine, [(storage, 352), *extra])
     words = struct.unpack("<88I", storage_original)
     normalized = packed([0x0C000000 if word >> 26 == 3 else word for word in words])
     if hashlib.sha256(normalized).hexdigest() != "572b00ad8dd163d5fb2c33d751223e56928bf4186bf2960640ae82a88e1bc37f":
         raise RuntimeError("Vendor debug storage layout changed")
     if not (words[14] == words[18] == words[22] and words[49] == words[78]):
         raise RuntimeError("Vendor debug storage calls changed")
-    return storage, storage_original
+    return (storage, storage_original, *rest)
 
 
 class VendorPresentation(PatchSet):
@@ -61,12 +62,15 @@ class VendorPresentation(PatchSet):
         render, title, description, encoded = require(symbols, "SCRNVENDOR_Render__Fv",
             "HUD_FontPrintWindowAreaScaledXY__FP20tFontPrintWindowDataff",
             "HUD_FontPrintWindowArea__FP20tFontPrintWindowData", "HUD_SetUseEncodedTextColorTo__Fb")
-        w = struct.unpack("<3I", self.pine.read_bytes(encoded, 12))
+        call_sites = (*VendorTextPreview.TITLE_CALLS, VendorTextPreview.DESCRIPTION_CALL)
+        storage, storage_original, switch, *calls = triangle_storage(
+            self.pine, symbols, [(encoded, 12), *((render + site, 4) for site in call_sites)])
+        current_call = dict(zip(call_sites, calls))
+        w = struct.unpack("<3I", switch)
         if w[0] & 0xFFFF0000 != 0x3C020000 or w[1] != 0x03E00008 or w[2] & 0xFFFF0000 != 0xA0440000:
             raise RuntimeError("Vendor encoded color switch changed")
         low = w[2] & 65535
         encoded = ((w[0] & 65535) << 16) + (low - 65536 if low & 32768 else low)
-        storage, storage_original = triangle_storage(self.pine, symbols)
         if any(storage < patch.address + len(patch.replacement) and patch.address < storage + 352
                for patch in hooks.patches):
             raise RuntimeError("Vendor debug storage is already occupied")
@@ -82,7 +86,7 @@ class VendorPresentation(PatchSet):
             address = reserve(packed([*m.li32(m.T3, target), jump(common), m.addiu(m.T4, m.ZERO, offset)]))
             for site in sites:
                 original = packed([jump(target, True)])
-                if self.pine.read_bytes(render + site, 4) != original:
+                if current_call[site] != original:
                     raise RuntimeError("Vendor text draw call changed")
                 self.patches.append(Patch(render + site, original, packed([jump(address, True)])))
         if len(body) > 352:
@@ -95,10 +99,10 @@ class VendorPresentation(PatchSet):
         if self.mailbox is None or self.pine.read_int32(self.timer):
             return
         # Withdraw first; native render can only see the new payload after commit.
-        self.pine.write_int32(self.mailbox, 0)
-        if reward is None:
-            return
-        text = VendorTextPreview._text(reward.item_name, 88, 2 if reward.progression else 1)
-        text += VendorTextPreview._text("For " + reward.recipient_name + "\nArchipelago reward", 152)
-        self.pine.write_bytes(self.mailbox + 4, struct.pack("<3I", row.node_type, row.weapon_id, row.mod_id) + text)
-        self.pine.write_int32(self.mailbox, pointer)
+        writes = [(self.mailbox, packed([0]))]
+        if reward is not None:
+            text = VendorTextPreview._text(reward.item_name, 88, 2 if reward.progression else 1)
+            text += VendorTextPreview._text("For " + reward.recipient_name + "\nArchipelago reward", 152)
+            writes += [(self.mailbox + 4, struct.pack("<3I", row.node_type, row.weapon_id, row.mod_id) + text),
+                       (self.mailbox, packed([pointer]))]
+        write_blocks(self.pine, writes)

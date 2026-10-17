@@ -1,24 +1,21 @@
-"""Native vendor rows and the pause-screen selector."""
 import struct
 from typing import TYPE_CHECKING, NamedTuple
 
+from .address_maps import VENDOR_ITEM_MAX_COUNT, VENDOR_ITEM_STRIDE
 from .address_maps.ps2 import (
     _ITEM_OFFSET_ACTIVE,
     _ITEM_OFFSET_ICON,
     _ITEM_OFFSET_MOD_ID,
     _ITEM_OFFSET_NODE_TYPE,
     _ITEM_OFFSET_WEAPON_ID,
-    VENDOR_ITEM_MAX_COUNT,
-    VENDOR_ITEM_STRIDE,
 )
-from .inventories.weapons import WEAPON_ORDER
+from ..constants import WEAPON_ORDER
 
 if TYPE_CHECKING:
     from ..pypine import Pine
 
 
 class VendorItem(NamedTuple):
-    """One row of the native vendor's item array."""
     index: int
     node_type: int
     icon: int
@@ -79,7 +76,7 @@ class VendorState:
         snapshot = VendorSnapshot(rows, header[2], self.pine.read_int32(self.price_addr),
                                   self.pine.read_int32(0x2075C8), self.pine.read_int8(self.purchase_flag_addr))
         if self._native_header() != header:
-            return []  # Menu changed during the read; retain the earlier baseline.
+            return []
         previous = self._previous_snapshot
         self._previous_snapshot = snapshot
         if previous is None:
@@ -144,7 +141,6 @@ class VendorState:
         """Whether the native weapon vendor is the active pause screen."""
         return self.state in (8, 16)
 
-    # Field order shared by read_items() and write_item().
     _FIELDS = (
         _ITEM_OFFSET_ACTIVE, _ITEM_OFFSET_ICON, _ITEM_OFFSET_NODE_TYPE,
         _ITEM_OFFSET_WEAPON_ID, _ITEM_OFFSET_MOD_ID,

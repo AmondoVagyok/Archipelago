@@ -1,11 +1,10 @@
-"""Exercise the real client receipt path without a server or emulator."""
 import asyncio
 import unittest
 from types import SimpleNamespace
-from unittest.mock import AsyncMock, Mock
+from unittest.mock import AsyncMock
 
-from ..client.context import SACContext
-from ..core.notifications import ItemNotifications
+from ..client import SACContext
+from ..core import ItemNotifications
 
 
 class NotificationDeliveryTests(unittest.IsolatedAsyncioTestCase):

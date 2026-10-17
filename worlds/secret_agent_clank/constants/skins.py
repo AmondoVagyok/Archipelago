@@ -1,5 +1,3 @@
-"""USA PS2 SPHeroSkinId values, verified against the native skin menu."""
-
 RATCHET_SKINS = {
     "prison_scrubs": 1,
     "towel": 2,
@@ -23,12 +21,9 @@ CLANK_SKINS = {
 QWARK_SKINS = {"regular": 18, "cowboy": 19, "maid_qwark": 20, "lucha_libre_qwark": 21}
 QWARK_GIANT_SKINS = {18: 22, 19: 23, 20: 24, 21: 25}
 
-# Save layout used by SelectedSPHeroSkinID and SCRNSKINSCREEN_Update.
 SKIN_SAVE_OFFSET = 0x19900
 SKIN_CHARACTER_STRIDE = 0x34
 SKIN_OWNED_OFFSET = 0x199D4
-# Retail IsSkinUnlocked explicitly rejects Robo-Ratchet. Its standalone
-# Actors/KlunkRatchet/KlunkRatchet asset is not shipped in IMAGE.ZIP.
 UNSUPPORTED_RATCHET_SKIN = 7
 DEFAULT_RATCHET_SKIN = 1
 ALL_SKINS_MASK = sum(1 << skin for skin in range(1, 26) if skin != UNSUPPORTED_RATCHET_SKIN)

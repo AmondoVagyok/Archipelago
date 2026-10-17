@@ -1,18 +1,25 @@
 import unittest
 from pathlib import Path
 
-from ..constants.weapon_mods import WEAPON_MODS, enabled_mods
-from ..constants.weapons import EQUIPMENT_DISPLAY_TO_INTERNAL
-from ..core.inventories.weapons import WEAPON_ORDER
-from ..core.patches import PICKUP_LOCATIONS, VENDOR_LOCATIONS, LocationHooks
-from ..core.patches.weapon_mods import WeaponMods
-from ..core.symbols import RuntimeSymbols
+from test.general import setup_multiworld
+
+from ..constants import (
+    CHALLENGE_MODS,
+    EQUIPMENT_DISPLAY_TO_INTERNAL,
+    PICKUP_LOCATIONS,
+    VENDOR_LOCATIONS,
+    WEAPON_MODS,
+    WEAPON_ORDER,
+    enabled_mods,
+)
+from ..core.patches import LocationHooks, WeaponMods
+from ..core import RuntimeSymbols
+from ..world import SecretAgentClankWorld
 from .test_native_capture_plans import CaptureMemory
 
 
 class WeaponModTests(unittest.TestCase):
     def run_leaf(self, p, address, mod_id):
-        # Execute the emitted six-instruction leaf including JR's delay slot.
         regs = [0] * 32
         regs[5] = mod_id
         for offset in range(0, 24, 4):
@@ -56,7 +63,7 @@ class WeaponModTests(unittest.TestCase):
         hooks.prepare(symbols, pickup_locations=PICKUP_LOCATIONS,
                       vendor_locations=VENDOR_LOCATIONS, entitlements={})
         mods = WeaponMods(p)
-        mods.configure({"weapon_mods": True, "operatives": {"Ratchet": 1, "Clank": 1}, "ng_plus": 1})
+        mods.configure({"operatives": {"Ratchet": 1, "Clank": 1}, "ng_plus": 1, "weapon_mod_ids": [mod.mod_id for mod in WEAPON_MODS]})
         hooks.patches.extend(mods.prepare(symbols, hooks, 22, set(), True))
         hooks._install_plan()
         mod = WEAPON_MODS[0]
@@ -68,8 +75,6 @@ class WeaponModTests(unittest.TestCase):
         self.assertEqual(p.read_int32(gadget + 0x70), 0)
         self.assertEqual(p.read_int8(hooks.tables["mods"] + mod.mod_id), 1)
         self.assertNotIn(mod.location, hooks.poll())
-        # Native transaction only latches the separate table. Keeping this
-        # check confirmed does not supply ownership after an AP replay.
         buy = symbols["SCRNVENDOR_ProcessPurchase__Fv"]
         recorder = (p.read_int32(buy + 0x10C) & 0x3FFFFFF) << 2
         self.assertEqual(self.run_leaf(p, buy + 0x13C, mod.mod_id), 0)
@@ -81,10 +86,33 @@ class WeaponModTests(unittest.TestCase):
         self.assertIn(mod.location, hooks.poll())
         self.assertEqual(hooks.poll(), [])
 
-    def test_older_seed_leaves_mods_vanilla(self):
+    def test_challenge_mods_are_pooled_items_for_ratchet(self):
+        for operatives, goal, expected in (({"Ratchet": 1, "Clank": 1}, "defeat_klunk", 1),
+                                           ({"Ratchet": 1}, "ratchet_prison_escape", 1),
+                                           ({"Clank": 1}, "defeat_klunk", 0)):
+            with self.subTest(operatives=operatives):
+                m = setup_multiworld(SecretAgentClankWorld, seed=1, options={"operatives": operatives, "goal": goal})
+                names = [item.name for item in (*m.itempool, *m.precollected_items[1])]
+                for mod in CHALLENGE_MODS:
+                    self.assertEqual(names.count(mod.name), expected, mod.name)
+
+    def test_challenge_rewards_are_owned_only_once_received(self):
         p = CaptureMemory()
         mods = WeaponMods(p)
-        mods.configure({})
+        mods.configure({"operatives": {"Ratchet": 1}, "ng_plus": 0, "weapon_mod_ids": []})
+        mods.base, mods.mod_list, mods.module = 0x600000, 0x700000, 7
+        writes = [(0x206328, 7), (0x206324, 0xFFFFFFFF), (0x206338, 3)]
+        slots = {}
+        for mod in WEAPON_MODS:
+            definition = 0x710000 + mod.mod_id * 16
+            gadget = mods.base + WEAPON_ORDER.index(EQUIPMENT_DISPLAY_TO_INTERNAL[mod.weapon]) * 0x74
+            writes += [(mods.mod_list + mod.mod_id * 4, definition), (gadget + 0x30 + mod.slot * 4, definition)]
+            slots[mod.name] = gadget + 0x68 + mod.slot
+        p.batch_write_int32(writes)
+        p.batch_write_int8([(slots[mod.name], 1) for mod in CHALLENGE_MODS])
         mods.sync()
-        self.assertFalse(mods.enabled)
-        self.assertEqual(p.writes, [])
+        self.assertEqual([p.read_int8(slots[mod.name]) for mod in CHALLENGE_MODS], [0, 0])
+        mods.received = {CHALLENGE_MODS[0].name}
+        mods.sync()
+        self.assertEqual([p.read_int8(slots[mod.name]) for mod in CHALLENGE_MODS], [1, 0])
+

@@ -1,11 +1,12 @@
 """Reversible selected-offer text preview using native vendor font windows."""
 import struct
 
+from ..batch_io import read_blocks, write_blocks
 from ..notifications import ItemNotifications
 from ..symbols import require
 from ..vendor import VendorState
 from . import mips as m
-from .asm import Patch, jump, packed
+from .asm import Patch, capture, jump, packed
 from .gain_storage import GainStorage
 from .patch import PatchSet
 
@@ -50,7 +51,6 @@ class VendorTextPreview(PatchSet):
             raise RuntimeError("Open a vendor with the SAC client closed")
         if self.pine.get_game_id() != "SCUS-97623":
             raise RuntimeError("Unsupported game")
-        self.module = self.pine.read_int32(0x206328)
         header = self.vendor._native_header()
         if header is None or not header[1]:
             raise RuntimeError("No selected vendor offer")
@@ -61,14 +61,20 @@ class VendorTextPreview(PatchSet):
         if not notifications.bind(symbols):
             raise RuntimeError("Native text buffer signature changed")
         mailbox, timer, _cooldown, *_ = notifications.binding
-        if self.pine.read_int32(timer):
-            raise RuntimeError("Wait for native HUD notifications to finish")
         render, title_draw, description_draw = require(
             symbols, "SCRNVENDOR_Render__Fv",
             "HUD_FontPrintWindowAreaScaledXY__FP20tFontPrintWindowDataff",
             "HUD_FontPrintWindowArea__FP20tFontPrintWindowData")
         set_encoded = require(symbols, "HUD_SetUseEncodedTextColorTo__Fb")
-        words = struct.unpack("<3I", self.pine.read_bytes(set_encoded, 12))
+        sites = (*self.TITLE_CALLS, self.DESCRIPTION_CALL)
+        module, busy, switch, mailbox_original, *calls = read_blocks(self.pine, [
+            (0x206328, 4), (timer, 4), (set_encoded, 12), (mailbox, 256),
+            *((render + site, 4) for site in sites)])
+        self.module, = struct.unpack("<I", module)
+        current_call = dict(zip(sites, calls))
+        if struct.unpack("<I", busy)[0]:
+            raise RuntimeError("Wait for native HUD notifications to finish")
+        words = struct.unpack("<3I", switch)
         if (words[0] & 0xFFFF0000 != 0x3C020000 or words[1] != 0x03E00008
                 or words[2] & 0xFFFF0000 != 0xA0440000):
             raise RuntimeError("Native encoded text switch changed")
@@ -84,24 +90,23 @@ class VendorTextPreview(PatchSet):
                                  encoded_flag if offset == self.TITLE_OFFSET else None)
             if len(code) > region[1] - region[0]:
                 raise RuntimeError("Insufficient verified text hook storage")
-            routines.append(Patch(region[0], self.pine.read_bytes(region[0], len(code)), code))
+            routines.append((region[0], code))
             for site_offset in offsets:
                 site = render + site_offset
-                if self.pine.read_int32(site) != jump(target, True):
+                if current_call[site_offset] != packed([jump(target, True)]):
                     raise RuntimeError("Vendor text call changed")
                 calls.append(Patch(site, packed([jump(target, True)]),
                                    packed([jump(region[0], True)])))
         pointer, _count, selected_index = header
         payload = struct.pack("<2I", pointer + selected_index * 0x1C, 0)
         payload += self._text(title, 96, color=2 if progression else 1) + self._text(description, 152)
-        self.patches = guards + routines + [
-            Patch(mailbox, self.pine.read_bytes(mailbox, 256), payload)] + calls
+        self.patches = guards + capture(self.pine, routines) + [
+            Patch(mailbox, mailbox_original, payload)] + calls
         return self.patches
 
     def _check_context(self):
         if (self.pine.get_game_id() != "SCUS-97623"
-                or self.pine.read_int32(0x206328) != self.module
-                or self.pine.read_int32(0x206324) != 0xFFFFFFFF
+                or self.pine.batch_read_int32([0x206328, 0x206324]) != [self.module, 0xFFFFFFFF]
                 or not self.vendor.active):
             raise RuntimeError("Vendor text preview context changed")
 
@@ -116,11 +121,10 @@ class VendorTextPreview(PatchSet):
         if not self.installed:
             return
         self._check_context()
-        for patch in self.patches:
-            if self.pine.read_bytes(patch.address, len(patch.replacement)) != patch.replacement:
-                raise RuntimeError("Text preview was changed; refusing stale restoration")
-        for patch in reversed(self.patches):
-            self.pine.write_bytes(patch.address, patch.original)
-            if self.pine.read_bytes(patch.address, len(patch.original)) != patch.original:
-                raise RuntimeError("Text preview restoration failed")
+        spans = [(patch.address, len(patch.replacement)) for patch in self.patches]
+        if read_blocks(self.pine, spans) != [patch.replacement for patch in self.patches]:
+            raise RuntimeError("Text preview was changed; refusing stale restoration")
+        write_blocks(self.pine, [(patch.address, patch.original) for patch in reversed(self.patches)])
+        if read_blocks(self.pine, spans) != [patch.original for patch in self.patches]:
+            raise RuntimeError("Text preview restoration failed")
         self.installed = False

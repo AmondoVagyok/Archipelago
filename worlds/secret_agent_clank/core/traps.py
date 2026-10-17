@@ -2,18 +2,15 @@
 import struct
 import time
 
-from ..constants.cheats import TRAP_DURATIONS, SACTraps
+from ..constants import TRAP_DURATIONS, SACTraps
 from .case_menu import ee_pointer
 
-# Verified CHEAT_IsActive callers: clip matrix, GrantBolts, head scaling,
-# and CHEAT_Update/CanSelectWeapon respectively.
 TRAP_BITS = {
     SACTraps.BIG_HEADED: (1 << 1) | (1 << 2),
     SACTraps.MIRRORED_LEVELS: 1 << 3,
     SACTraps.BOLT_CONFUSION: 1 << 5,
     SACTraps.WEAPON_SWITCHING: 1 << 6,
 }
-# Native cheat id 10: the 65 skill point entry in the cheat menu's table.
 RATCHET_PACK_BIT = 1 << 10
 
 
@@ -45,7 +42,6 @@ class Traps:
         return root + 0x8E0 if ee_pointer(root, 0x8E4) else None
 
     def switching_timer(self, symbols):
-        # Mirror the only nonempty activation callback used by these traps.
         function = symbols.get("CHEAT_Activate__FUi")
         if function is None:
             raise RuntimeError("Native cheat activation routine missing")
@@ -109,8 +105,6 @@ class Traps:
         now = self.clock()
         elapsed = min(0.5, max(0, now - self.last_tick)) if self.last_tick is not None and playing else 0
         self.last_tick = now if playing else None
-        # Menus pause duration, not enforcement: the cheat menu can clear
-        # these same bits while the level and save are still valid.
         if not self.managed:
             return
         address = self.address(symbols)

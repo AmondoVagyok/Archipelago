@@ -1,15 +1,18 @@
-"""Editable access rules for Clank and Ratchet Nanotech level checks, tiered by cases reached."""
-from typing import TYPE_CHECKING
+from dataclasses import dataclass
 
-from rule_builder.rules import CanReachRegion, False_, Has, Rule
+from rule_builder.rules import CanReachRegion, False_, Has, Rule, TWorld
+from typing_extensions import override
 
-from ..constants import CASES_BY_OPERATIVE, SACOperatives
-from ..constants.challenge_mode import PROGRESSIVE_CHALLENGE_MODE
-from ..constants.nanotech import CLANK_NG_CAP, CLANK_START_NANOTECH, RATCHET_NG_CAP, RATCHET_START_NANOTECH
+from ..constants import (
+    CASES_BY_OPERATIVE,
+    CLANK_NG_CAP,
+    CLANK_START_NANOTECH,
+    PROGRESSIVE_CHALLENGE_MODE,
+    RATCHET_NG_CAP,
+    RATCHET_START_NANOTECH,
+    SACOperatives,
+)
 from .rule_helpers import AtLeast, HasEnemyAccess, region_names
-
-if TYPE_CHECKING:
-    from ..world import SecretAgentClankWorld
 
 NANOTECH_LEVELS_PER_CASE = 10
 """Each Clank case with reachable enemies puts this many more Clank Nanotech levels in logic."""
@@ -28,17 +31,28 @@ def ratchet_nanotech_cases_required(level: int) -> int:
     return -(-(level - RATCHET_START_NANOTECH) // RATCHET_NANOTECH_LEVELS_PER_CASE)
 
 
-def nanotech_access_rule(world: "SecretAgentClankWorld", level: int) -> Rule:
-    rule = HasEnemyAccess(world, nanotech_cases_required(level))
-    if world.options.progressive_challenge_mode and level > CLANK_NG_CAP:
-        rule = rule & Has(PROGRESSIVE_CHALLENGE_MODE)
-    return rule
+@dataclass
+class ClankNanotechRule(Rule[TWorld], game="Secret Agent Clank"):
+    level: int
+
+    @override
+    def _instantiate(self, world: TWorld) -> Rule.Resolved:
+        rule = HasEnemyAccess(nanotech_cases_required(self.level))
+        if world.options.progressive_challenge_mode and self.level > CLANK_NG_CAP:
+            rule = rule & Has(PROGRESSIVE_CHALLENGE_MODE)
+        return rule.resolve(world)
 
 
-def ratchet_nanotech_access_rule(world: "SecretAgentClankWorld", level: int) -> Rule:
-    existing = region_names(world)
-    cases = [CanReachRegion(case.name) for case in CASES_BY_OPERATIVE[SACOperatives.RATCHET] if case.name in existing]
-    rule = AtLeast(min(ratchet_nanotech_cases_required(level), len(cases)), *cases) if cases else False_()
-    if world.options.progressive_challenge_mode and level > RATCHET_NG_CAP:
-        rule = rule & Has(PROGRESSIVE_CHALLENGE_MODE)
-    return rule
+@dataclass
+class RatchetNanotechRule(Rule[TWorld], game="Secret Agent Clank"):
+    level: int
+
+    @override
+    def _instantiate(self, world: TWorld) -> Rule.Resolved:
+        existing = region_names(world)
+        cases = [CanReachRegion(case.name) for case in CASES_BY_OPERATIVE[SACOperatives.RATCHET]
+                 if case.name in existing]
+        rule = AtLeast(min(ratchet_nanotech_cases_required(self.level), len(cases)), *cases) if cases else False_()
+        if world.options.progressive_challenge_mode and self.level > RATCHET_NG_CAP:
+            rule = rule & Has(PROGRESSIVE_CHALLENGE_MODE)
+        return rule.resolve(world)

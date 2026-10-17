@@ -1,4 +1,3 @@
-"""Weapon quick-select wheel tracking."""
 from typing import TYPE_CHECKING
 
 from .address_maps import QUICK_SELECT_ADDRESS, QUICK_SELECT_SLOT_COUNT
@@ -14,7 +13,6 @@ class QuickSelectState:
 
     @property
     def slots(self) -> list[int]:
-        """The weapon id currently bound to each of the 8 wheel slots, in slot order."""
         return [
             self.pine.read_int32(QUICK_SELECT_ADDRESS + slot * 4)
             for slot in range(QUICK_SELECT_SLOT_COUNT)

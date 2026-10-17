@@ -1,4 +1,3 @@
-"""Skill point locations and their native completion flags (all 65 confirmed live)."""
 from dataclasses import dataclass
 
 from .types import EventFlag
@@ -73,7 +72,6 @@ class SACSkillPointLocations:
     KLUNKS_LAIR_PRETTY_GOOD_LIKENESS = "Hydrano (Clank) - Klunk's Lair: Skill Point: A Pretty Good Likeness"
 
 
-# Flags walk 0x206BF8-0x206C00 one bit at a time, in case_id order.
 SKILL_POINT_FLAGS: dict[str, EventFlag] = {
     SACSkillPointLocations.BOLTAIRE_MUSEUM_FURIOUS_FISTS: EventFlag(0x206BF8, 0b00000001),
     SACSkillPointLocations.BOLTAIRE_MUSEUM_SILENT_NIGHT: EventFlag(0x206BF8, 0b00000010),

@@ -1,4 +1,3 @@
-"""Equipment display names and their native WEAPON_ORDER names."""
 from dataclasses import dataclass
 
 from .clank_gadgets import SACClankGadgets, SACClankWeapons
@@ -10,7 +9,6 @@ class SACRatchetWeapons:
     SHOCKROCKET       = "Shock Rocket (Ratchet)"
     PLASMAWHIP        = "Plasma Whip (Ratchet)"
     PORKBOMB          = "Pork Bomb Gun (Ratchet)"
-    KICKBLAST         = "Clank Fu Hot Foot (Clank)"  # Legacy attribute/order preserves item IDs.
     BLASTER           = "Dual Lacerators (Ratchet)"
     SHARDGUN          = "Shard Gun (Ratchet)"
     BEEMINEGLOVE      = "Bee Mine Mk. II (Ratchet)"
@@ -58,12 +56,10 @@ class SACQwarkWeapons:
     GIANTQWARKBLASTER = "Giant Blaster (Qwark)"
 
 
-# Category order is also the historical AP item allocation order.
 RATCHET_WEAPONS: tuple[str, ...] = (
     SACRatchetWeapons.SHOCKROCKET,
     SACRatchetWeapons.PLASMAWHIP,
     SACRatchetWeapons.PORKBOMB,
-    SACRatchetWeapons.KICKBLAST,
     SACRatchetWeapons.BLASTER,
     SACRatchetWeapons.SHARDGUN,
     SACRatchetWeapons.BEEMINEGLOVE,
@@ -86,13 +82,11 @@ GADGETS_FROM_WEAPON_TABLE: tuple[str, ...] = (
     SACClankWeapons.FLAMETHROWERPEN,
     SACClankWeapons.HOLOKNUCKLES,
     SACClankWeapons.SUPERKICK,
+    SACClankWeapons.KICKBLAST,
     SACClankWeapons.LIGHTNINGUMBRELLA,
     SACClankWeapons.KICKSPLOSION,
 )
 
-# One shared native equipment lookup, with its reverse for runtime checks.
-# Attribute names match WeaponSlot, so no parallel hand-maintained slot map
-# is needed. The positional pen/shades pickups remain separate below.
 EQUIPMENT_DISPLAY_TO_INTERNAL: dict[str, str] = {
     display: WEAPON_ORDER[WeaponSlot[attr]]
     for cls in (SACRatchetWeapons, SACClankGadgets, SACClankWeapons)

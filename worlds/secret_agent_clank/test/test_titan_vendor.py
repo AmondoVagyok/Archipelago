@@ -1,10 +1,7 @@
 import unittest
 
-from ..constants.weapon_progression import TITAN_LOCATIONS
-from ..core.inventories.weapons import WEAPON_ORDER
-from ..core.patches import LocationHooks, jump
-from ..core.patches.progression import Progression
-from ..core.patches.titan_vendor import TitanVendor
+from ..constants import TITAN_LOCATIONS, WEAPON_ORDER
+from ..core.patches import LocationHooks, Progression, TitanVendor, jump
 from .test_runtime import Memory
 
 

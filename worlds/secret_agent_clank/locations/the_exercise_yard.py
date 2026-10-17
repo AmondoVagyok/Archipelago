@@ -1,4 +1,3 @@
-"""The Exercise Yard: the case region and every location in it, with its access rule."""
 from ..constants import (
     SACCases,
     SACCutsceneLocations,
@@ -18,7 +17,7 @@ REGION = CaseRegion(SACCases.THE_EXERCISE_YARD, (
     SACLocation(SACRatchetChallengeLocations.THE_EXERCISE_YARD_GREAT_BALLS_OF_FIRE, SACLocationType.RATCHET_CHALLENGE),
     SACLocation(SACRatchetChallengeLocations.THE_EXERCISE_YARD_MEGA_CHALLENGE_PRISON_YARD,
                 SACLocationType.RATCHET_CHALLENGE),
-    SACLocation(SACTitaniumBoltLocations.THE_EXERCISE_YARD_1, SACLocationType.TITANIUM_BOLT),
+    SACLocation(SACTitaniumBoltLocations.THE_EXERCISE_YARD_1, SACLocationType.TITANIUM_BOLT, flag_bit=0),
     SACLocation(SACMissionLocations.THE_EXERCISE_YARD_COMPLETE, SACLocationType.CASE_COMPLETE),
     SACLocation(SACMissionLocations.THE_EXERCISE_YARD_AND_THE_PASSWORD_IS, SACLocationType.MISSION),
     SACLocation(SACMissionLocations.THE_EXERCISE_YARD_FIGHT_FOR_SLIM, SACLocationType.MISSION),

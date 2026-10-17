@@ -3,23 +3,36 @@ import unittest
 from itertools import product
 from pathlib import Path
 
-from ..core.main_menu import is_main_menu
-from ..core.patches import MARKER, PICKUP_LOCATIONS, VENDOR_LOCATIONS, LocationHooks
-from ..core.native_runtime import NativeRuntime
-from ..core.notifications import ItemNotifications
-from ..constants.native_functions import NativeFunctions
-from ..core.patches.connection_warning import ConnectionWarning
-from ..core.patches.gain_storage import GainStorage
-from ..core.patches.mission_travel import MissionTravel
-from ..core.patches.progression import Progression
-from ..core.patches.titan_vendor import TitanOffers, TitanVendor
-from ..core.patches.vendor_catalog import VendorCatalog
-from ..core.patches.vendor_presentation import VendorPresentation
-from ..core.patches.weapon_mods import WeaponMods
-from ..core.patches.wrench import WrenchProgression
-from ..constants.stealth import STEALTH_CASES, STEALTH_MAX_PER_CASE
-from ..core.stealth import StealthState
-from ..core.symbols import RuntimeSymbols
+from ..core import (
+    ItemNotifications,
+    MissionFailure,
+    NativeRuntime,
+    RuntimeSymbols,
+    StealthState,
+    is_main_menu,
+)
+from ..constants import (
+    PICKUP_LOCATIONS,
+    STEALTH_CASES,
+    STEALTH_MAX_PER_CASE,
+    VENDOR_LOCATIONS,
+    WEAPON_MODS,
+    NativeFunctions,
+)
+from ..core.patches import (
+    MARKER,
+    ConnectionWarning,
+    GainStorage,
+    LocationHooks,
+    MissionTravel,
+    Progression,
+    TitanOffers,
+    TitanVendor,
+    VendorCatalog,
+    VendorPresentation,
+    WeaponMods,
+    WrenchProgression,
+)
 from .test_runtime import Memory
 
 
@@ -62,8 +75,6 @@ class NativeCapturePlansTests(unittest.TestCase):
         _guards, ranges = GainStorage(p).prepare(symbols)
         self.assertEqual(len(ranges), 4)
         self.assertTrue(all(end - start >= 32 for start, end in ranges))
-        # A changed body, even with the original entry still intact, must
-        # never become storage: it could now contain actual game behavior.
         p.data[ranges[-1][0]] ^= 1
         before = bytes(p.data)
         with self.assertRaisesRegex(RuntimeError, "Gain storage stub layout changed"):
@@ -81,7 +92,7 @@ class NativeCapturePlansTests(unittest.TestCase):
             captured = CaptureMemory()
             captured.data[:] = raw
             if is_main_menu(captured):
-                continue  # Title DLL has no gameplay hook plan.
+                continue
             if MARKER in raw:
                 with self.subTest(capture=capture.name):
                     self.skipTest("Capture already contains installed AP hooks")
@@ -102,9 +113,10 @@ class NativeCapturePlansTests(unittest.TestCase):
                     hooks.patches.extend(wrench.prepare(symbols, module))
                     hooks.patches.extend(MissionTravel(p).prepare(symbols, module=module))
                     mods = WeaponMods(p)
-                    mods.configure({"weapon_mods": True, "operatives": {"Ratchet": 1, "Clank": 1}, "ng_plus": ng})
+                    mods.configure({"operatives": {"Ratchet": 1, "Clank": 1}, "ng_plus": ng, "weapon_mod_ids": [mod.mod_id for mod in WEAPON_MODS]})
                     hooks.patches.extend(mods.prepare(symbols, hooks, module, set(), vendor))
                     progression = Progression(p)
+                    progression.mission_failure = MissionFailure(p)
                     progression.configure({"ng_plus": ng, "progressive_weapons": progressive,
                         "weapon_xp_multiplier": multiplier, "health_xp_multiplier": multiplier, "bolt_multiplier": multiplier})
                     progression.stealth = StealthState(p)
@@ -121,11 +133,21 @@ class NativeCapturePlansTests(unittest.TestCase):
                     hooks.patches.extend(ConnectionWarning(p).prepare(symbols, hooks))
                     hooks.patches.extend(progression.prepare(symbols, hooks, module,
                                                              vendor_enabled=vendor))
+                    if module != 31:
+                        patched = {patch.address for patch in progression.patches}
+                        for name in (NativeFunctions.GLOBALVARS_ADD_EXPERIENCE,
+                                     NativeFunctions.GLOBALVARS_ADD_CLANK_EXPERIENCE):
+                            if symbols.get(name) is not None:
+                                self.assertIn(symbols[name], patched)
+                        xp = symbols[NativeFunctions.GADGET_GETS_XP]
+                        if not progression.enabled or progression.manual:
+                            self.assertIn(xp + 0x104, patched)
+                            if not progression.enabled:
+                                self.assertNotIn(xp, patched)
                     spans = sorted((x.address, x.address + len(x.replacement)) for x in hooks.patches)
                     self.assertTrue(all(b <= c for (a, b), (c, d) in zip(spans, spans[1:])))
                     self.assertEqual(p.data, raw, "Planning must not write RAM")
                     hooks._install_plan()
-                    # Core binds the receipt HUD after install, over the watchdog's render hook.
                     self.assertTrue(ItemNotifications(p).bind(symbols), "Receipt HUD must bind after install")
                     if not vendor:
                         for name, size in ((NativeFunctions.SCRNVENDOR_PROCESS_PURCHASE, 0x350),

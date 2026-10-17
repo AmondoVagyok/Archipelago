@@ -1,7 +1,8 @@
 import struct
 import unittest
+from unittest.mock import Mock
 
-from ..core.patches.loader_gate import LoaderBarrierLost, LoaderGate
+from ..core.patches import LoaderBarrierLost, LoaderGate
 from .test_runtime import Memory
 
 
@@ -35,6 +36,44 @@ class LoaderGateTests(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             self.gate.arm()
         self.assertFalse(self.gate.armed)
+
+    def test_settled_module_requires_same_target_and_handle_on_two_polls(self):
+        self.gate.arm()
+        self.p.batch_write_int32([(LoaderGate.STATE, 4), (LoaderGate.STATUS, 1),
+                                 (LoaderGate.TARGET, 1), (LoaderGate.HANDLE, 0x200000)])
+        self.assertIsNone(self.gate.held_module(settled=True))
+        self.p.write_int32(LoaderGate.HANDLE, 0x210000)
+        self.assertIsNone(self.gate.held_module(settled=True))
+        self.assertEqual(self.gate.held_module(settled=True), 1)
+        self.p.write_int32(LoaderGate.TARGET, 2)
+        self.assertIsNone(self.gate.held_module(settled=True))
+        self.assertEqual(self.gate.held_module(settled=True), 2)
+
+    def test_target_or_handle_changing_between_reads_is_not_held(self):
+        self.gate.arm()
+        for after in ([4, 1, 2, 0x200000], [4, 1, 1, 0x210000]):
+            self.p.batch_read_int32 = Mock(side_effect=[[4, 1, 1, 0x200000], after])
+            self.assertIsNone(self.gate.held_module())
+
+    def test_recheck_rejects_same_module_replaced_after_settling(self):
+        self.gate.arm()
+        self.p.batch_write_int32([(LoaderGate.STATE, 4), (LoaderGate.STATUS, 1),
+                                 (LoaderGate.TARGET, 1), (LoaderGate.HANDLE, 0x200000)])
+        self.assertIsNone(self.gate.held_module(settled=True))
+        self.assertEqual(self.gate.held_module(settled=True), 1)
+        self.p.write_int32(LoaderGate.HANDLE, 0x210000)
+        self.assertIsNone(self.gate.held_module())
+
+    def test_leaving_held_state_restarts_settling(self):
+        self.gate.arm()
+        self.p.batch_write_int32([(LoaderGate.STATE, 4), (LoaderGate.STATUS, 1),
+                                 (LoaderGate.TARGET, 1), (LoaderGate.HANDLE, 0x200000)])
+        self.assertIsNone(self.gate.held_module(settled=True))
+        self.p.write_int32(LoaderGate.STATUS, 0)
+        self.assertIsNone(self.gate.held_module(settled=True))
+        self.p.write_int32(LoaderGate.STATUS, 1)
+        self.assertIsNone(self.gate.held_module(settled=True))
+        self.assertEqual(self.gate.held_module(settled=True), 1)
 
     def test_title_module_zero_is_recognized_so_it_can_be_released(self):
         self.gate.arm()

@@ -22,6 +22,7 @@ class LoaderGate:
     def __init__(self, pine):
         self.pine = pine
         self.armed = False
+        self._held_candidate = None
 
     def validate(self, *, patched=False):
         if self.pine.get_game_id() != "SCUS-97623":
@@ -53,22 +54,36 @@ class LoaderGate:
         self.validate()
         # Mark before the write so finally can recover a failed readback.
         self.armed = True
+        self._held_candidate = None
         self.pine.write_int32(self.SITE, self.HELD)
         self.validate(patched=True)
 
-    def held_module(self):
+    def held_module(self, *, settled=False):
         if not self.armed:
+            self._held_candidate = None
             return None
         self.validate(patched=True)
         p = self.pine
-        before = (p.read_int32(self.STATE), p.read_int32(self.STATUS))
-        target, handle = p.read_int32(self.TARGET), p.read_int32(self.HANDLE)
-        after = (p.read_int32(self.STATE), p.read_int32(self.STATUS))
+        addresses = [self.STATE, self.STATUS, self.TARGET, self.HANDLE]
+        before = tuple(p.batch_read_int32(addresses))
+        after = tuple(p.batch_read_int32(addresses))
+        state, status, target, handle = before
         # State 4 + completed relocation. State 5 can still display a loading
         # screen but the level thread is already running and is NOT safe.
-        if before == after == (4, 1) and 0 <= target < 33 and handle:
-            return target
-        return None
+        if before != after or (state, status) != (4, 1) or not 0 <= target < 33 or not handle:
+            self._held_candidate = None
+            return None
+        if settled:
+            # NativeRuntime calls once per poll. Do not scan or patch the DLL
+            # on the first observation of completed relocation; the entire
+            # loader identity must remain held through the next poll.
+            previous, self._held_candidate = self._held_candidate, before
+            if previous != before:
+                return None
+        elif self._held_candidate is not None and self._held_candidate != before:
+            self._held_candidate = None
+            return None
+        return target
 
     def release(self):
         if not self.armed:
@@ -83,3 +98,4 @@ class LoaderGate:
             raise RuntimeError("Barrier was replaced; refusing to overwrite unknown code")
         self.validate()
         self.armed = False
+        self._held_candidate = None

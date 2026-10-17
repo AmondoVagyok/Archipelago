@@ -1,8 +1,7 @@
-"""Shared trackers for locations that each have a native completion check."""
 from collections.abc import Iterable
 from typing import TYPE_CHECKING
 
-from ...constants.types import EventFlag
+from ...constants import EventFlag
 
 if TYPE_CHECKING:
     from ...pypine import Pine

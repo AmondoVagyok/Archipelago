@@ -1,4 +1,3 @@
-"""Gadgetbot Challenge locations and their native completion flags."""
 from dataclasses import dataclass
 
 from .types import EventFlag

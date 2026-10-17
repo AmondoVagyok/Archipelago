@@ -1,8 +1,7 @@
 """Native location interception: picks the patch plan for the loaded module and installs, polls and restores it."""
-from ...constants.native_functions import NativeFunctions
-from ...constants.vendor import vendor_location_name
-from ...constants.weapons import EQUIPMENT_INTERNAL_TO_DISPLAY
-from .asm import MARKER
+from ...constants import EQUIPMENT_INTERNAL_TO_DISPLAY, NativeFunctions, vendor_location_name
+from ..batch_io import read_blocks, write_blocks
+from .asm import MARKER, packed
 from .vendor_only import VendorOnly
 from .weapon_pickup import WeaponPickup
 from .equipment_only import EquipmentOnly
@@ -66,8 +65,9 @@ class LocationHooks:
         if not self.patches or self.installed:
             raise RuntimeError("No fresh patch plan")
         assert p.get_game_id() == "SCUS-97623"
-        assert p.read_int32(0x206328) == self.module and p.read_int32(0x206324) == 0xFFFFFFFF
-        assert p.read_int32(screen_address) in (8, 14, 16), "Open vendor or Case Files before installing"
+        module, status, screen = p.batch_read_int32([0x206328, 0x206324, screen_address])
+        assert module == self.module and status == 0xFFFFFFFF
+        assert screen in (8, 14, 16), "Open vendor or Case Files before installing"
         self._install_plan()
 
     def install_at_loader_gate(self, gate):
@@ -84,41 +84,40 @@ class LocationHooks:
 
     def _install_plan(self):
         p = self.pine
-        for patch in self.patches:
-            assert p.read_bytes(patch.address, len(patch.original)) == patch.original, "Code changed since planning"
-        attempted = []
+        originals = [patch.original for patch in self.patches]
+        replacements = [patch.replacement for patch in self.patches]
+        current = read_blocks(p, [(patch.address, len(patch.original)) for patch in self.patches])
+        assert current == originals, "Code changed since planning"
+        tables = list(self.tables.items())
         try:
-            for patch in self.patches:
-                attempted.append(patch)
-                p.write_bytes(patch.address, patch.replacement)
-            for patch in self.patches:
-                assert p.read_bytes(patch.address, len(patch.replacement)) == patch.replacement
-            for kind, table in self.tables.items():
-                flags = p.read_bytes(table, 40)
+            write_blocks(p, [(patch.address, patch.replacement) for patch in self.patches])
+            readback = read_blocks(p, [*((patch.address, len(patch.replacement)) for patch in self.patches),
+                                       *((table, 40) for _, table in tables)])
+            assert readback[:len(self.patches)] == replacements
+            for (kind, _), flags in zip(tables, readback[len(self.patches):]):
                 for slot, name in self.locations[kind].items():
                     unchecked = 3 if kind == "titan" else 1
                     assert flags[slot] == (2 if name in self.reported else unchecked)
         except Exception as err:
             # Caller keeps native execution parked throughout installation.
             # Undo even a partially transmitted write before releasing it.
-            for patch in reversed(attempted):
-                p.write_bytes(patch.address, patch.original)
-                if p.read_bytes(patch.address, len(patch.original)) != patch.original:
-                    raise RuntimeError("Hook installation rollback readback failed") from err
+            write_blocks(p, [(patch.address, patch.original) for patch in reversed(self.patches)])
+            if read_blocks(p, [(patch.address, len(patch.original)) for patch in self.patches]) != originals:
+                raise RuntimeError("Hook installation rollback readback failed") from err
             raise
         self.installed = True
 
     def poll(self):
         if not self.installed:
             return []
-        if not self.is_current():
+        tables = self._read_if_current([(table, 40) for table in self.tables.values()])
+        if tables is None:
             # A savestate or same-level reload can replace code without
             # changing the module id. The client must install again.
             self.installed = False
             return []
         found = []
-        for kind, table in self.tables.items():
-            flags = self.pine.read_bytes(table, 40)
+        for kind, flags in zip(self.tables, tables):
             for slot, name in self.locations[kind].items():
                 if flags[slot] == 2 and name not in self.reported:
                     found.append(name)
@@ -126,37 +125,45 @@ class LocationHooks:
         return found
 
     def is_current(self):
-        return (self.marker_address is not None
-                and self.pine.read_int32(0x206328) == self.module
-                and self.pine.read_bytes(self.marker_address, len(MARKER)) == MARKER)
+        return self._read_if_current([]) is not None
+
+    def _read_if_current(self, spans):
+        if self.marker_address is None:
+            return None
+        module, marker, *data = read_blocks(self.pine, [(0x206328, 4), (self.marker_address, len(MARKER)), *spans])
+        if int.from_bytes(module, "little") != self.module or marker != MARKER:
+            return None
+        return data
 
     def sync_checked(self, checked):
         """Server-confirmed checks suppress offers/spawns, never grant items."""
         if not self.installed:
             self.reported.update(checked)
             return
-        if not self.is_current():
+        kinds = list(self.locations)
+        tables = self._read_if_current([(self.tables[kind], 40) for kind in kinds])
+        if tables is None:
             self.installed = False
             return
         checked = set(checked)
         writes = [(self.tables[kind] + slot, 2)
-                  for kind, mapping in self.locations.items()
-                  for slot, name in mapping.items() if name in checked
-                  and self.pine.read_int8(self.tables[kind] + slot) != 2]
+                  for kind, flags in zip(kinds, tables)
+                  for slot, name in self.locations[kind].items() if name in checked and flags[slot] != 2]
         if writes:
             self.pine.batch_write_int8(writes)
         self.reported.update(checked)
 
     def sync_entitlements(self, entitlements):
         """Keep the pre-object-init snapshot current for native restarts too."""
-        if self.entitlement_table is None or not self.installed or not self.is_current():
+        if self.entitlement_table is None or not self.installed:
             return
         flags = bytearray(40)
         for slot, value in entitlements.items():
             if not 0 <= slot < 40 or type(value) is not bool:
                 raise ValueError("Invalid AP entitlement")
             flags[slot] = 2 if value else 1
-        if self.pine.read_bytes(self.entitlement_table, 40) != flags:
+        current = self._read_if_current([(self.entitlement_table, 40)])
+        if current is not None and current[0] != flags:
             self.pine.write_bytes(self.entitlement_table, bytes(flags))
 
     def restore(self):
@@ -164,10 +171,8 @@ class LocationHooks:
             return
         p = self.pine
         assert p.get_game_id() == "SCUS-97623"
-        assert p.read_int32(0x206328) == self.module and p.read_int32(0x206324) == 0xFFFFFFFF
-        assert p.read_bytes(self.marker_address, len(MARKER)) == MARKER
+        assert self._read_if_current([(0x206324, 4)]) == [packed([0xFFFFFFFF])]
         # Restore entry calls before reclaiming their routines, and restore
         # the original pickup tail branch last.
-        for patch in reversed(self.patches):
-            p.write_bytes(patch.address, patch.original)
+        write_blocks(p, [(patch.address, patch.original) for patch in reversed(self.patches)])
         self.installed = False

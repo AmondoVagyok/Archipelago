@@ -1,9 +1,9 @@
 import unittest
 from unittest.mock import Mock
 
-from ..constants.titanium_bolts import TITANIUM_BOLTS_BY_MODULE
-from ..core.titanium_bolts import TitaniumBoltState
-from ..locations import TITANIUM_BOLT_LOCATIONS
+from ..constants import SACTitaniumBoltLocations
+from ..core import TitaniumBoltState
+from ..locations import TITANIUM_BOLT_FLAGS, TITANIUM_BOLT_LOCATIONS
 from .test_runtime import Memory
 
 
@@ -16,20 +16,18 @@ class TitaniumBoltTests(unittest.TestCase):
                                       bytes(self.data) if index == 0x28 else bytes([0]))
 
     def test_each_native_id_reports_only_its_own_location(self):
-        for module, names in TITANIUM_BOLTS_BY_MODULE.items():
-            for index, name in enumerate(names, start=1):
-                self.data[:] = bytes(15)
-                self.data[(module - 1) // 2] = 1 << (((module - 1) & 1) * 4 + index - 1)
-                found = self.reader.check()
-                self.assertEqual(found, [name])
-                self.reader.confirm(found[0])
-                self.assertEqual(self.reader.check(), [])
+        for name, (module, bit) in TITANIUM_BOLT_FLAGS.items():
+            self.data[:] = bytes(15)
+            self.data[(module - 1) // 2] = 1 << (((module - 1) & 1) * 4 + bit)
+            found = self.reader.check()
+            self.assertEqual(found, [name])
+            self.reader.confirm(found[0])
+            self.assertEqual(self.reader.check(), [])
 
     def test_unconfirmed_checks_are_retried_on_the_next_check(self):
-        first = TITANIUM_BOLTS_BY_MODULE[1][0]
+        first = SACTitaniumBoltLocations.BOLTAIRE_MUSEUM_1
         self.data[0] = 1
         self.assertEqual(self.reader.check(), [first])
-        # Not confirmed (the send was rejected), so check() reports it again.
         self.assertEqual(self.reader.check(), [first])
         self.reader.confirm(first)
         self.assertEqual(self.reader.check(), [])
@@ -47,7 +45,7 @@ class TitaniumBoltTests(unittest.TestCase):
         self.assertEqual(self.reader.check(), [])
 
     def test_reconnect_deduplicates_server_checks_without_baselining_new_ones(self):
-        first, second = TITANIUM_BOLTS_BY_MODULE[1]
+        first, second = SACTitaniumBoltLocations.BOLTAIRE_MUSEUM_1, SACTitaniumBoltLocations.BOLTAIRE_MUSEUM_2
         self.reader.sync_from_ap({first})
         self.data[0] = 3
         self.reader.sync()
@@ -64,4 +62,4 @@ class TitaniumBoltTests(unittest.TestCase):
     def test_all_bolts_are_always_on(self):
         self.assertEqual(len(TITANIUM_BOLT_LOCATIONS), 23)
         for data in TITANIUM_BOLT_LOCATIONS.values():
-            self.assertTrue(data.available(Mock()))  # no option gates a titanium bolt
+            self.assertTrue(data.available(Mock()))

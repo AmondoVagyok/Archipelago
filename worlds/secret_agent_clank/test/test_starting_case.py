@@ -5,10 +5,17 @@ from pathlib import Path
 from test.general import gen_steps, setup_multiworld
 from worlds.AutoWorld import call_all
 
-from ..constants import ALL_CASES, CASE_NAME_TO_INFOBOT, SACCases
-from ..constants.native_modules import CASE_MODULES
-from ..core.patches import jump, packed
-from ..core.patches.starting_case import StartingCase
+from ..constants import (
+    ALL_CASES,
+    CASE_MODULES,
+    CASE_NAME_TO_CASE,
+    CASE_NAME_TO_INFOBOT,
+    PLANET_ACCESS_ITEM_NAME,
+    PROGRESSIVE_PLANET_ITEM_NAME,
+    SACCases,
+)
+from ..core.inventories import resolve_owned_cases
+from ..core.patches import StartingCase, jump, packed
 from ..world import SecretAgentClankWorld
 from .test_runtime import Memory
 
@@ -48,6 +55,22 @@ class StartingCaseTests(unittest.TestCase):
         self.assertIn(CASE_NAME_TO_INFOBOT[saved["starting_case"]],
                       [item.name for item in restored.precollected_items[1]])
 
+    def test_two_random_starts_include_a_clank_case(self):
+        by_name = {case.name: case for case in ALL_CASES}
+        pairs = set()
+        for mode in ("cases", "planets", "progressive_planet", "character_unlocks"):
+            for seed in range(10):
+                with self.subTest(mode=mode, seed=seed):
+                    world = setup_multiworld(SecretAgentClankWorld, seed=seed, options={
+                        "operatives": {"Qwark": 1}, "goal": "qwark_opera", "infobots": mode}).worlds[1]
+                    pair = (world.starting_case, world.second_starting_case)
+                    self.assertNotEqual(*pair)
+                    self.assertIn("Clank", {by_name[name].operative for name in pair})
+                    for name in pair:
+                        self.assertTrue(world.multiworld.state.can_reach(name, "Region", 1))
+                    pairs.add(pair)
+        self.assertGreater(len(pairs), 5)
+
     def test_random_start_respects_characters_and_access_in_every_mode(self):
         observed = set()
         for mode in ("cases", "planets", "progressive_planet", "character_unlocks"):
@@ -59,11 +82,49 @@ class StartingCaseTests(unittest.TestCase):
                 name = world.starting_case
                 observed.add(name)
                 case = next(case for case in ALL_CASES if case.name == name)
-                self.assertIn(case.operative, ("Ratchet", "Qwark", "Gadgetbots"))
-                self.assertIn(CASE_NAME_TO_INFOBOT[name], [i.name for i in mw.precollected_items[1]])
+                self.assertIn(case.operative, ("Ratchet", "Clank", "Qwark", "Gadgetbots"))
                 self.assertTrue(mw.state.can_reach(name, "Region", 1))
                 self.assertEqual(world.fill_slot_data()["starting_case"], name)
         self.assertGreater(len(observed), 1)
+
+    def test_planet_modes_start_with_planets_not_case_files(self):
+        for mode in ("planets", "progressive_planet"):
+            for seed in range(8):
+                with self.subTest(mode=mode, seed=seed):
+                    mw = setup_multiworld(SecretAgentClankWorld, seed=seed, options={
+                        "operatives": {"Ratchet": 1, "Qwark": 1, "Gadgetbots": 1}, "infobots": mode})
+                    world = mw.worlds[1]
+                    names = [item.name for item in mw.precollected_items[1]]
+                    pool = [item.name for item in mw.itempool if item.player == 1]
+                    for case_name in (world.starting_case, world.second_starting_case):
+                        planet = CASE_NAME_TO_CASE[case_name].planet
+                        self.assertTrue(mw.state.can_reach(case_name, "Region", 1))
+                        if mode == "progressive_planet":
+                            needed = world.planet_cases[planet].index(case_name) + 1
+                            self.assertGreaterEqual(names.count(PROGRESSIVE_PLANET_ITEM_NAME[planet]), needed)
+                            self.assertNotIn(CASE_NAME_TO_INFOBOT[case_name], names)
+                        elif planet in PLANET_ACCESS_ITEM_NAME:
+                            self.assertIn(PLANET_ACCESS_ITEM_NAME[planet], names)
+                            self.assertNotIn(PLANET_ACCESS_ITEM_NAME[planet], pool)
+                            self.assertNotIn(CASE_NAME_TO_INFOBOT[case_name], names)
+                    if mode == "progressive_planet":
+                        for planet, cases in world.planet_cases.items():
+                            item = PROGRESSIVE_PLANET_ITEM_NAME[planet]
+                            self.assertEqual(names.count(item) + pool.count(item), len(cases))
+
+    def test_progressive_planets_unlock_only_their_own_cases(self):
+        for seed in range(6):
+            with self.subTest(seed=seed):
+                mw = setup_multiworld(SecretAgentClankWorld, seed=seed, options={"infobots": "progressive_planet"})
+                world = mw.worlds[1]
+                names = [item.name for item in mw.precollected_items[1]]
+                starts = (world.starting_case, world.second_starting_case)
+                owned = resolve_owned_cases(names, planet_cases=world.planet_cases)
+                expected = {name for planet, cases in world.planet_cases.items()
+                            for name in cases[:max((cases.index(start) + 1 for start in starts if start in cases),
+                                                   default=0)]}
+                self.assertEqual(owned, expected)
+                self.assertLessEqual(len(owned), 2 * max(len(cases) for cases in world.planet_cases.values()))
 
     def test_install_idempotent_restore_and_disabled_validation(self):
         p = FrontendMemory()
@@ -121,8 +182,6 @@ class StartingCaseTests(unittest.TestCase):
         self.assertEqual(p.read_bytes(load, 8), expected)
 
     def test_wrapper_executes_init_then_sets_destination_and_shared_flags(self):
-        # Execute the emitted instructions with real branch delay semantics.
-        # Model the native initializer as a call that clobbers caller registers.
         for name, flags in [(SACCases.MAX_SECURITY_CELLS, (0, 0)),
                             (SACCases.ASYANICA_ROOFTOPS, (1, 0)),
                             (SACCases.ROOFTOP_DEATHTRAP, (0, 0)),

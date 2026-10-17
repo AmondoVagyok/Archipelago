@@ -14,9 +14,7 @@ from Options import (
     Toggle,
 )
 
-from .constants.cheats import TRAP_DURATIONS
-from .constants.operatives import ALL_OPERATIVES
-from .constants.stealth import STEALTH_MAX_PER_CASE
+from .constants import OPTIONAL_OPERATIVES, STEALTH_MAX_PER_CASE, TRAP_DURATIONS, SACOperatives
 
 
 class ClankSkin(Choice):
@@ -87,22 +85,14 @@ class AllCutscenes(Toggle):
 class SkillPoints(Choice):
     """Off: no skill point checks. Easy: the easier challenges only.
     Normal: Easy and Normal challenges. Hard: all three difficulties.
-    Checks requiring disabled operatives are excluded. Legacy true means hard.
+    Checks requiring disabled operatives are excluded.
     """
     display_name = "Skill Points"
     option_off = 0
     option_easy = 1
     option_normal = 2
     option_hard = 3
-    alias_false = 0
-    alias_true = 3
     default = 0
-
-    @classmethod
-    def from_any(cls, data):
-        if isinstance(data, bool):
-            return cls(cls.option_hard if data else cls.option_off)
-        return super().from_any(data)
 
 
 class RandomSkillPoints(Toggle):
@@ -155,17 +145,13 @@ class Infobots(Choice):
 
 
 class Operatives(OptionCounter):
-    """Enabled operatives (Ratchet, Clank, Qwark, Gadgetbots, and Special Missions)."""
+    """Enabled optional operatives (Ratchet, Qwark, Gadgetbots, and Special Missions).
+    Clank is always included and cannot be disabled."""
     display_name = "Operatives"
     min = 0
     max = 1
-    valid_keys = ALL_OPERATIVES
-    default = dict.fromkeys(ALL_OPERATIVES, 1)
-
-    def __init__(self, value: dict[str, int]) -> None:
-        # Drop zeros so a disabled operative is simply absent from .value.
-        value = {name: amount for name, amount in value.items() if amount != 0}
-        super().__init__(value)
+    valid_keys = OPTIONAL_OPERATIVES
+    default = dict.fromkeys(OPTIONAL_OPERATIVES, 1)
 
 
 class Goal(Choice):
@@ -230,21 +216,13 @@ class ProgressiveWeapons(Choice):
     """Off: weapons level through combat normally.
     Manual: the first copy unlocks a weapon; further copies raise its combat XP level cap.
     Automatic: each copy immediately grants the next level, with combat XP disabled.
-    Only upgradeable weapons participate. Legacy true means automatic.
+    Only upgradeable weapons participate.
     """
     display_name = "Progressive Weapons"
     option_off = 0
     option_manual = 1
     option_automatic = 2
-    alias_true = 2
-    alias_false = 0
     default = 0
-
-    @classmethod
-    def from_any(cls, data):
-        if isinstance(data, bool):
-            return cls(cls.option_automatic if data else cls.option_off)
-        return super().from_any(data)
 
 
 class WeaponLevelChecks(Choice):
@@ -264,7 +242,7 @@ class StealthTakedownChecks(Range):
     """Successful Clank stealth takedown checks per case: takedowns 1 up to this
     number in every case that has stealth takedowns, capped at what the case offers.
     Takedowns add up across replays of a case. 0 turns them off.
-    Adds nothing when Clank is disabled. Progress is tracked while the AP client is connected.
+    Progress is tracked while the AP client is connected.
     The locations included in this setting are:
     - Boltaire (Clank) - Boltaire Museum
     - Asyanica (Clank) - Asyanica Rooftops
@@ -283,7 +261,7 @@ class StealthTakedownChecks(Range):
 
 class NanotechChecks(Toggle):
     """Add a location for each Clank nanotech increase: 16-60 in NG, 16-85 in NG+.
-    Requires Clank to be enabled. Other operatives never award these locations.
+    Other operatives never award these locations.
     """
     display_name = "Clank Nanotech Locations"
 
@@ -353,7 +331,7 @@ class StartingBolts(Range):
     display_name = "Starting Bolts"
     range_start = 0
     range_end = 100_000
-    default = 5_000
+    default = 25_000
 
 
 class TrapChance(Range):
@@ -422,13 +400,11 @@ class SecretAgentClankOptions(PerGameCommonOptions):
 
     @property
     def keycard_checks_enabled(self):
-        return getattr(self, '_legacy_collectible_checks',
-                       (bool(self.keycards_and_alien_codes),) * 2)[0]
+        return bool(self.keycards_and_alien_codes)
 
     @property
     def alien_code_checks_enabled(self):
-        return getattr(self, '_legacy_collectible_checks',
-                       (bool(self.keycards_and_alien_codes),) * 2)[1]
+        return bool(self.keycards_and_alien_codes)
 
 
 sac_option_groups = [
@@ -468,3 +444,7 @@ sac_option_groups = [
     ]),
     OptionGroup("SAC Cosmetics", [ClankSkin, RatchetSkin, QwarkSkin]),
 ]
+
+
+def enabled_operatives(options: SecretAgentClankOptions) -> frozenset[str]:
+    return frozenset({SACOperatives.CLANK, *(name for name, amount in options.operatives.value.items() if amount)})

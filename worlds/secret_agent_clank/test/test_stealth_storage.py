@@ -3,8 +3,8 @@ import unittest
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
-from ..client.context import SACContext
-from ..core.stealth import StealthState
+from ..client import SACContext
+from ..core import StealthState
 
 
 class StealthStorageTests(unittest.IsolatedAsyncioTestCase):
@@ -17,8 +17,6 @@ class StealthStorageTests(unittest.IsolatedAsyncioTestCase):
 
         async def send(messages):
             for message in messages:
-                # MultiServer's default operation is a no-op. Initialization
-                # comes from the packet-level default (otherwise integer 0).
                 value = stored.get(message['key'], message.get('default', 0))
                 for operation in message['operations']:
                     if operation['operation'] == 'replace':
@@ -32,7 +30,6 @@ class StealthStorageTests(unittest.IsolatedAsyncioTestCase):
         async def request(command, counts):
             self.assertEqual(command, 'stealth')
             state.load(counts)
-            # Subsequent count updates must work with the stored value too.
             stored[key].update({})
 
         ctx.send_msgs = AsyncMock(side_effect=send)

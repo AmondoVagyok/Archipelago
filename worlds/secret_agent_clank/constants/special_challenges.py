@@ -1,4 +1,3 @@
-"""Special Missions challenge locations. Each address is a plain 0/1 byte, confirmed live."""
 from dataclasses import dataclass
 
 from .types import EventFlag

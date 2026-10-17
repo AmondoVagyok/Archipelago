@@ -1,7 +1,4 @@
-"""Boltaire Museum: the case region and every location in it, with its access rule."""
-from typing import TYPE_CHECKING
-
-from rule_builder.rules import Has, HasAll, Rule
+from rule_builder.rules import Has, HasAll
 
 from ..constants import (
     SACAlienCodeLocations,
@@ -13,20 +10,17 @@ from ..constants import (
     SACPickups,
     SACSkillPointLocations,
     SACTitaniumBoltLocations,
+    SACVendor,
 )
-from ..constants.challenge_mode import PROGRESSIVE_CHALLENGE_MODE
+from ..rules import ProgressiveChallengeModeRule, VendorCaseRule
 from .model import CaseRegion, SACLocation, SACLocationType
 
-if TYPE_CHECKING:
-    from ..world import SecretAgentClankWorld
-
-_FINISH_MISSION = HasAll(SACClankGadgets.BLACK_OUT_PEN, SACClankWeapons.THROWTIE, SACClankGadgets.JETBOOTS)
+_FINISH_MISSION_ITEMS = (SACClankGadgets.BLACK_OUT_PEN, SACClankWeapons.THROWTIE, SACClankGadgets.JETBOOTS)
+_FINISH_MISSION = HasAll(*_FINISH_MISSION_ITEMS)
 
 
-def _challenge_mode(world: "SecretAgentClankWorld") -> "Rule | None":
-    """The shades pickup only spawns in challenge mode, which progressive seeds must unlock first."""
-    return Has(PROGRESSIVE_CHALLENGE_MODE) if world.options.progressive_challenge_mode else None
-
+_VENDOR = VendorCaseRule(SACCases.BOLTAIRE_MUSEUM)
+_CHALLENGE_VENDOR = _VENDOR & ProgressiveChallengeModeRule()
 
 REGION = CaseRegion(SACCases.BOLTAIRE_MUSEUM, (
     SACLocation(SACPickups.BOLTAIRE_MUSEUM_DUAL_LACERATORS,
@@ -34,11 +28,12 @@ REGION = CaseRegion(SACCases.BOLTAIRE_MUSEUM, (
     SACLocation(SACPickups.BOLTAIRE_MUSEUM_TIE_A_RANG, SACLocationType.CLANK_WEAPON),
     SACLocation(SACPickups.BOLTAIRE_MUSEUM_JET_BOOTS, SACLocationType.CLANK_GADGET, _FINISH_MISSION),
     SACLocation(SACPickups.BOLTAIRE_MUSEUM_BLACKOUT_PEN, SACLocationType.GADGET_PICKUP),
-    SACLocation(SACPickups.BOLTAIRE_MUSEUM_THERM_OPTIC_SHADES, SACLocationType.GADGET_PICKUP, _challenge_mode),
+    SACLocation(SACPickups.BOLTAIRE_MUSEUM_THERM_OPTIC_SHADES, SACLocationType.GADGET_PICKUP, ProgressiveChallengeModeRule()),
     SACLocation(SACTitaniumBoltLocations.BOLTAIRE_MUSEUM_1,
-                SACLocationType.TITANIUM_BOLT, Has(SACClankGadgets.JETBOOTS)),
+                SACLocationType.TITANIUM_BOLT, Has(SACClankGadgets.JETBOOTS), flag_bit=0),
     SACLocation(SACTitaniumBoltLocations.BOLTAIRE_MUSEUM_2,
-                SACLocationType.TITANIUM_BOLT, HasAll(SACClankGadgets.JETBOOTS, SACClankGadgets.BLACK_OUT_PEN)),
+                SACLocationType.TITANIUM_BOLT, HasAll(SACClankGadgets.JETBOOTS, SACClankGadgets.BLACK_OUT_PEN),
+                flag_bit=1),
     SACLocation(SACMissionLocations.BOLTAIRE_MUSEUM_COMPLETE, SACLocationType.CASE_COMPLETE),
     SACLocation(SACMissionLocations.BOLTAIRE_MUSEUM_ESCAPE_THE_RAVINE, SACLocationType.MISSION),
     SACLocation(SACMissionLocations.BOLTAIRE_MUSEUM_GET_INSIDE_THE_MUSEUM, SACLocationType.MISSION),
@@ -47,9 +42,18 @@ REGION = CaseRegion(SACCases.BOLTAIRE_MUSEUM, (
     SACLocation(SACSkillPointLocations.BOLTAIRE_MUSEUM_SILENT_NIGHT, SACLocationType.SKILL_POINT, _FINISH_MISSION),
     SACLocation(SACCutsceneLocations.BOLTAIRE_MUSEUM_ENTER_CUTSCENE, SACLocationType.CUTSCENE),
     SACLocation(SACAlienCodeLocations.BOLTAIRE_MUSEUM_THE_LEGENDS,
-                SACLocationType.ALIEN_CODE, Has(SACClankGadgets.THERM_OPTIC_SHADES)),
+                SACLocationType.ALIEN_CODE, Has(SACClankGadgets.THERM_OPTIC_SHADES), flag_bit=1),
     SACLocation(SACAlienCodeLocations.BOLTAIRE_MUSEUM_RONNS_SECRET,
-                SACLocationType.ALIEN_CODE, _FINISH_MISSION & Has(SACClankGadgets.THERM_OPTIC_SHADES)),
+                SACLocationType.ALIEN_CODE, HasAll(*_FINISH_MISSION_ITEMS, SACClankGadgets.THERM_OPTIC_SHADES),
+                flag_bit=0),
     SACLocation(SACAlienCodeLocations.BOLTAIRE_MUSEUM_BENS_SECRET,
-                SACLocationType.ALIEN_CODE, _FINISH_MISSION & Has(SACClankGadgets.THERM_OPTIC_SHADES)),
+                SACLocationType.ALIEN_CODE, HasAll(*_FINISH_MISSION_ITEMS, SACClankGadgets.THERM_OPTIC_SHADES),
+                flag_bit=2),
+    SACLocation(SACVendor.BOLTAIRE_MUSEUM_HOLO_KNUCKLES, SACLocationType.VENDOR, _VENDOR),
+    SACLocation(SACVendor.BOLTAIRE_MUSEUM_CLANK_FU_KICK, SACLocationType.VENDOR, _VENDOR),
+    SACLocation(SACVendor.BOLTAIRE_MUSEUM_PROTO_WHIRLWIND_THROWTIE, SACLocationType.TITAN_VENDOR, _CHALLENGE_VENDOR),
+    SACLocation(SACVendor.BOLTAIRE_MUSEUM_CLANK_PROTO_HARDLIGHT_FIST, SACLocationType.TITAN_VENDOR, _CHALLENGE_VENDOR),
+    SACLocation(SACVendor.BOLTAIRE_MUSEUM_TITAN_DUAL_VINDICATORS, SACLocationType.TITAN_VENDOR, _CHALLENGE_VENDOR),
+    SACLocation(SACVendor.CHALLENGE_MODE_RYNO, SACLocationType.VENDOR, _CHALLENGE_VENDOR),
+    SACLocation(SACVendor.CHALLENGE_MODE_HOT_FOOT_21_BETA, SACLocationType.VENDOR, _CHALLENGE_VENDOR),
 ))

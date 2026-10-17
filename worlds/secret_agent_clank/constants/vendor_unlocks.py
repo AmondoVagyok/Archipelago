@@ -39,7 +39,31 @@ MOD_CASES = {
     25: C.VENANTONIO_LABS, 28: C.VENANTONIO_LABS, 29: C.VENANTONIO_LABS,
 }
 
-# Display names are canonical AP location names for base purchases.
+VENDOR_REQUIREMENT_ITEMS: dict[str, tuple[str, ...]] = {
+    C.BOLTAIRE_MUSEUM: (G.BLACK_OUT_PEN,),
+    C.MAX_SECURITY_CELLS: (R.RATCHETPDA,),
+    C.ASYANICA_ROOFTOPS: (),
+    C.COUNTESS_VILLA: (),
+    C.THE_MESS_HALL: (R.RATCHETPDA,),
+    C.AZCOTAL_ALLEY: (),
+    C.GONDOLA_ASCENT: (),
+    C.HIGH_ROLLERS_CASINO: (G.HOLOMONOCLE, W.CUFFLINK),
+    C.THE_EXERCISE_YARD: (R.RATCHETPDA,),
+    C.VENANTONIO_LABS: (),
+    C.GALACTIC_BOLT_RESERVE: (),
+    C.THE_SHOWERS: (R.RATCHETPDA,),
+    C.SPACESHIP_GRAVEYARD: (),
+    C.PRISON_BREAKOUT: (R.RATCHETPDA,),
+    C.UNDERWATER_BUNKER: (),
+    C.KLUNKS_LAIR: (),
+}
+
+
+def vendor_unlocked_cases(owned_cases, received_names) -> frozenset[str]:
+    """Owned cases whose own vendor the player can reach with `received_names`."""
+    received = set(received_names)
+    return frozenset(case for case in owned_cases
+                     if case in VENDOR_REQUIREMENT_ITEMS and received.issuperset(VENDOR_REQUIREMENT_ITEMS[case]))
 
 VENDOR_CASES = {
     name: WEAPON_CASES[EQUIPMENT_DISPLAY_TO_INTERNAL[name]]
@@ -49,7 +73,7 @@ VENDOR_CASES = {
 VENDOR_CASES.update({
     G.CLANKPDA: C.AZCOTAL_ALLEY, G.HYPNOWATCH: C.HIGH_ROLLERS_CASINO,
     G.BOLTGRABBER: C.GALACTIC_BOLT_RESERVE, W.SUPERKICK: C.BOLTAIRE_MUSEUM,
-    R.KICKBLAST: C.VENANTONIO_LABS, W.KICKSPLOSION: C.BOLTAIRE_MUSEUM,
+    W.KICKBLAST: C.VENANTONIO_LABS, W.KICKSPLOSION: C.BOLTAIRE_MUSEUM,
 })
 VENDOR_CASES = {vendor_location_name(name): case for name, case in VENDOR_CASES.items()}
 VENDOR_CASES.update({mod.location: MOD_CASES[mod.mod_id] for mod in VENDOR_MODS})

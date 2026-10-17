@@ -1,6 +1,10 @@
 import unittest
+from types import SimpleNamespace
+from unittest.mock import Mock, patch
 
-from ..core.notifications import ItemNotifications, receipt_text
+from NetUtils import NetworkItem
+
+from ..core import ItemNotifications, death_text, receipt_text, sent_text
 from .test_runtime import Memory
 
 
@@ -44,3 +48,41 @@ class NotificationTests(unittest.TestCase):
         self.assertIn(b'Wrench', self.p.read_bytes(0x110000, 256))
         self.n.tick()
         self.assertEqual(len(self.n.queue), 1)
+
+
+class SentNotificationTests(unittest.TestCase):
+    def test_sent_text_names_item_and_receiver(self):
+        text = sent_text('Hookshot', 'Bob\nX', True)
+        self.assertTrue(text.startswith(b'Sent \x90\x03Hookshot'))
+        self.assertIn(b'to \x90\x0bBob?X', text)
+        self.assertTrue(text.endswith(b'\0'))
+        self.assertIn(b'\x90\x0d', sent_text('Hookshot', 'Bob'))
+
+    def test_only_our_items_for_other_players_are_shown(self):
+        from ..client.context import SACContext
+        ctx = SimpleNamespace(slot=1, _worker=SimpleNamespace(request=Mock(return_value=None)),
+                              player_names={1: "Me", 2: "Bob"},
+                              item_names=SimpleNamespace(lookup_in_slot=lambda item, slot: f"item{item}@{slot}"))
+        cases = (
+            (NetworkItem(7, 100, 1, 4), 2, ("item7@2", "Bob", True)),
+            (NetworkItem(7, 100, 1, 0), 1, None),
+            (NetworkItem(7, 100, 2, 0), 1, None),
+        )
+        for item, receiver, expected in cases:
+            with self.subTest(item=item, receiver=receiver), \
+                    patch("worlds.secret_agent_clank.client.context.async_start"):
+                ctx._worker.request.reset_mock()
+                SACContext._notify_sent_item(ctx, {"type": "ItemSend", "item": item, "receiving": receiver})
+                if expected is None:
+                    ctx._worker.request.assert_not_called()
+                else:
+                    ctx._worker.request.assert_called_once_with("sent", expected)
+
+
+class DeathNotificationTextTests(unittest.TestCase):
+    def test_death_text_names_source_and_cause(self):
+        text = death_text('Bob\nX', 'Bob died on Hydrano.')
+        self.assertTrue(text.startswith(b'DeathLink from \x90\x0bBob?X\x90\x01\n'))
+        self.assertIn(b'\x90\x03Bob died on Hydrano.', text)
+        self.assertTrue(text.endswith(b'\0'))
+        self.assertLess(len(death_text('S' * 200, 'C' * 200)), 256)

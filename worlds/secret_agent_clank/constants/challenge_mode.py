@@ -1,4 +1,3 @@
-"""Challenge-mode item identity and shared shop requirements."""
 from .vendor import NG_PLUS_VENDOR_LOCATIONS
 from .weapon_mods import VENDOR_MODS
 from .weapon_progression import TITAN_LOCATIONS

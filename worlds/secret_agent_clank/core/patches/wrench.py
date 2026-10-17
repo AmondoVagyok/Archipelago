@@ -1,8 +1,9 @@
 """Ratchet-only wrench input gates and progressive native mod entitlements."""
 import struct
 
-from ...constants.native_functions import NativeFunctions
+from ...constants import NativeFunctions
 from ..symbols import require
+from ..batch_io import read_blocks
 from .asm import Patch
 from .patch import PatchSet
 
@@ -37,11 +38,12 @@ class WrenchProgression(PatchSet):
             (NativeFunctions.RATCHET_UPDATE_CONTROLS_CROUCH_ACTION_BUTTONS, 0x228, 0x27BDFFE0, 0x30420020, 1),
             (NativeFunctions.RATCHET_CHECK_JUMP_ATTACK, 0x158, 0x27BDFFE0, 0x30420020, 1),
         )
-        for name, size, prologue, mask, expected in specs:
-            address = require(symbols, name)
-            if self.pine.read_int32(address) != prologue:
+        addresses = [require(symbols, name) for name, *_ in specs]
+        blocks = read_blocks(self.pine, [(address, size) for address, (_, size, *_) in zip(addresses, specs)])
+        for address, block, (name, size, prologue, mask, expected) in zip(addresses, blocks, specs):
+            code = struct.unpack("<" + "I" * (size // 4), block)
+            if code[0] != prologue:
                 raise RuntimeError(f"Unrecognized Ratchet wrench gate: {name}")
-            code = struct.unpack("<" + "I" * (size // 4), self.pine.read_bytes(address, size))
             sites = [(address + i * 4, word) for i, word in enumerate(code) if word == mask]
             if len(sites) != expected:
                 raise RuntimeError(f"Ratchet wrench input layout changed: {name}")
@@ -54,21 +56,24 @@ class WrenchProgression(PatchSet):
     def sync(self):
         if not self.enabled or not self.sites:
             return
-        if (self.pine.read_int32(0x206328) != self.module
-                or self.pine.read_int32(0x206324) != 0xFFFFFFFF):
+        power = (self.power_address,) if self.power_address is not None else ()
+        module, loading, *current = self.pine.batch_read_int32(
+            [0x206328, 0x206324, *power, *(address for address, _ in self.sites)])
+        if module != self.module or loading != 0xFFFFFFFF:
             return
-        for address, original in self.sites:
-            current = self.pine.read_int32(address)
-            if current not in (original, original & 0xFFFF0000):
-                raise RuntimeError("Wrench gate changed; refusing an unknown code write")
+        writes = []
         # Previously selected vanilla mods must not bypass AP ownership.
-        if self.power_address is not None:
-            selected = self.pine.read_int32(self.power_address)
+        if power:
+            selected = current.pop(0)
             if selected > max(0, self.count - 1):
-                self.pine.write_int32(self.power_address, 0)
-        # Each write changes only an ANDI immediate in one aligned word.
-        # Both versions are valid independently, including in a delay slot.
-        for address, original in self.sites:
+                writes.append((self.power_address, 0))
+        for (address, original), word in zip(self.sites, current):
+            if word not in (original, original & 0xFFFF0000):
+                raise RuntimeError("Wrench gate changed; refusing an unknown code write")
+            # Each write changes only an ANDI immediate in one aligned word.
+            # Both versions are valid independently, including in a delay slot.
             desired = original if self.count else original & 0xFFFF0000
-            if self.pine.read_int32(address) != desired:
-                self.pine.write_int32(address, desired)
+            if word != desired:
+                writes.append((address, desired))
+        if writes:
+            self.pine.batch_write_int32(writes)

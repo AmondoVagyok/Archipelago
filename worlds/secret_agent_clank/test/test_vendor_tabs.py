@@ -3,25 +3,21 @@ import unittest
 from pathlib import Path
 from types import SimpleNamespace
 
-from ..core.patches import PICKUP_LOCATIONS, VENDOR_LOCATIONS, LocationHooks
+from ..constants import PICKUP_LOCATIONS, VENDOR_LOCATIONS
+from ..core.patches import LocationHooks, VendorCatalog, VendorTabs, jump, packed, words
 from ..core.patches import mips as m
-from ..core.patches.asm import jump, packed, words
-from ..core.patches.vendor_catalog import VendorCatalog
-from ..core.patches.vendor_tabs import VendorTabs
-from ..core.symbols import RuntimeSymbols
+from ..core import RuntimeSymbols
 from .mips_cpu import CPU
 from .test_native_capture_plans import CaptureMemory
 
 
 def _signed16(word):
-    """Sign-extend an instruction's 16-bit immediate."""
     return (word & 32767) - (word & 32768)
 
 class VendorTabsTests(unittest.TestCase):
     def test_initial_tab_uses_live_available_stock(self):
         p = self.memory()
         entry, mode, descriptors, flags, builder = range(0x110000, 0x160000, 0x10000)
-        # Includes regular stock, a locked row, and a Titan upgrade.
         for states, expected in (((2, 1, 4), 1), ((1, 1, 4), 0),
                                   ((2, 1, 3), 0), ((2, 2, 4), 1)):
             with self.subTest(states=states):
@@ -90,12 +86,12 @@ class VendorTabsTests(unittest.TestCase):
         run(8 | 0x80, 1, 0, 8 | 0x80)
         self.assertEqual(rebuilds, [1])
         self.assertEqual(p.read_int8(dirty), 1)
-        run(0, 1, 8, 8)  # Holding Down / analog motion does not rebuild.
-        run(8, 1, 8, 8)  # Pressing the current tab again does not rebuild.
-        run(12, 1, 12, 12)  # Opposite physical directions together are ignored.
+        run(0, 1, 8, 8)
+        run(8, 1, 8, 8)
+        run(12, 1, 12, 12)
         run(4, 0, 0, 4)
-        run(0, 0, 4, 4)  # Analog Up does not switch tabs.
-        run(0x80, 0, 0x80, 0x80)  # Normal buying input passes through.
+        run(0, 0, 4, 4)
+        run(0x80, 0, 0x80, 0x80)
         self.assertEqual(rebuilds, [1, 0])
 
     def test_controller_address_sign_extends_and_rejects_changed_getter(self):
@@ -175,7 +171,6 @@ class VendorTabsTests(unittest.TestCase):
         p.write_int8(mode, 1)
         cpu = CPU(p)
         cpu.r[23] = upper << 16
-        # Native ammo rejects every gadget when none belongs to this operative.
         cpu.run(builder + 0x70, stop=builder + 0x738,
                 stubs={symbols['GADGET_IsGadgetOfChar__F8PLR_TYPE7eGADGET']: lambda c: c.r.__setitem__(2, 0)},
                 max_steps=5000)

@@ -1,4 +1,3 @@
-"""Rooftop Deathtrap: the case region and every location in it, with its access rule."""
 from ..constants import (
     SACCases,
     SACCutsceneLocations,

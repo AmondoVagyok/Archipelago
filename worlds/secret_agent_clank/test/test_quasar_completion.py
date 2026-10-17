@@ -2,12 +2,16 @@ import unittest
 from pathlib import Path
 from unittest.mock import Mock
 
-from ..constants.cutscenes import CUTSCENE_FLAGS, SACCutsceneLocations
-from ..constants.missions import CHAPTER_ENTRIES, MISSION_COMPLETE_NAME
-from ..constants.planets import SACCases, CASE_NAME_TO_CASE
-from ..core.core import Core
-from ..core.patches.mission_travel import MissionTravel
-from ..core.symbols import RuntimeSymbols
+from ..constants import (
+    CASE_NAME_TO_CASE,
+    CHAPTER_ENTRIES,
+    CUTSCENE_FLAGS,
+    MISSION_COMPLETE_NAME,
+    SACCases,
+    SACCutsceneLocations,
+)
+from ..core import Core, RuntimeSymbols
+from ..core.patches import MissionTravel
 from .test_runtime import Memory
 
 
@@ -30,7 +34,6 @@ class QuasarCompletionTests(unittest.TestCase):
                 intro = self.NEXT_INTRO
                 flag = CUTSCENE_FLAGS[intro]
                 p.data[flag.address] = flag.mask
-                # Retail derives this task state from the next case's intro.
                 p.write_int32(0x12000C, 3)
                 p.writes.clear()
                 self.assertIn(intro, core.cutscenes.check())
@@ -99,7 +102,6 @@ class QuasarCompletionTests(unittest.TestCase):
         changes = travel.prepare(symbols, module=self.MODULE)
         for change in changes:
             p.data[change.address:change.address + len(change.replacement)] = change.replacement
-        # Execute the short MIPS receipt routine, including its return delay slot.
         registers = [0] * 32
         registers[31] = 0x123456
         pc = changes[0].address

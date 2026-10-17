@@ -2,9 +2,8 @@ import unittest
 from pathlib import Path
 from unittest.mock import Mock
 
-from ..constants.cheats import SACTraps
-from ..core.symbols import RuntimeSymbols
-from ..core.traps import RATCHET_PACK_BIT, TRAP_BITS, Traps
+from ..constants import SACTraps
+from ..core import RATCHET_PACK_BIT, TRAP_BITS, RuntimeSymbols, Traps
 from .test_runtime import Memory
 
 

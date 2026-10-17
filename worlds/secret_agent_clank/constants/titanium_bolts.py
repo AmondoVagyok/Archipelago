@@ -1,4 +1,3 @@
-"""Titanium bolt locations, keyed by the USA game's per-module count table."""
 from dataclasses import dataclass
 
 
@@ -28,21 +27,3 @@ class SACTitaniumBoltLocations:
     PRISON_BREAKOUT_1 = "Prison Planet (Ratchet) - Prison Breakout!: T-Bolt: Complete Mega Challenge: Battle Royale"
     UNDERWATER_BUNKER_1 = "Hydrano (Clank) - Underwater Bunker: T-Bolt: Omni-Key Room Before End of Level"
 
-
-# Native module ID -> its bolts, in native bolt-ID order (IDs are one-based).
-TITANIUM_BOLTS_BY_MODULE: dict[int, tuple[str, ...]] = {
-    1: (SACTitaniumBoltLocations.BOLTAIRE_MUSEUM_1, SACTitaniumBoltLocations.BOLTAIRE_MUSEUM_2),
-    3: (SACTitaniumBoltLocations.MAX_SECURITY_CELLS_1,),
-    4: (SACTitaniumBoltLocations.ASYANICA_ROOFTOPS_1,),
-    9: (SACTitaniumBoltLocations.THE_MESS_HALL_1,),
-    10: (SACTitaniumBoltLocations.AZCOTAL_ALLEY_1, SACTitaniumBoltLocations.AZCOTAL_ALLEY_2, SACTitaniumBoltLocations.AZCOTAL_ALLEY_3),
-    11: (SACTitaniumBoltLocations.GONDOLA_ASCENT_1,),
-    13: (SACTitaniumBoltLocations.HIGH_ROLLERS_CASINO_1,),
-    14: (SACTitaniumBoltLocations.THE_EXERCISE_YARD_1,),
-    16: (SACTitaniumBoltLocations.VENANTONIO_LABS_1, SACTitaniumBoltLocations.VENANTONIO_LABS_2),
-    19: (SACTitaniumBoltLocations.GALACTIC_BOLT_RESERVE_1, SACTitaniumBoltLocations.GALACTIC_BOLT_RESERVE_2, SACTitaniumBoltLocations.GALACTIC_BOLT_RESERVE_3),
-    21: (SACTitaniumBoltLocations.THE_SHOWERS_1,),
-    22: (SACTitaniumBoltLocations.SPACESHIP_GRAVEYARD_1, SACTitaniumBoltLocations.SPACESHIP_GRAVEYARD_3, SACTitaniumBoltLocations.SPACESHIP_GRAVEYARD_2, SACTitaniumBoltLocations.SPACESHIP_GRAVEYARD_4),
-    25: (SACTitaniumBoltLocations.PRISON_BREAKOUT_1,),
-    29: (SACTitaniumBoltLocations.UNDERWATER_BUNKER_1,),
-}

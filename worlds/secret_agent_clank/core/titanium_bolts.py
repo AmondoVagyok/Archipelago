@@ -1,8 +1,8 @@
 """Read individual persistent titanium bolt flags, never the spendable total."""
 import struct
 
-from ..constants.titanium_bolts import TITANIUM_BOLTS_BY_MODULE
-from .global_flags import GlobalFlags, module_bit, read_module_counts
+from ..locations import TITANIUM_BOLT_FLAGS
+from .global_flags import GlobalFlags, module_bit, module_counts, read_module_counts
 
 
 class TitaniumBoltState:
@@ -20,8 +20,7 @@ class TitaniumBoltState:
         found_fn = symbols.get("GLOBALVARS_HasTitaniumBoltBeenFound__FUiUi")
         if count_fn is None or found_fn is None:
             return False
-        if read_module_counts(self.pine, count_fn) != {
-                module: len(names) for module, names in TITANIUM_BOLTS_BY_MODULE.items()}:
+        if read_module_counts(self.pine, count_fn) != module_counts(TITANIUM_BOLT_FLAGS):
             return False
         # Validate the native nibble/one-based ID calculation. The JAL's
         # relocated target varies between DLLs; all other words must match.
@@ -38,7 +37,6 @@ class TitaniumBoltState:
         return True
 
     def sync(self):
-        # Persistent checks must survive reconnects and collections during load.
         pass
 
     def sync_from_ap(self, checked):
@@ -50,9 +48,7 @@ class TitaniumBoltState:
         flags = self.flags.read(0x28, 15)
         if flags is None:
             return []
-        # Native bolt IDs are one-based, so bolt ID n is bit n - 1.
-        found = {name for module, names in TITANIUM_BOLTS_BY_MODULE.items()
-                 for bit, name in enumerate(names) if module_bit(flags, module, bit)}
+        found = {name for name, (module, bit) in TITANIUM_BOLT_FLAGS.items() if module_bit(flags, module, bit)}
         return sorted(found - self.reported)
 
     def confirm(self, name: str) -> None:

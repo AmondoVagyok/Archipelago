@@ -2,9 +2,9 @@
 
 Intercepts pickup grants, ownership gates and vendor purchases.
 """
-from ...constants.native_functions import NativeFunctions
+from ...constants import NativeFunctions
 from ..symbols import require
-from .asm import MARKER, Patch, branch, jump, packed, words
+from .asm import MARKER, branch, capture, jump, packed, words
 from .entitlements import Entitlements
 from .gameFlags import GameFlags
 from .patch import PatchSet
@@ -29,28 +29,33 @@ class WeaponPickup(PatchSet):
             NativeFunctions.GADGET_PLAYER_HAS_GADGET,
             NativeFunctions.GADGET_SET_GADGET_OWNERSHIP_STATUS,
         )
-        assert p.read_int32(give) == 0x27BDFF90, "Pickup prologue changed"
-        assert p.read_int32(give + 0x50) == jump(setter, True), "Pickup grant call changed"
-        assert p.read_int32(give + 0x54) == 0x2CC60002, "Pickup grant arguments changed"
-        assert p.read_int32(give + 0x58) == 0x8E450000, "Pickup tail changed"
-        assert words(p.read_bytes(give + 0x278, 28)) == [
+        (module, prologue, grant, grant_args, tail, gate, gate_args, collect, collect_args,
+         *epilogue) = p.batch_read_int32([
+            0x206328, give, give + 0x50, give + 0x54, give + 0x58, wait + 0x50, wait + 0x54,
+            wait_pickup + 0x48, wait_pickup + 0x4C, *range(give + 0x278, give + 0x294, 4)])
+        assert prologue == 0x27BDFF90, "Pickup prologue changed"
+        assert grant == jump(setter, True), "Pickup grant call changed"
+        assert grant_args == 0x2CC60002, "Pickup grant arguments changed"
+        assert tail == 0x8E450000, "Pickup tail changed"
+        assert epilogue == [
             0xDFB00040, 0xDFB10048, 0xDFB20050, 0xDFB30058,
             0xDFBF0060, 0x03E00008, 0x27BD0070], "Pickup epilogue changed"
-        assert p.read_int32(wait + 0x50) == jump(getter, True), "Pickup ownership gate changed"
-        assert p.read_int32(wait + 0x54) == 0x8E640000, "Pickup gate arguments changed"
-        assert p.read_int32(wait_pickup + 0x48) == jump(getter, True), "Collection ownership gate changed"
-        assert p.read_int32(wait_pickup + 0x4C) == 0x8E040000, "Collection gate arguments changed"
+        assert gate == jump(getter, True), "Pickup ownership gate changed"
+        assert gate_args == 0x8E640000, "Pickup gate arguments changed"
+        assert collect == jump(getter, True), "Collection ownership gate changed"
+        assert collect_args == 0x8E040000, "Collection gate arguments changed"
         if vendor_enabled:
             sellable, purchase = require(symbols, NativeFunctions.GADGET_IS_SELLABLE,
                                          NativeFunctions.SCRNVENDOR_PROCESS_PURCHASE)
-            assert p.read_int32(sellable + 12) == jump(getter, True), "Sellable gate changed"
-            assert p.read_int32(purchase + 0x1EC) == jump(setter, True), "Purchase grant changed"
-            assert words(p.read_bytes(purchase + 0x1F4, 8)) == [0x8E430010, 0x24020026]
-            builder_call = p.read_int32(purchase + 0x338)
+            sellable_gate, purchase_grant, *purchase_tail, builder_call = p.batch_read_int32([
+                sellable + 12, purchase + 0x1EC, purchase + 0x1F4, purchase + 0x1F8, purchase + 0x338])
+            assert sellable_gate == jump(getter, True), "Sellable gate changed"
+            assert purchase_grant == jump(setter, True), "Purchase grant changed"
+            assert purchase_tail == [0x8E430010, 0x24020026]
             assert builder_call >> 26 == 3, "Vendor rebuild call changed"
             builder = (builder_call & 0x03FFFFFF) << 2
-            assert p.read_int32(builder) == 0x27BDFF70, "Vendor builder changed"
             body = words(p.read_bytes(builder, 0x800))
+            assert body[0] == 0x27BDFF70, "Vendor builder changed"
             # Only base-offer ownership calls immediately following IsSellable.
             # Ammo and mod ownership calls retain their gameplay semantics.
             sites = []
@@ -96,8 +101,8 @@ class WeaponPickup(PatchSet):
             base, init, load, restart = require(symbols,
                 "GADGET_g_GadgetList", NativeFunctions.MOBY_INIT_MOBYS, NativeFunctions.LEVEL_LOAD_LEVEL, NativeFunctions.LEVEL_RESTART,
             )
-            for site in (load + 0x2F0, restart + 0x12C):
-                assert words(p.read_bytes(site, 8)) == [jump(init, True), 0], "Object init call changed"
+            sites_words = p.batch_read_int32([load + 0x2F0, load + 0x2F4, restart + 0x12C, restart + 0x130])
+            assert sites_words == [jump(init, True), 0] * 2, "Object init call changed"
             entitlement_table = arena + len(data)
             flags = bytearray(44)  # 40 slots, invocation byte, alignment padding
             for slot, value in entitlements.items():
@@ -122,10 +127,9 @@ class WeaponPickup(PatchSet):
                 (purchase + 0x1F4, packed([branch(purchase + 0x1F4, purchase + 0x338), 0]))])
             edits.extend((site, packed([jump(routines["vendor", False], True)])) for site in sites)
         edits.extend(init_edits)
-        patches = [Patch(a, p.read_bytes(a, len(b)), b) for a, b in edits]
         plan = PatchPlan(
-            patches=patches, locations=locations, tables=tables, reported=reported,
-            marker_address=arena, module=p.read_int32(0x206328), entitlement_table=entitlement_table,
+            patches=capture(p, edits), locations=locations, tables=tables, reported=reported,
+            marker_address=arena, module=module, entitlement_table=entitlement_table,
         )
         self.patches = plan.patches
         self.plan = plan

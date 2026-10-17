@@ -2,17 +2,18 @@ import struct
 import unittest
 from unittest.mock import Mock
 
-from ..constants.clank_gadgets import SACClankGadgets
-from ..constants.pickups import SACPickups
-from ..constants.planets import CASE_ID_TO_CASE
-from ..constants.weapons import CLANK_PICKUP_TO_INTERNAL, EQUIPMENT_DISPLAY_TO_INTERNAL
+from ..constants import (
+    CASE_ID_TO_CASE,
+    CLANK_PICKUP_TO_INTERNAL,
+    EQUIPMENT_DISPLAY_TO_INTERNAL,
+    WEAPON_ORDER,
+    SACClankGadgets,
+    SACPickups,
+)
 from ..core.address_maps import CURRENT_CASE_ADDRESS, FORCE_CASE_ADDRESS
-from ..core.core import Core
-from ..core.inventories.missions import MissionInventory
-from ..core.inventories.planets import CaseInventory
-from ..core.inventories.weapons import WEAPON_ORDER, WeaponInventory
-from ..core.symbols import RuntimeSymbols
-from ..core.vendor import VendorState
+from ..core import Core, RuntimeSymbols, VendorState
+from ..core.inventories import CaseInventory, MissionInventory, WeaponInventory
+from ..core.patches import LoaderGate
 from ..items import ALL_ITEMS, GADGET_ITEM_TABLE, WEAPON_ITEM_TABLE
 from ..locations import ALL_LOCATIONS
 
@@ -49,6 +50,17 @@ class Memory:
         for address, value in writes:
             self.writes.append((address, value))
             self.data[address] = value
+
+    def write_bytes(self, address, data):
+        self.data[address:address + len(data)] = data
+
+    def batch_read(self, reads):
+        return [int.from_bytes(self.read_bytes(address, size), "little") for size, address in reads]
+
+    def batch_write(self, writes):
+        for _size, address, data in writes:
+            self.writes.append((address, int.from_bytes(data, "little")))
+            self.write_bytes(address, data)
 
 
 class RuntimeTests(unittest.TestCase):
@@ -152,6 +164,56 @@ class RuntimeTests(unittest.TestCase):
         self.assertFalse(case.ratchet_items.weapons)
         self.assertEqual(memory.writes, [])
         case.on_transition_start.assert_called_once()
+
+    def test_unsettled_loader_never_scans_or_checks_old_weapon_table(self):
+        for loader, game in ((0, 3), (1, 3), (2, 3), (3, 3), (4, 3), (5, 1), (5, 2)):
+            with self.subTest(loader=loader, game=game):
+                memory = Memory()
+                memory.batch_write_int32([(CURRENT_CASE_ADDRESS, 1), (FORCE_CASE_ADDRESS, 0xFFFFFFFF),
+                                          (LoaderGate.STATE, loader), (0x206338, game)])
+                case = CaseInventory(memory)
+                case._prev_case_id = 1
+                case.is_ready = True
+                case.symbols.refresh = Mock()
+                case._valid_weapon_table = Mock(return_value=True)
+                memory.writes.clear()
+                self.assertFalse(case.check_transition())
+                self.assertFalse(case.is_ready)
+                case.symbols.refresh.assert_not_called()
+                case._valid_weapon_table.assert_not_called()
+                self.assertEqual(memory.writes, [])
+
+    def test_loading_started_during_symbol_scan_discards_binding(self):
+        memory = Memory()
+        memory.batch_write_int32([(CURRENT_CASE_ADDRESS, 1), (FORCE_CASE_ADDRESS, 0xFFFFFFFF),
+                                  (LoaderGate.STATE, 5), (0x206338, 3)])
+        case = CaseInventory(memory)
+        case._prev_case_id = 1
+        def scan():
+            case.symbols.values['GADGET_g_GadgetList'] = 0x100000
+            memory.write_int32(LoaderGate.STATE, 4)
+        case.symbols.refresh = scan
+        case._valid_weapon_table = Mock(return_value=True)
+        case.set_case = Mock()
+        self.assertFalse(case.check_transition())
+        self.assertFalse(case.is_ready)
+        self.assertIsNone(case.weapon_base)
+        self.assertEqual(case.symbols.values, {})
+        case.set_case.assert_not_called()
+
+    def test_native_startup_blocks_binding_even_when_game_flags_look_ready(self):
+        memory = Memory()
+        memory.batch_write_int32([(CURRENT_CASE_ADDRESS, 1), (FORCE_CASE_ADDRESS, 0xFFFFFFFF),
+                                  (LoaderGate.STATE, 5), (0x206338, 3)])
+        case = CaseInventory(memory)
+        case._prev_case_id = 1
+        case.is_ready = True
+        case.symbols.refresh = Mock()
+        case._valid_weapon_table = Mock(return_value=True)
+        self.assertFalse(case.check_transition(allow_bind=False))
+        self.assertFalse(case.is_ready)
+        case.symbols.refresh.assert_not_called()
+        case._valid_weapon_table.assert_not_called()
 
     def test_inventory_packet_only_updates_snapshot(self):
         memory = Memory()

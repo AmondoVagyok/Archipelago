@@ -1,5 +1,5 @@
 """Pre-object-init ownership without rewriting pickup or vendor routines."""
-from ...constants.native_functions import NativeFunctions
+from ...constants import NativeFunctions
 from ..symbols import require
 from . import mips as m
 from .asm import MARKER, Patch, jump, packed
@@ -14,15 +14,19 @@ class EquipmentOnly:
 
     def prepare(self, symbols, checked, entitlements):
         p = self.pine
-        storage, original = triangle_storage(p, symbols)
+        init_sites = []
+        if entitlements is not None:
+            base, init, load, restart = require(
+                symbols, "GADGET_g_GadgetList", NativeFunctions.MOBY_INIT_MOBYS,
+                NativeFunctions.LEVEL_LOAD_LEVEL, NativeFunctions.LEVEL_RESTART)
+            init_sites = [load + 0x2F0, restart + 0x12C]
+        storage, original, module, *init_calls = triangle_storage(
+            p, symbols, [(0x206328, 4), *((site, 8) for site in init_sites)])
         marker = storage + 8
         data = bytearray(packed([m.jr(m.RA), m.NOP]) + MARKER)
         edits = []
         table = None
         if entitlements is not None:
-            base, init, load, restart = require(
-                symbols, "GADGET_g_GadgetList", NativeFunctions.MOBY_INIT_MOBYS,
-                NativeFunctions.LEVEL_LOAD_LEVEL, NativeFunctions.LEVEL_RESTART)
             table = storage + len(data)
             flags = bytearray(44)
             for slot, value in entitlements.items():
@@ -33,8 +37,8 @@ class EquipmentOnly:
             routine = storage + len(data)
             data.extend(Entitlements(p).prepare(
                 address=routine, table=table, gadget_base=base, fallback=init).replacement)
-            for site in (load + 0x2F0, restart + 0x12C):
-                if p.read_bytes(site, 8) != packed([jump(init, True), 0]):
+            for site, call in zip(init_sites, init_calls):
+                if call != packed([jump(init, True), 0]):
                     raise RuntimeError("Object init call changed")
                 edits.append(Patch(site, packed([jump(init, True)]), packed([jump(routine, True)])))
         # ConnectionWarning uses the tail of the same verified no-op routine.
@@ -42,6 +46,6 @@ class EquipmentOnly:
             raise RuntimeError("Equipment initialization overlaps connection warning storage")
         edits.insert(0, Patch(storage, original[:len(data)], bytes(data)))
         return PatchPlan(patches=edits, locations={}, tables={}, reported=set(checked),
-                         marker_address=marker, module=p.read_int32(0x206328),
+                         marker_address=marker, module=int.from_bytes(module, "little"),
                          entitlement_table=table,
                          extra_ranges=[(storage + len(data), storage + 152)])

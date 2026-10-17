@@ -1,14 +1,10 @@
-"""Audit retail mission predicates against every AP intro cutscene."""
 import struct
 import unittest
 from pathlib import Path
 
-from ..constants.cutscenes import CUTSCENE_FLAGS, SACCutsceneLocations
-from ..constants.missions import CHAPTER_ENTRIES, NATIVE_FINISH_CASES
-from ..constants.planets import SACCases
-from ..core.inventories.cutscenes import CutsceneInventory
-from ..core.inventories.missions import MissionInventory, resolve_chapter_table
-from ..core.symbols import RuntimeSymbols
+from ..constants import CHAPTER_ENTRIES, CUTSCENE_FLAGS, NATIVE_FINISH_CASES, SACCases, SACCutsceneLocations
+from ..core.inventories import CutsceneInventory, MissionInventory, resolve_chapter_table
+from ..core import RuntimeSymbols
 from ..locations import ALL_LOCATIONS
 from .test_runtime import Memory
 
@@ -58,8 +54,6 @@ class MissionCutsceneIsolationTests(unittest.TestCase):
                     p.data[flag.address] = flag.mask
                     for address, row in rows:
                         kind, arg, bit = row[8:11]
-                        # Retail condition 1 reads a planet's movie bit;
-                        # condition 6 reads an individual global flag bit.
                         if kind == 1:
                             byte = 0x206BE0 + ((arg - 1) // 3) * 2 + bit // 8
                             mask = 1 << (bit % 8)
@@ -76,7 +70,6 @@ class MissionCutsceneIsolationTests(unittest.TestCase):
                     reported = inv.check_all(all_missions=all_missions)
                     self.assertTrue(all(ALL_LOCATIONS[name].case == case_name
                                         for name in reported), reported)
-                    # These first objectives really are arrival milestones.
                     if all_missions and case_name in (
                             SACCases.AZCOTAL_ALLEY, SACCases.HIGH_ROLLERS_CASINO,
                             SACCases.BULKHEAD_LOCK):

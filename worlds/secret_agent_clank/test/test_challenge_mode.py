@@ -1,23 +1,68 @@
 import unittest
+from types import SimpleNamespace
 
 from BaseClasses import CollectionState
 from Fill import distribute_items_restrictive
 from test.general import setup_multiworld
 
-from ..constants.challenge_mode import CHALLENGE_VENDOR_LOCATIONS, PROGRESSIVE_CHALLENGE_MODE
-from ..constants.clank_gadgets import SACClankGadgets
-from ..constants.pickups import SACPickups
-from ..constants.nanotech import nanotech_location_name
-from ..constants.weapon_progression import level_location_name
-from ..core.patches.progression import Progression
-from ..core.patches.vendor_catalog import VendorCatalog
+from ..constants import (
+    CHALLENGE_VENDOR_LOCATIONS,
+    PROGRESSIVE_CHALLENGE_MODE,
+    SACClankGadgets,
+    SACPickups,
+    level_location_name,
+    nanotech_location_name,
+)
+from ..core.patches import Progression, VendorCatalog, jump, packed
 from ..options import BoltMultiplier, HealthXPMultiplier, NgPlus, WeaponXPMultiplier
 from ..universal_tracker import setup_options_from_slot_data
 from ..world import SecretAgentClankWorld
 from .test_runtime import Memory
+from .mips_cpu import CPU
 
 
 class ChallengeModeTests(unittest.TestCase):
+    def test_challenge_pickups_use_ap_level_before_save_initialization(self):
+        for maximum, progressive, count in ((1, False, 0), (2, False, 0),
+                                           (1, True, 0), (1, True, 1),
+                                           (2, True, 0), (2, True, 1), (2, True, 2)):
+            with self.subTest(maximum=maximum, progressive=progressive, count=count):
+                mem = Memory()
+                p = Progression(mem)
+                p.configure({'ng_plus': maximum, 'progressive_challenge_mode': progressive})
+                p.receive([PROGRESSIVE_CHALLENGE_MODE] * count)
+                replay, getter, init = 0x110000, 0x120000, 0x140000
+                mem.write_bytes(replay + 0x1C, packed([0x3C020021, 0x8C448000,
+                                                      0x8C830ED4, 0x0003182B]))
+                mem.write_bytes(getter + 0x20, packed([0x8C42005C]))
+                mem.write_bytes(init + 0x38, packed([0x9042001C, 0x10400007, 0x8E510058,
+                    jump(replay, True), 0, 0x14400004, 0x3C05005F]))
+                symbols = {'GLOBALVARS_IsInReplayMode__Fv': replay,
+                    'GADGET_GetCurrentPowerLevel__FUi': getter,
+                    'GADGET_g_GadgetList': 0x100000, 'WeaponPickup_Init__FP4Moby': init}
+                patches = p.prepare(symbols, SimpleNamespace(patches=[],
+                    extra_ranges=[(0x180000, 0x180100)]), 1, vendor_enabled=False)
+                for patch in patches:
+                    mem.write_bytes(patch.address, patch.replacement)
+                # The native save pointer is still null, just as at the loader
+                # gate. Object initialization must already see the AP setting.
+                self.assertEqual(mem.read_int32(p.save_pointer_address), 0)
+                mem.batch_write_int8([(0x16001C, 1)])
+                cpu = CPU(mem)
+                cpu.r[2], cpu.r[18] = 0x160000, 0x150000
+                cpu.run(init + 0x38, stop=init + (0x60 if p.ng_plus else 0x54))
+                self.assertEqual(cpu.r[2], p.ng_plus)
+
+    def test_progressive_receipt_updates_pickup_gate_for_native_restarts(self):
+        mem = Memory()
+        p = Progression(mem)
+        p.configure({'ng_plus': 2, 'progressive_challenge_mode': True})
+        p.base, p.pickup_challenge_address = 0x100000, 0x180000
+        for count in (0, 1, 2):
+            p.receive([PROGRESSIVE_CHALLENGE_MODE] * count)
+            p.sync()
+            self.assertEqual(mem.read_int32(p.pickup_challenge_address), count)
+
     def test_defaults_and_slider_label(self):
         self.assertEqual(NgPlus.display_name, "Max Challenge Mode")
         for option in (WeaponXPMultiplier, HealthXPMultiplier, BoltMultiplier):
@@ -111,7 +156,7 @@ class ChallengeModeTests(unittest.TestCase):
             self.assertEqual(mem.read_int8(0x100000), 1)
             self.assertEqual(mem.read_int8(0x100008), expected)
 
-    def test_tracker_restores_progression_and_legacy_defaults(self):
+    def test_tracker_restores_progression(self):
 
         mw = setup_multiworld(SecretAgentClankWorld, options={
             "ng_plus": 2, "progressive_challenge_mode": True})
@@ -123,6 +168,3 @@ class ChallengeModeTests(unittest.TestCase):
         setup_options_from_slot_data(world)
         self.assertTrue(world.options.progressive_challenge_mode)
         self.assertEqual(world.options.ng_plus.value, 2)
-        del slot["progressive_challenge_mode"]
-        setup_options_from_slot_data(world)
-        self.assertFalse(world.options.progressive_challenge_mode)

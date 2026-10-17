@@ -1,64 +1,70 @@
-"""Shared rule builders, returning rule_builder rule objects."""
 import dataclasses
-from collections.abc import Iterable
+from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 from BaseClasses import CollectionState
-from rule_builder.rules import CanReachRegion, False_, Has, NestedRule, Rule, True_
+from rule_builder.rules import CanReachRegion, False_, Has, HasAll, HasAny, NestedRule, Or, Rule, True_, TWorld
+from typing_extensions import override
 
 from ..constants import (
+    ALL_OPERATIVES,
+    CASES_BY_OPERATIVE,
+    CASE_NAME_TO_CASE,
     CASE_NAME_TO_INFOBOT,
-    CHARACTER_ITEM_NAME,
     PLANET_ACCESS_ITEM_NAME,
+    PROGRESSIVE_CHALLENGE_MODE,
     PROGRESSIVE_CHARACTER_ITEM_NAME,
+    PROGRESSIVE_PLANET_ITEM_NAME,
+    UNLOCK_TO_PROGRESSIVE,
+    SACCases,
+    SACClankGadgets,
+    SACClankWeapons,
 )
-from ..constants.clank_gadgets import SACClankGadgets, SACClankWeapons
-from ..constants.operatives import ALL_OPERATIVES, SACOperatives
-from ..constants.planets import CASES_BY_OPERATIVE, SACCases
-from ..constants.weapon_progression import UNLOCK_TO_PROGRESSIVE
-from ..items import PROGRESSIVE_PLANET_ITEM_NAME
-from ..options import Infobots
+from ..items import PROGRESSIVE_WRENCH_ITEM_NAME
+from ..options import Infobots, enabled_operatives
 
 if TYPE_CHECKING:
-    from ..constants.planets import Case
     from ..world import SecretAgentClankWorld
 
 
 def region_names(world: "SecretAgentClankWorld") -> set[str]:
-    """Names of every region created so far for this world's player."""
     return {region.name for region in world.multiworld.get_regions(world.player)}
 
 
-def can_reach_all_cases(world: "SecretAgentClankWorld", case_names: Iterable[str]) -> Rule:
-    """Reach every listed case that exists in this world; never satisfiable when none of them exist."""
-    existing = region_names(world)
-    cases = [case for case in case_names if case in existing]
-    if not cases:
+@dataclass
+class HasPlanet(Rule[TWorld], game="Secret Agent Clank"):
+    planet: str
+
+    @override
+    def _instantiate(self, world: TWorld) -> Rule.Resolved:
+        rule = True_()
+        if world.options.infobots == Infobots.option_planets and self.planet in PLANET_ACCESS_ITEM_NAME:
+            rule = Has(PLANET_ACCESS_ITEM_NAME[self.planet])
+        return rule.resolve(world)
+
+
+@dataclass
+class HasCase(Rule[TWorld], game="Secret Agent Clank"):
+    cases: str
+
+    @override
+    def _instantiate(self, world: TWorld) -> Rule.Resolved:
+        rule = True_()
+        if world.options.infobots == Infobots.option_cases and self.cases in CASE_NAME_TO_INFOBOT:
+            rule = Has(CASE_NAME_TO_INFOBOT[self.cases])
+        elif world.options.infobots == Infobots.option_progressive_planet:
+            rule = HasProgressivePlanet(world, self.cases)
+        return rule.resolve(world)
+
+
+def HasProgressivePlanet(world: "SecretAgentClankWorld", case_name: str) -> Has | False_:
+    planet = CASE_NAME_TO_CASE[case_name].planet
+    order = world.planet_cases.get(planet, [])
+    if case_name not in order:
         return False_()
-    rule = True_()
-    for case in cases:
-        rule = rule & CanReachRegion(case)
-    return rule
+    return Has(PROGRESSIVE_PLANET_ITEM_NAME[planet], order.index(case_name) + 1)
 
 
-def HasPlanet(world: "SecretAgentClankWorld", planet: str) -> Has | True_:
-    if world.options.infobots == Infobots.option_progressive_planet:
-        planets = world.progressive_planets
-        return Has(PROGRESSIVE_PLANET_ITEM_NAME, planets.index(planet) + 1) if planet in planets else True_()
-    if world.options.infobots in (Infobots.option_cases, Infobots.option_character_unlocks):
-        return True_()
-    item = PLANET_ACCESS_ITEM_NAME.get(planet)
-    return Has(item) if item else True_()
-
-
-def HasCase(world: "SecretAgentClankWorld", case_name: str) -> Has | True_:
-    if world.options.infobots != Infobots.option_cases:
-        return True_()
-    item = CASE_NAME_TO_INFOBOT.get(case_name)
-    return Has(item) if item else True_()
-
-
-# Clank case -> items needed (on top of reaching the case) to get at its enemies.
 CLANK_ENEMY_CASES: dict[str, tuple[str, ...]] = {
     SACCases.BOLTAIRE_MUSEUM:       (),
     SACCases.ASYANICA_ROOFTOPS:     (SACClankWeapons.THROWTIE,),
@@ -72,10 +78,10 @@ CLANK_ENEMY_CASES: dict[str, tuple[str, ...]] = {
 }
 
 
-def _has_unlock(world: "SecretAgentClankWorld", name: str) -> Has:
+def _unlock_name(world: "SecretAgentClankWorld", name: str) -> str:
     if world.options.progressive_weapons and name in UNLOCK_TO_PROGRESSIVE:
-        return Has(UNLOCK_TO_PROGRESSIVE[name])
-    return Has(name)
+        return UNLOCK_TO_PROGRESSIVE[name]
+    return name
 
 
 @dataclasses.dataclass(init=False)
@@ -126,61 +132,75 @@ class AtLeast(NestedRule["SecretAgentClankWorld"], game="Secret Agent Clank"):
             return f"(at least {self.count} of: " + ", ".join(str(c) for c in self.children) + ")"
 
 
-def enemy_case_rule(world: "SecretAgentClankWorld", case: str) -> Rule:
-    """Reach a Clank case, plus the items its enemies need (see CLANK_ENEMY_CASES)."""
-    rule = CanReachRegion(case)
-    for item in CLANK_ENEMY_CASES.get(case, ()):
-        rule = rule & _has_unlock(world, item)
-    return rule
+@dataclass
+class EnemyCaseRule(Rule[TWorld], game="Secret Agent Clank"):
+    cases: str
+
+    @override
+    def _instantiate(self, world: TWorld) -> Rule.Resolved:
+        rule = CanReachRegion(self.cases)
+        items = CLANK_ENEMY_CASES.get(self.cases, ())
+        if items:
+            rule = rule & HasAll(*(_unlock_name(world, item) for item in items))
+        return rule.resolve(world)
 
 
-def enemy_case_rules(world: "SecretAgentClankWorld") -> list[Rule]:
-    """One enemy_case_rule per existing Clank case with enemies."""
-    existing = region_names(world)
-    return [enemy_case_rule(world, case) for case in CLANK_ENEMY_CASES if case in existing]
-
-
-def HasEnemyAccess(world: "SecretAgentClankWorld", cases: int = 1) -> Rule:
+@dataclass
+class HasEnemyAccess(Rule[TWorld], game="Secret Agent Clank"):
     """Clank can reach enemies in at least `cases` Clank cases (capped at the cases that exist)."""
-    rules = enemy_case_rules(world)
-    if not rules:
-        return False_()
-    if cases <= 1:
-        rule = False_()
-        for case_rule in rules:
-            rule = rule | case_rule
-        return rule
-    return AtLeast(min(cases, len(rules)), *rules)
+
+    cases: int = 1
+
+    @override
+    def _instantiate(self, world: TWorld) -> Rule.Resolved:
+        existing = region_names(world)
+        rules = [EnemyCaseRule(case) for case in CLANK_ENEMY_CASES if case in existing]
+        if not rules:
+            return False_().resolve(world)
+        if self.cases <= 1:
+            return Or(*rules).resolve(world)
+        return AtLeast(min(self.cases, len(rules)), *rules).resolve(world)
 
 
-def HasProjectileWeapon() -> Has:
-    return Has(SACClankWeapons.THROWTIE) | Has(SACClankWeapons.LIGHTNINGUMBRELLA) | Has(SACClankWeapons.CUFFLINK)
+@dataclass
+class HasProjectileWeapon(Rule[TWorld], game="Secret Agent Clank"):
+    @override
+    def _instantiate(self, world: TWorld) -> Rule.Resolved:
+        return HasAny(SACClankWeapons.THROWTIE, SACClankWeapons.LIGHTNINGUMBRELLA,
+                      SACClankWeapons.CUFFLINK).resolve(world)
 
 
-def HasCharacter(world: "SecretAgentClankWorld", character: str) -> Has | True_:
-    if world.options.infobots != Infobots.option_character_unlocks:
-        return True_()
-    if character in CHARACTER_ITEM_NAME:
-        return Has(CHARACTER_ITEM_NAME[character])
-    return Has(PROGRESSIVE_CHARACTER_ITEM_NAME[character])
+@dataclass
+class HasCharacter(Rule[TWorld], game="Secret Agent Clank"):
+    cases: str
+
+    @override
+    def _instantiate(self, world: TWorld) -> Rule.Resolved:
+        case = CASE_NAME_TO_CASE[self.cases]
+        item = PROGRESSIVE_CHARACTER_ITEM_NAME.get(case.operative)
+        if world.options.infobots != Infobots.option_character_unlocks or item is None:
+            return True_().resolve(world)
+        return Has(item, list(CASES_BY_OPERATIVE[case.operative]).index(case) + 1).resolve(world)
 
 
 def disabled_operatives(world: "SecretAgentClankWorld") -> set[str]:
-    """Operatives turned off in the Operatives option; their cases get no regions."""
     return {
         operative for operative in ALL_OPERATIVES
-        if operative not in world.options.operatives.value
+        if operative not in enabled_operatives(world.options)
     }
 
 
-def case_access_rule(world: "SecretAgentClankWorld", case: "Case") -> Has | True_:
-    rule = HasPlanet(world, case.planet) & HasCase(world, case.name)
-    if case.operative != SACOperatives.SPECIAL_MISSIONS:
-        if (world.options.infobots == Infobots.option_character_unlocks
-                and case.operative in PROGRESSIVE_CHARACTER_ITEM_NAME):
-            count = list(CASES_BY_OPERATIVE[case.operative]).index(case)
-            rule = rule & (Has(PROGRESSIVE_CHARACTER_ITEM_NAME[case.operative], count) if count else True_())
-        else:
-            rule = rule & HasCharacter(world, case.operative)
-    item = CASE_NAME_TO_INFOBOT.get(case.name)
-    return rule | Has(item) if item else rule
+@dataclass
+class ProgressiveChallengeModeRule(Rule[TWorld], game="Secret Agent Clank"):
+    @override
+    def _instantiate(self, world: TWorld) -> Rule.Resolved:
+        rule = Has(PROGRESSIVE_CHALLENGE_MODE) if world.options.progressive_challenge_mode else True_()
+        return rule.resolve(world)
+
+
+@dataclass
+class ProgressiveWrenchRule(Rule[TWorld], game="Secret Agent Clank"):
+    @override
+    def _instantiate(self, world: TWorld) -> Rule.Resolved:
+        rule = Has(PROGRESSIVE_WRENCH_ITEM_NAME) if world.options.progressive_wrench else True_()
+        return rule.resolve(world)

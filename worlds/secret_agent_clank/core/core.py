@@ -2,33 +2,43 @@
 import logging
 from collections.abc import Callable, Sequence
 
-from ..constants.cheats import SACCheats
-from ..constants.missions import CHAPTER_ENTRIES, MISSION_COMPLETE_NAME, SACMissionLocations
-from ..constants.operatives import SACOperatives
-from ..constants.pickups import PICKUP_LOCATION_BY_INTERNAL
-from ..constants.planets import CASE_ID_TO_CASE, CASES_BY_OPERATIVE, SACCases
-from ..constants.vendor import VENDOR_LOCATION_NAMES
-from ..constants.weapons import CLANK_PICKUP_TO_INTERNAL, EQUIPMENT_INTERNAL_TO_DISPLAY
 from ..options import Goal
 from .address_maps import BOLTS_ADDRESS, CHALLENGE_MODE_ADDRESS
 from .bolt_rewards import BoltRewards
-from .inventories.alien_codes import AlienCodeInventory
-from .inventories.case_unlocks import CaseUnlockInventory, resolve_owned_cases
-from .inventories.cutscenes import CutsceneInventory
-from .inventories.gadgetbot_challenges import GadgetbotChallengeInventory
-from .inventories.keycards import KeycardInventory
-from .inventories.missions import MissionInventory
-from .inventories.planets import CaseInventory
-from .inventories.ratchet_challenges import RatchetChallengeInventory
-from .inventories.special_challenges import SpecialChallengeInventory
-from .inventories.weapons import WEAPON_ORDER
+from .inventories import (
+    AlienCodeInventory,
+    CaseInventory,
+    CaseUnlockInventory,
+    CutsceneInventory,
+    GadgetbotChallengeInventory,
+    KeycardInventory,
+    MissionInventory,
+    RatchetChallengeInventory,
+    SpecialChallengeInventory,
+    resolve_owned_cases,
+)
 from .main_menu import MainMenuNotice
 from .native_runtime import NativeRuntime
 from .notifications import ItemNotifications
-from .patches import MARKER, PICKUP_LOCATIONS, VENDOR_LOCATIONS, LocationHooks
-from .patches.progression import Progression
-from .patches.weapon_mods import WeaponMods
-from .patches.wrench import PROGRESSIVE_WRENCH, WrenchProgression
+from ..constants import (
+    CASES_BY_OPERATIVE,
+    CASE_ID_TO_CASE,
+    CHAPTER_ENTRIES,
+    CLANK_PICKUP_TO_INTERNAL,
+    EQUIPMENT_INTERNAL_TO_DISPLAY,
+    MISSION_COMPLETE_NAME,
+    PICKUP_LOCATIONS,
+    PICKUP_LOCATION_BY_INTERNAL,
+    VENDOR_LOCATIONS,
+    VENDOR_LOCATION_NAMES,
+    WEAPON_ORDER,
+    SACCases,
+    SACCheats,
+    SACMissionLocations,
+    SACOperatives,
+    vendor_unlocked_cases,
+)
+from .patches import MARKER, PROGRESSIVE_WRENCH, LocationHooks, Progression, WeaponMods, WrenchProgression
 from .quick_select import QuickSelectState
 from .skill_points import SkillPointState
 from .skins import Skins
@@ -39,7 +49,6 @@ from .vendor_rewards import VendorRewards
 
 logger = logging.getLogger("CommonClient")
 
-# Native WEAPON_ORDER names of the pickups the installed location hooks report themselves.
 _HOOKED_PICKUP_NAMES = frozenset(WEAPON_ORDER[slot] for slot in PICKUP_LOCATIONS)
 
 
@@ -49,7 +58,6 @@ class Core:
                  debug: Callable[[str], None] | None = None) -> None:
         self.pine = pine
         self._log = log or logger.info
-        # Diagnostics only shown while the client's /debug is on.
         self._debug = debug or logger.debug
         self.main_menu = MainMenuNotice(pine, self._debug)
         self.bolt_rewards = BoltRewards(pine, self._debug)
@@ -64,7 +72,6 @@ class Core:
         self.case.on_respawn          = self._handle_respawn
 
         self.case_unlocks  = CaseUnlockInventory(pine)
-        # Owned and rebound by self.case on every case transition.
         self.vendor        = self.case.vendor
         self.location_hooks = LocationHooks(pine)
         self.native_runtime = NativeRuntime(pine, self.location_hooks, self._log, self._debug)
@@ -77,6 +84,7 @@ class Core:
         self.stealth = StealthState(pine)
         self.progression = Progression(pine)
         self.progression.stealth = self.stealth
+        self.progression.mission_failure = self.case.mission_failure
         self.native_runtime.progression = self.progression
         self.weapon_mods = WeaponMods(pine)
         self.native_runtime.weapon_mods = self.weapon_mods
@@ -95,34 +103,29 @@ class Core:
         self.goal = 0
         self.pick_and_mix_goals = None
         self.character_unlocks = False
-        self.progressive_planets: list[str] | None = None
+        self.planet_cases: dict[str, list[str]] | None = None
         self._goal_sent = False
         self.quick_select   = QuickSelectState(pine)
 
-        # AP ownership per character from the last apply_inventory(), re-applied on respawn.
         self._ap_owned: dict[str, dict[str, bool]] = {"ratchet": {}, "clank": {}}
-        # Cases owned via AP, from the last apply_inventory().
         self._owned_cases: set[str] = set()
+        self._vendor_cases: frozenset[str] = frozenset()
         self._inventory_initialized = False
         self._checked_items: set[str] = set()
 
-        # Returns whether the check was queued. A rejected check is retried next
-        # tick, so the default rejects everything until the client is wired up.
         self.send_location:      Callable[[str], bool] = lambda _: False
-        self.send_deathlink:     Callable[[int], None]  = lambda _: None
-        self.death_amnesty:      Callable[[], int]      = lambda: 1
+        self.send_deathlink:     Callable[[str], None]  = lambda _: None
+        self.death_amnesty:      Callable[[], int]      = lambda: 0
         self.death_link_enabled: Callable[[], bool]     = lambda: False
         self.on_goal:            Callable[[], None]     = lambda: None
-        # Fired once, the tick a case transition completes.
         self.on_case_ready:      Callable[[], None]     = lambda: None
-        # True when the Missions option is "all" rather than level_completion.
         self.missions_all:       Callable[[], bool]     = lambda: False
         self._death_count: int = 0
 
     def wire(
         self,
         send_location:      Callable[[str], bool],
-        send_deathlink:      Callable[[int], None]  | None = None,
+        send_deathlink:      Callable[[str], None]  | None = None,
         death_amnesty:       Callable[[], int]       | None = None,
         death_link_enabled:  Callable[[], bool]      | None = None,
         on_goal:             Callable[[], None]      | None = None,
@@ -146,12 +149,9 @@ class Core:
         if on_bolt_state_changed is not None:
             self.bolt_rewards.on_state_changed = on_bolt_state_changed
 
-    # -- AP inventory application ---------------------------------------------
-
     def apply_inventory(
         self, *, ratchet: dict[str, bool], clank: dict[str, bool], received_names: Sequence[str] = (),
     ) -> None:
-        """Cache received items."""
         self._inventory_initialized = True
         self.progression.receive(received_names)
         self.keycards.hunt.receive(received_names)
@@ -162,16 +162,16 @@ class Core:
             self.ratchet_pack = self._ratchet_pack_pending = True
         self._ap_owned = {"ratchet": dict(ratchet), "clank": dict(clank)}
         self._owned_cases = resolve_owned_cases(list(received_names), character_unlocks=self.character_unlocks,
-                                                progressive_planets=self.progressive_planets)
+                                                planet_cases=self.planet_cases)
         if self.alien_codes.all_found:
             self._owned_cases.add(SACCases.HIGH_TREEHOUSE)
         self.native_runtime.owned_cases = frozenset(self._owned_cases)
+        self._vendor_cases = vendor_unlocked_cases(self._owned_cases, received_names)
+        self.native_runtime.vendor_cases = self._vendor_cases
 
     def _invalidate_level(self) -> None:
         self.traps.last_tick = None
         self.vendor_rewards.invalidate()
-        # The old module may already have been freed when its case id changes.
-        # Invalidate cached addresses without writing through the old bindings.
         self.missions.invalidate_resolved_addresses()
         self.missions.table_base = None
         self.notifications.binding = None
@@ -183,7 +183,6 @@ class Core:
         self._native_pause_notice = False
 
     def _owned_equipment(self) -> dict[str, bool]:
-        """Resolve AP ownership once for both native hooks and inventory writes."""
         owned = dict(self._ap_owned["ratchet"])
         owned.update(self.wrench.entitlements())
         owned.update(self.progression.ownership())
@@ -223,8 +222,6 @@ class Core:
             return False
         if (hooks.module == self.case.case_id and hooks.marker_address is not None
                 and self.pine.read_bytes(hooks.marker_address, len(MARKER)) == MARKER):
-            # A cancelled transition may invalidate bindings without unloading
-            # the patched module. Reuse its journal instead of patching twice.
             hooks.installed = True
             hooks.sync_checked(self._checked_items)
             return True
@@ -250,7 +247,6 @@ class Core:
 
     def _read_native_locations(self) -> None:
         for name in self.location_hooks.poll():
-            # Native slot names become AP location names; named pickups pass through.
             self._send_once(EQUIPMENT_INTERNAL_TO_DISPLAY.get(name, name))
 
     def _strip_all_inventories(self) -> None:
@@ -272,8 +268,6 @@ class Core:
         self.titanium_bolts.sync_from_ap(checked_locations)
         self.keycards.sync_from_ap(checked_locations)
 
-    # -- Traps ---------------------------------------------------------------
-
     def activate_trap(self, trap_name: str) -> bool:
         if not self.case.is_ready or not self._inventory_initialized:
             return False
@@ -281,10 +275,11 @@ class Core:
 
     @property
     def owned_cases(self) -> frozenset[str]:
-        """Case names currently unlocked via AP."""
         return frozenset(self._owned_cases)
 
-    # -- Bolts / NG+ (plain global values, CONFIRMED live addresses) -------
+    @property
+    def vendor_cases(self) -> frozenset[str]:
+        return self._vendor_cases
 
     @property
     def bolts(self) -> int:
@@ -302,35 +297,26 @@ class Core:
     def challenge_mode(self, value: int) -> None:
         self.pine.write_int8(CHALLENGE_MODE_ADDRESS, value)
 
-    # -- Tick --------------------------------------------------------------
-
     def tick(self) -> None:
+        self.case.check_mission_failure()
         self.stealth.poll()
         if self.main_menu.poll():
             self.case.is_ready = False
             self._invalidate_level()
             self.location_hooks.installed = False
-            # Arm the loader for New Game when AP inventory is available,
-            # but never bind gameplay memory using the stale last case ID.
             if self._inventory_initialized:
                 self.native_runtime.service(self._checked_items, self._entitlements())
             return
-        # Installation targets the incoming DLL while CURRENT_CASE can still
-        # identify the outgoing one. Polling then would invalidate fresh hooks.
         if not self.native_runtime.awaiting_start:
             self._read_native_locations()
         if self._inventory_initialized:
             generation = self.native_runtime.generation
             native_ready = self.native_runtime.service(self._checked_items, self._entitlements())
             if self.native_runtime.generation != generation:
-                # A same-module reset can finish between host polls. Force
-                # every binding to refresh even when all addresses look valid.
                 self.case.is_ready = False
                 self._invalidate_level()
             if not native_ready:
-                # Still observe transitions so old bindings cannot survive a
-                # same-module reload. No inventory writes while held/loading.
-                self.case.check_transition()
+                self.case.check_transition(allow_bind=False)
                 return
         became_ready = self.case.check_transition()
         self.case.check_death()
@@ -349,7 +335,6 @@ class Core:
         if became_ready:
             case_label = current_case.name if current_case else f"unknown case 0x{self.case.case_id:X}"
             self._debug(f"[SAC] Case changed -> {case_label} (id={self.case.case_id})")
-            # Mission table addresses are per level; re-resolve them for this one.
             self.missions.invalidate_resolved_addresses()
             self.missions.table_base = table_base
             self.case.ratchet_items.sync()
@@ -372,8 +357,6 @@ class Core:
             self.on_case_ready()
         if self.ratchet_pack and (became_ready or self._ratchet_pack_pending):
             self._ratchet_pack_pending = not self.traps.grant_ratchet_pack(self.case.symbols)
-        # Read collectible access before updating the menu. AP inventory is
-        # refreshed after every tick, so this cannot rely on the prior tick.
         self._report_checks(self.alien_codes, self.alien_codes.check())
         if self.alien_codes.all_found:
             self._owned_cases.add(SACCases.HIGH_TREEHOUSE)
@@ -409,7 +392,7 @@ class Core:
         self._reapply_all_inventories()
 
         self.progression.sync()
-        for name in (*self.progression.level_checks(), *self.progression.nanotech_checks(),
+        for name in (*self.progression.level_checks(), *self.progression.nanotech_checks(self.case.symbols),
                      *self.progression.ratchet_nanotech_checks(self.case.symbols), *self.stealth.checks()):
             self._send_once(name)
         self.weapon_mods.sync()
@@ -448,7 +431,6 @@ class Core:
             Goal.option_chalice_of_power: self.keycards.chalice_collected,
             Goal.option_alien_codes: self.alien_codes.all_found,
         }
-        # Any completes on whichever goal is finished first.
         conditions[Goal.option_any] = any(conditions.values())
         reached = (bool(self.pick_and_mix_goals) and
                    all(conditions.get(goal, False) for goal in self.pick_and_mix_goals)
@@ -457,17 +439,16 @@ class Core:
             self.on_goal()
             self._goal_sent = True
 
-    def _handle_death(self) -> None:
+    def _handle_death(self, cause: str) -> None:
         self._strip_all_inventories()
         if not self.death_link_enabled():
             return
         self._death_count += 1
         if self._death_count > self.death_amnesty():
-            cause = int(self.case.ratchet.movement_state)
+            self._death_count = 0
             self.send_deathlink(cause)
 
     def _handle_respawn(self) -> None:
-        self._death_count = 0
         self._reapply_all_inventories()
 
     def __repr__(self) -> str:

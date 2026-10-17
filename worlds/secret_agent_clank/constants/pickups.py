@@ -2,7 +2,6 @@ from .weapon_order import WEAPON_ORDER, WeaponSlot
 
 
 class SACPickups:
-    """String constants for weapon/gadget pickup locations"""
     BOLTAIRE_MUSEUM_TIE_A_RANG = "Boltaire (Clank) - Boltaire Museum: Tie-A-Rang Pickup"
     BOLTAIRE_MUSEUM_JET_BOOTS = "Boltaire (Clank) - Boltaire Museum: Jet Boots Pickup"
     BOLTAIRE_MUSEUM_BLACKOUT_PEN = "Boltaire (Clank) - Boltaire Museum: Blackout Pen Pickup"
@@ -19,11 +18,9 @@ class SACPickups:
     MAX_SECURITY_CELLS_WALLOPER = "Prison Planet (Ratchet) - Max-Security Cells: Walloper Pickup"
 
 
-# Pickups that only spawn in challenge mode; the item stays in the pool either way.
 CHALLENGE_MODE_PICKUP_LOCATIONS = frozenset({SACPickups.BOLTAIRE_MUSEUM_THERM_OPTIC_SHADES})
 
 
-# Native WEAPON_ORDER name -> the AP location the client sends when it is picked up.
 PICKUP_LOCATION_BY_INTERNAL: dict[str, str] = {
     WEAPON_ORDER[slot]: name for slot, name in (
         (WeaponSlot.THROWTIE, SACPickups.BOLTAIRE_MUSEUM_TIE_A_RANG),
@@ -42,3 +39,12 @@ PICKUP_LOCATION_BY_INTERNAL: dict[str, str] = {
         (WeaponSlot.WALLOPER, SACPickups.MAX_SECURITY_CELLS_WALLOPER),
     )
 }
+
+_PICKUP_SLOTS = (
+    WeaponSlot.BLASTER, WeaponSlot.SHARDGUN, WeaponSlot.BEEMINEGLOVE, WeaponSlot.WALLOPER,
+    WeaponSlot.MINELAUNCHER, WeaponSlot.THROWTIE, WeaponSlot.CUFFLINK, WeaponSlot.TANGLEVINE,
+    WeaponSlot.FLAMETHROWERPEN, WeaponSlot.FOUNTAINPEN, WeaponSlot.SUNGLASSES,
+    WeaponSlot.HOLOMONOCLE, WeaponSlot.JETBOOTS, WeaponSlot.OMNIKEY,
+)
+# Slot -> AP pickup location name the native hook reports.
+PICKUP_LOCATIONS = {slot: PICKUP_LOCATION_BY_INTERNAL[WEAPON_ORDER[slot]] for slot in _PICKUP_SLOTS}

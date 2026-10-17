@@ -1,37 +1,61 @@
-"""One region per case, each entered from Menu through a "To <Case>" entrance gated by that case's access rule."""
 from typing import TYPE_CHECKING
 
 from BaseClasses import Region
 from Options import OptionError
-from rule_builder.rules import CanReachLocation, CanReachRegion, False_, Has, True_
+from rule_builder.rules import And, CanReachLocation, CanReachRegion, False_, Has, HasAll
 
-from .constants import ALL_CASES, CASE_NAME_TO_CASE, CASES_BY_OPERATIVE, SACCases, SACOperatives
-from .constants.clank_gadgets import SACClankGadgets
-from .constants.keycards import KEYCARD_ITEMS
-from .constants.vendor import VENDOR_WEAPONS, vendor_location_name
-from .constants.weapon_mods import enabled_mods
-from .constants.vendor_unlocks import VENDOR_CASES
-from .constants.weapon_progression import TITAN_LOCATIONS
-from .constants.weapons import EQUIPMENT_INTERNAL_TO_DISPLAY
-from .entities import SACLocation
+from .constants import (
+    ALL_CASES,
+    CASES_BY_OPERATIVE,
+    CASE_NAME_TO_CASE,
+    EQUIPMENT_INTERNAL_TO_DISPLAY,
+    KEYCARD_ITEMS,
+    TITAN_LOCATIONS,
+    VENDOR_CASES,
+    VENDOR_WEAPONS,
+    SACCases,
+    SACClankGadgets,
+    SACOperatives,
+    enabled_mods,
+    vendor_location_name,
+)
+from .entities import SACItem, SACLocation
 from .locations import (
     ALIEN_CODE_LOCATIONS,
+    ALL_ALIEN_CODES_EVENT,
     BASE_VENDOR_LOCATIONS,
     CASE_REGIONS,
     KEYCARD_LOCATIONS,
     RATCHET_CHALLENGE_LOCATIONS,
     SKILL_POINT_LOCATIONS,
+    create_nanotech_locations,
+    create_ratchet_nanotech_locations,
+    create_stealth_locations,
+    create_weapon_level_locations,
 )
-from .locations.nanotech import create_nanotech_locations, create_ratchet_nanotech_locations
-from .locations.stealth import create_stealth_locations
-from .locations.skill_points import select_skill_points
-from .locations.weapon_levels import create_weapon_level_locations
-from .options import Goal
-from .rules.rule_helpers import case_access_rule, disabled_operatives
-from .rules.vendor_access import VENDOR_REQUIREMENTS
+from .options import Goal, enabled_operatives
+from .rules import VENDOR_REQUIREMENTS, CaseAccessRule, disabled_operatives
 
 if TYPE_CHECKING:
     from .world import SecretAgentClankWorld
+
+def select_skill_points(world):
+    eligible = sorted(name for name, definition in SKILL_POINT_LOCATIONS.items()
+                      if definition.available(world.options))
+    if world.using_ut and "selected_skill_points" in world.passthrough:
+        return frozenset(world.passthrough["selected_skill_points"])
+    if not world.options.skill_points or not world.options.random_skill_points:
+        return frozenset(eligible)
+    count = world.options.skill_point_count.value
+    if count > len(eligible):
+        raise OptionError(
+            f"{world.multiworld.player_name[world.player]}: Random Skill Points requests {count}, "
+            f"but only {len(eligible)} are available with difficulty "
+            f"{world.options.skill_points.current_key} and the enabled operatives. "
+            "Lower Random Skill Point Count, raise the difficulty, or enable more operatives."
+        )
+    return frozenset(world.random.sample(eligible, count))
+
 
 def create_regions(world: "SecretAgentClankWorld") -> None:
     player = world.player
@@ -40,7 +64,6 @@ def create_regions(world: "SecretAgentClankWorld") -> None:
     world.selected_skill_points = select_skill_points(world)
 
     menu_region = Region("Menu", player, multiworld)
-    # Clank's menu and Ratchet's PDA both provide vendor routes.
     has_vendor = any(
         case.operative not in disabled and
         not isinstance(VENDOR_REQUIREMENTS.get(case.name, False_()), False_)
@@ -51,66 +74,71 @@ def create_regions(world: "SecretAgentClankWorld") -> None:
         return CASE_NAME_TO_CASE[VENDOR_CASES[name]].operative not in disabled
 
     world.weapon_mod_catalog = (
-        tuple(mod for mod in enabled_mods(world.options.operatives.value, world.options.ng_plus.value)
+        tuple(mod for mod in enabled_mods(enabled_operatives(world.options), world.options.ng_plus.value)
               if available_stock(mod.location)) if has_vendor else ()
     )
     if world.using_ut:
-        saved_ids = world.passthrough.get("weapon_mod_ids", ())
+        saved_ids = world.passthrough["weapon_mod_ids"]
         world.weapon_mod_catalog = tuple(mod for mod in enabled_mods(
-            world.options.operatives.value, world.options.ng_plus.value) if mod.mod_id in saved_ids)
+            enabled_operatives(world.options), world.options.ng_plus.value) if mod.mod_id in saved_ids)
+    vendor_stock: set[str] = set()
     if has_vendor:
-        vendor_region = Region("Vendor", player, multiworld)
         def enabled_item(name):
             return (SACOperatives.CLANK if name.endswith("(Clank)")
                     else SACOperatives.RATCHET) not in disabled
-        for item in VENDOR_WEAPONS:
-            definition = BASE_VENDOR_LOCATIONS[vendor_location_name(item)]
-            if enabled_item(item) and definition.available(world.options) and available_stock(definition.name):
-                vendor_region.locations.append(SACLocation(
-                    player, definition.name, world.location_name_to_id[definition.name], vendor_region))
-        for mod in world.weapon_mod_catalog:
-            vendor_region.locations.append(SACLocation(
-                player, mod.location, world.location_name_to_id[mod.location], vendor_region))
+        vendor_stock.update(vendor_location_name(item) for item in VENDOR_WEAPONS
+                            if enabled_item(item)
+                            and BASE_VENDOR_LOCATIONS[vendor_location_name(item)].available(world.options)
+                            and available_stock(vendor_location_name(item)))
+        vendor_stock.update(mod.location for mod in world.weapon_mod_catalog)
         if world.options.ng_plus.value:
-            for internal, name in TITAN_LOCATIONS.items():
-                if enabled_item(EQUIPMENT_INTERNAL_TO_DISPLAY[internal]) and available_stock(name):
-                    vendor_region.locations.append(SACLocation(
-                        player, name, world.location_name_to_id[name], vendor_region))
-        menu_region.connect(vendor_region)
-        multiworld.regions.append(vendor_region)
+            vendor_stock.update(name for internal, name in TITAN_LOCATIONS.items()
+                                if enabled_item(EQUIPMENT_INTERNAL_TO_DISPLAY[internal]) and available_stock(name))
+
+    def enabled(definition) -> bool:
+        if definition.name in SKILL_POINT_LOCATIONS:
+            return definition.name in world.selected_skill_points
+        if definition.name in VENDOR_CASES:
+            return definition.name in vendor_stock
+        return definition.available(world.options)
+
     case_regions: dict[str, Region] = {
         case.name: Region(case.name, player, multiworld)
         for case in ALL_CASES if case.operative not in disabled
     }
 
     for case_name, region in case_regions.items():
-        # Stable sort: locations of one type keep their case file's order.
-        for definition in sorted(CASE_REGIONS[case_name].locations, key=lambda location: location.region_order):
-            if definition.name in SKILL_POINT_LOCATIONS:
-                if definition.name in world.selected_skill_points:
-                    region.locations.append(SACLocation(player, definition.name, world.location_name_to_id[definition.name], region))
-                continue
-            if definition.available(world.options):
-                region.locations.append(SACLocation(player, definition.name, world.location_name_to_id[definition.name], region))
+        definitions = sorted(CASE_REGIONS[case_name].locations, key=lambda location: location.region_order)
+        region.add_locations({
+            definition.name: world.location_name_to_id[definition.name] for definition in definitions
+            if enabled(definition)
+        }, SACLocation)
 
+    multiworld.regions += [menu_region, *case_regions.values()]
+    _create_treehouse_event(world, menu_region)
     _create_victory(world, case_regions, disabled)
 
     for case_name, region in case_regions.items():
         menu_region.connect(region, f"To {case_name}")
 
-    multiworld.regions += [menu_region, *case_regions.values()]
     create_weapon_level_locations(world, menu_region)
     create_nanotech_locations(world, menu_region)
     create_ratchet_nanotech_locations(world, menu_region)
     create_stealth_locations(world, menu_region)
 
 
+def _create_treehouse_event(world, menu_region):
+    """The native Case Files menu opens High Impact Treehouse once all 27 Alien Codes are scanned."""
+    reach = [CanReachLocation(location.name) if world.options.alien_code_checks_enabled
+             else CanReachRegion(location.case) for location in ALIEN_CODE_LOCATIONS.values()]
+    menu_region.add_event(ALL_ALIEN_CODES_EVENT, SACCases.HIGH_TREEHOUSE,
+                          Has(SACClankGadgets.THERM_OPTIC_SHADES) & And(*reach),
+                          location_type=SACLocation, item_type=SACItem)
+
+
 def _create_victory(world, case_regions, disabled_operatives):
     def add_victory(name, region, rule):
-        loc = SACLocation(world.player, name, None, region)
-        loc.place_locked_item(world.create_event("Victory"))
-        world.set_rule(loc, rule)
-        region.locations.append(loc)
+        region.add_event(name, "Victory", rule, location_type=SACLocation, item_type=SACItem)
 
     if world.options.goal != Goal.option_pick_and_mix:
         _create_goal_conditions(world, case_regions, disabled_operatives,
@@ -125,13 +153,10 @@ def _create_victory(world, case_regions, disabled_operatives):
         _create_goal_conditions(world, case_regions, disabled_operatives,
                                 Goal.from_any(name).value,
                                 lambda title, region, rule: conditions.append((region, rule)))
-    rule = True_()
-    for region, condition in conditions:
-        rule = rule & CanReachRegion(region.name) & condition
+    rule = And(*(CanReachRegion(region.name) & condition for region, condition in conditions))
     add_victory("Victory: Pick and Mix", conditions[0][0], rule)
 
 
-# Every goal Any can complete on, and Pick and Mix can combine.
 INDIVIDUAL_GOALS: tuple[int, ...] = (
     Goal.option_defeat_klunk, Goal.option_qwark_opera, Goal.option_all_gadgetbots,
     Goal.option_ratchet_prison_escape, Goal.option_these_are_the_real_adventures_of_captain_qwark,
@@ -147,7 +172,6 @@ GOAL_TITLES: dict[int, str] = {
     Goal.option_chalice_of_power: "Collect the Chalice of Power",
 }
 _GOAL_OPERATIVES: dict[int, str] = {
-    Goal.option_defeat_klunk: SACOperatives.CLANK,
     Goal.option_qwark_opera: SACOperatives.QWARK,
     Goal.option_all_gadgetbots: SACOperatives.GADGETBOTS,
     Goal.option_ratchet_prison_escape: SACOperatives.RATCHET,
@@ -156,12 +180,10 @@ _GOAL_OPERATIVES: dict[int, str] = {
 
 
 def _collectibles(goal: int, keycard_hunt=False) -> tuple:
-    """Both collectible goals need Alien Codes to reach the Treehouse.
-
-    The Chalice additionally needs physical keycards unless they are shuffled.
-    """
-    codes = tuple(ALIEN_CODE_LOCATIONS.values())
-    return codes if goal == Goal.option_alien_codes or keycard_hunt else codes + tuple(KEYCARD_LOCATIONS.values())
+    """Physical keycards the Chalice needs inside the Treehouse, unless they are shuffled."""
+    if goal == Goal.option_chalice_of_power and not keycard_hunt:
+        return tuple(KEYCARD_LOCATIONS.values())
+    return ()
 
 
 def _goal_unavailable(goal: int, case_regions: dict[str, Region], disabled_operatives: set[str], keycard_hunt=False) -> "str | None":
@@ -180,10 +202,8 @@ def _create_goal_conditions(
     world: "SecretAgentClankWorld", case_regions: dict[str, Region], disabled_operatives: set[str],
     goal: int, add_victory,
 ) -> None:
-    """Validate one goal and pass its victory requirements to the caller."""
     player_name = world.multiworld.get_player_name(world.player)
     if goal == Goal.option_any:
-        # Any completes on whichever achievable goal is finished first.
         goals = [g for g in INDIVIDUAL_GOALS if _goal_unavailable(g, case_regions, disabled_operatives, bool(world.options.keycard_hunt)) is None]
         if not goals:
             raise OptionError(f"{player_name}'s Secret Agent Clank: Goal is Any, but no goal can be "
@@ -200,21 +220,18 @@ def _create_goal_conditions(
 def _add_goal_victory(world: "SecretAgentClankWorld", case_regions: dict[str, Region], goal: int, add_victory) -> None:
     title = f"Victory: {GOAL_TITLES[goal]}"
     if goal in (Goal.option_alien_codes, Goal.option_chalice_of_power):
-        collectibles = _collectibles(goal, bool(world.options.keycard_hunt))
-        rule = Has(SACClankGadgets.THERM_OPTIC_SHADES)
-        for location in collectibles:
-            locations_enabled = (world.options.alien_code_checks_enabled
-                                 if location.name in ALIEN_CODE_LOCATIONS else world.options.keycard_checks_enabled)
-            # Native collectibles remain available even without AP reward checks.
-            rule = rule & (CanReachLocation(location.name) if locations_enabled else CanReachRegion(location.case))
-        if goal == Goal.option_chalice_of_power and world.options.keycard_hunt:
-            for name in KEYCARD_ITEMS:
-                rule = rule & Has(name)
-        add_victory(title, case_regions[collectibles[0].case], rule)
+        rule = Has(SACCases.HIGH_TREEHOUSE)
+        if goal == Goal.option_chalice_of_power:
+            if world.options.keycard_hunt:
+                rule = rule & HasAll(*KEYCARD_ITEMS)
+            else:
+                rule = rule & And(*(CanReachLocation(location.name) if world.options.keycard_checks_enabled
+                                    else CanReachRegion(location.case)
+                                    for location in _collectibles(goal)))
+        region = case_regions[next(iter(ALIEN_CODE_LOCATIONS.values())).case]
+        add_victory(title, region, rule)
     elif goal == Goal.option_ratchet_prison_escape:
-        rule = True_()
-        for name in RATCHET_CHALLENGE_LOCATIONS:
-            rule = rule & CanReachLocation(name)
+        rule = And(*(CanReachLocation(name) for name in RATCHET_CHALLENGE_LOCATIONS))
         add_victory(title, case_regions[SACCases.PRISON_BREAKOUT], rule)
     else:
         cases = {
@@ -223,7 +240,5 @@ def _add_goal_victory(world: "SecretAgentClankWorld", case_regions: dict[str, Re
             Goal.option_all_gadgetbots: CASES_BY_OPERATIVE[SACOperatives.GADGETBOTS],
             Goal.option_these_are_the_real_adventures_of_captain_qwark: CASES_BY_OPERATIVE[SACOperatives.QWARK],
         }[goal]
-        rule = case_access_rule(world, cases[0])
-        for case in cases[1:]:
-            rule = rule & case_access_rule(world, case)
+        rule = And(*(CaseAccessRule(case.name) for case in cases))
         add_victory(title, case_regions[cases[0].name], rule)

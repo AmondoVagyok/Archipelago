@@ -27,7 +27,6 @@ class SACWeaponMods:
     THUNDERSTORM_UMBRELLA_XENOS_CAPACITOR = "Thunderstorm Umbrella (Clank): Xeno's Capacitor Mod"
     THUNDERSTORM_UMBRELLA_THUNDERCLOUD = "Thunderstorm Umbrella (Clank): Thundercloud Mod"
 
-# Mod name -> SACVendor location; the CHALLENGE_MOD_IDS rewards are not sold and have none.
 MOD_VENDOR_LOCATION_NAMES: dict[str, str] = {
     SACWeaponMods.DUAL_LACERATORS_SEEKER: SACVendor.ASYANICA_ROOFTOPS_DUAL_LACERATOR_SEEKER,
     SACWeaponMods.DUAL_LACERATORS_HUNTER: SACVendor.ASYANICA_ROOFTOPS_DUAL_LACERATOR_HUNTER,
@@ -51,7 +50,7 @@ MOD_VENDOR_LOCATION_NAMES: dict[str, str] = {
 
 class WeaponMod(NamedTuple):
     mod_id: int
-    weapon: str  # SACRatchetWeapons/SACClankWeapons display name, not the WEAPON_ORDER internal
+    weapon: str
     slot: int
     name: str
     ng_plus: bool = False
@@ -84,9 +83,13 @@ WEAPON_MODS = (
 )
 
 
-# No Shelter and Past Due award these mods; they are not shop purchases.
 CHALLENGE_MOD_IDS = frozenset({5, 14})
 VENDOR_MODS = tuple(mod for mod in WEAPON_MODS if mod.mod_id not in CHALLENGE_MOD_IDS)
+CHALLENGE_MODS = tuple(mod for mod in WEAPON_MODS if mod.mod_id in CHALLENGE_MOD_IDS)
+
+def enabled_challenge_mods(characters):
+    return CHALLENGE_MODS if 'Ratchet' in characters else ()
+
 
 def enabled_mods(characters, ng_plus):
     return tuple(mod for mod in VENDOR_MODS

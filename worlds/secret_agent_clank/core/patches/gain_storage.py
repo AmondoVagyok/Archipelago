@@ -1,4 +1,5 @@
 """Verified storage in retail debug-print stubs that already do nothing."""
+from ..batch_io import read_blocks
 from ..symbols import require
 from . import mips as m
 from .asm import Patch, packed, jump
@@ -23,9 +24,10 @@ class GainStorage(PatchSet):
         # into an unconditional return -- dead code the game never re-enters,
         # confirmed by this exact signature before any hook claims the space.
         edits, ranges = [], []
-        for stub in DEBUG_STUBS:
-            address = require(symbols, stub.symbol)
-            if pine.read_bytes(address, len(stub.signature)) != stub.signature:
+        addresses = [require(symbols, stub.symbol) for stub in DEBUG_STUBS]
+        current = read_blocks(pine, [(address, len(stub.signature)) for address, stub in zip(addresses, DEBUG_STUBS)])
+        for stub, address, signature in zip(DEBUG_STUBS, addresses, current):
+            if signature != stub.signature:
                 raise RuntimeError(f"Gain storage stub layout changed: {stub.symbol}")
             edits.append(Patch(address, stub.signature[:len(RETURN_IMMEDIATELY)],
                                RETURN_IMMEDIATELY))
@@ -57,8 +59,7 @@ class GainStorage(PatchSet):
             0xE7A20020, 0xE7A30024, 0xE7A50028, 0x7BA20010, 0x7BA30020,
             0x7FA20000, jump(color, True), 0x7FA30010, 0xDFBF0030,
             0x03E00008, 0x27BD0040])
-        if (self.pine.read_bytes(address, len(code)) != code
-                or self.pine.read_bytes(color, len(color_code)) != color_code):
+        if read_blocks(self.pine, [(address, len(code)), (color, len(color_code))]) != [code, color_code]:
             raise RuntimeError("Gain storage line stub layout changed")
         return ([Patch(address, code[:8], RETURN_IMMEDIATELY)],
                 [(address + 8, address + len(code))])

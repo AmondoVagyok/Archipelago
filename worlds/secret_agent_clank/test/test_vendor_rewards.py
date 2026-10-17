@@ -2,11 +2,9 @@ import unittest
 from pathlib import Path
 from unittest.mock import Mock
 
-from ..client.vendor_scouts import VendorReward
-from ..core.patches.vendor_presentation import VendorPresentation
-from ..core.symbols import RuntimeSymbols
-from ..core.vendor import VendorItem, VendorState
-from ..core.vendor_rewards import VendorRewards
+from ..client import VendorReward
+from ..core.patches import VendorPresentation
+from ..core import RuntimeSymbols, VendorItem, VendorRewards, VendorState
 from .test_native_capture_plans import CaptureMemory
 
 

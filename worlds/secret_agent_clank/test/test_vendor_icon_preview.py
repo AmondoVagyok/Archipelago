@@ -1,10 +1,8 @@
-"""Icon preview transaction regression using the recorded native test plan."""
 import json
 import unittest
 from pathlib import Path
 
-from ..core.patches.asm import Patch
-from ..core.patches.vendor_icon_preview import VendorIconPreview
+from ..core.patches import Patch, VendorIconPreview
 from .test_native_capture_plans import CaptureMemory
 
 

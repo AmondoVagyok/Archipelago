@@ -1,4 +1,3 @@
-"""Larger Than Life: the case region and every location in it, with its access rule."""
 from ..constants import SACCases, SACCutsceneLocations, SACMissionLocations, SACSkillPointLocations
 from .model import CaseRegion, SACLocation, SACLocationType
 

@@ -2,9 +2,17 @@
 import struct
 from typing import TYPE_CHECKING
 
-from ...constants.missions import CHAPTER_ENTRIES, MISSION_COMPLETE_NAME, MISSION_NAMES, MissionFlag, NATIVE_FINISH_CASES
-from ...constants.cutscenes import CUTSCENE_FLAGS, SACCutsceneLocations
-from ...constants.planets import CASE_NAME_TO_CASE, SACCases
+from ...constants import (
+    CASE_NAME_TO_CASE,
+    CHAPTER_ENTRIES,
+    CUTSCENE_FLAGS,
+    MISSION_COMPLETE_NAME,
+    MISSION_NAMES,
+    NATIVE_FINISH_CASES,
+    MissionFlag,
+    SACCases,
+    SACCutsceneLocations,
+)
 from ..case_menu import CASE_LABELS
 from ..symbols import RuntimeSymbols
 
@@ -13,24 +21,18 @@ if TYPE_CHECKING:
     from ...pypine import Pine
 
 
-# The USA module exports g_MISSION_LEVEL_LIST as a direct 33-slot array.
-# Verified in live Museum RAM: base 0x5775A0, slot 1 -> 0x576200/count 3.
-# The old resolver read the previous export, then compensated with +0x60.
 _CHAPTER_TABLE_OFFSET = 0
 _CHAPTER_TABLE_SLOTS = 33
-_TASK_ENTRY_SIZE = 0x60        # bytes per task entry within a chapter's task array
-_TASK_STATE_OFFSET = 0xC       # state field within a task entry (1 byte, MissionFlag-valued)
+_TASK_ENTRY_SIZE = 0x60
+_TASK_STATE_OFFSET = 0xC
 
-# Every location this inventory reports: each mission, and each "<case> Complete".
 _REPORTABLE_NAMES = frozenset((*MISSION_NAMES, *MISSION_COMPLETE_NAME.values()))
 
-# Sanity limits for a chapter-table slot, so a stale or mid-transition read is ignored.
-_PLAUSIBLE_PTR_RANGE: tuple[int, int] = (0x00100000, 0x02000000)  # PS2 EE main RAM, roughly
+_PLAUSIBLE_PTR_RANGE: tuple[int, int] = (0x00100000, 0x02000000)
 _PLAUSIBLE_MAX_COUNT = 10
 
 
 def find_mission_level_list(pine: "Pine") -> "int | None":
-    """g_MISSION_LEVEL_LIST's address in the currently loaded module."""
     symbols = RuntimeSymbols(pine)
     symbols.refresh()
     return symbols.get("g_MISSION_LEVEL_LIST")
@@ -105,11 +107,8 @@ class MissionInventory:
         """Progress can persist into the next module before the next host poll."""
         self._resolve_labels()
         found = []
-        # The final boss can enter the ending without completing its task row.
-        # Its resident ending flag survives that transition and missing tables.
         names = dict.fromkeys(self._resolved_cases or {})
         names[SACCases.KLUNKS_LAIR] = None
-        # A captured finish must remain retryable even if the table disappears.
         names.update(dict.fromkeys(NATIVE_FINISH_CASES.values()))
         for name in names:
             case = CASE_NAME_TO_CASE.get(name)
@@ -136,17 +135,12 @@ class MissionInventory:
             mission = CHAPTER_ENTRIES[current_case.name][0].name
             complete_name = MISSION_COMPLETE_NAME[current_case.name]
             if self.completed[mission] or complete_name in self._reported:
-                # Restore the display after reload from the captured finish or
-                # server-confirmed check, without forging the next intro flag.
                 addresses = self._resolve_case_addresses(current_case)
                 if addresses and len(addresses) == 1:
                     if self.pine.read_int32(addresses[0]) != MissionFlag.UNLOCKED_COMPLETED:
                         self.pine.write_int32(addresses[0], MissionFlag.UNLOCKED_COMPLETED)
                 name = mission if all_missions else complete_name
                 return [] if name in self._reported else [name]
-            # Retail marks these tasks complete from the next case's intro,
-            # which can be visited independently in AP. Only the native finish
-            # receipt (or an AP-confirmed check) is evidence of completion.
             return []
         if current_case.name == SACCases.KLUNKS_LAIR:
             ending = CUTSCENE_FLAGS[SACCutsceneLocations.KLUNKS_LAIR_COMPLETE_CUTSCENE]

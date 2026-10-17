@@ -1,30 +1,39 @@
-"""Applies access rules. Per-location rules live on the records in locations/<case>.py."""
-from typing import TYPE_CHECKING
+from .entrances import KLUNKS_LAIR_WEAPONS, CaseAccessRule, set_entrance_rules
+from .nanotech import ClankNanotechRule, RatchetNanotechRule
+from .rule_helpers import (
+    CLANK_ENEMY_CASES,
+    HasCase,
+    HasCharacter,
+    HasPlanet,
+    HasProjectileWeapon,
+    ProgressiveChallengeModeRule,
+    ProgressiveWrenchRule,
+    disabled_operatives,
+    region_names,
+)
+from .stealth import StealthCaseRule
+from .vendor_access import VENDOR_ONLY_ITEM_NAMES, VENDOR_REQUIREMENTS, VendorCaseRule
+from .weapon_levels import CLANK_WEAPON_LEVEL_CASES, WeaponLevelRule
 
-from rule_builder.rules import Has
-
-from .entrances import set_entrance_rules
-from .rule_helpers import HasCase, HasCharacter, HasPlanet
-from .vendor_access import set_vendor_rules
-
-if TYPE_CHECKING:
-    from ..world import SecretAgentClankWorld
-
-__all__ = ["HasCase", "HasCharacter", "HasPlanet", "set_rules"]
-
-
-def set_rules(world: "SecretAgentClankWorld") -> None:
-    # Imported here: the per-case location files import this package for their rules.
-    from ..locations import CASE_LOCATIONS
-
-    world.set_completion_rule(Has("Victory"))
-
-    set_entrance_rules(world)
-
-    locations = {location.name: location for location in world.multiworld.get_locations(world.player)}
-    for definition in CASE_LOCATIONS:
-        location = locations.get(definition.name)
-        rule = definition.resolve_rule(world) if location is not None else None
-        if rule is not None:
-            world.set_rule(location, rule)
-    set_vendor_rules(world)
+__all__ = [
+    "CLANK_ENEMY_CASES",
+    "CLANK_WEAPON_LEVEL_CASES",
+    "KLUNKS_LAIR_WEAPONS",
+    "VENDOR_ONLY_ITEM_NAMES",
+    "VENDOR_REQUIREMENTS",
+    "CaseAccessRule",
+    "ClankNanotechRule",
+    "HasCase",
+    "HasCharacter",
+    "HasPlanet",
+    "HasProjectileWeapon",
+    "ProgressiveChallengeModeRule",
+    "ProgressiveWrenchRule",
+    "RatchetNanotechRule",
+    "StealthCaseRule",
+    "VendorCaseRule",
+    "WeaponLevelRule",
+    "disabled_operatives",
+    "region_names",
+    "set_entrance_rules",
+]

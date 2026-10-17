@@ -1,19 +1,18 @@
 """Unlock cosmetic menu entries and feed the game's native skin loader."""
 import struct
 
-from ..constants.skins import (
+from ..constants import (
     ALL_SKINS_MASK,
     DEFAULT_RATCHET_SKIN,
     QWARK_GIANT_SKINS,
+    SKINS_BY_CHARACTER,
     SKIN_CHARACTER_STRIDE,
     SKIN_OWNED_OFFSET,
     SKIN_SAVE_OFFSET,
-    SKINS_BY_CHARACTER,
     UNSUPPORTED_RATCHET_SKIN,
 )
 from .global_flags import GlobalFlags
-from .patches import mips as m
-from .patches.asm import Patch, jump, packed
+from .patches import Patch, jump, mips as m, packed
 from .symbols import require
 
 
@@ -28,7 +27,7 @@ class Skins:
         for character, skins in SKINS_BY_CHARACTER.items():
             value = int(data.get(f"{character}_skin", 0))
             if character == "ratchet" and value == UNSUPPORTED_RATCHET_SKIN:
-                value = DEFAULT_RATCHET_SKIN  # Compatibility with older slot data.
+                value = DEFAULT_RATCHET_SKIN
             if value != 0 and value not in skins.values():
                 raise ValueError(f"Invalid {character} skin: {value}")
             selected[character] = value

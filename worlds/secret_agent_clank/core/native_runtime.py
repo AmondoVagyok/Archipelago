@@ -1,21 +1,28 @@
 """Install native location hooks before each loaded module starts gameplay."""
 import logging
 
-from ..constants.native_modules import CASE_MODULES
-from ..constants.missions import NATIVE_FINISH_CASES
-from ..constants.planets import CASES_BY_OPERATIVE
-from ..constants.operatives import SACOperatives
-from ..constants.vendor import vendor_location_name
-from ..constants.weapons import EQUIPMENT_INTERNAL_TO_DISPLAY
 from .address_maps import CURRENT_CASE_ADDRESS, FORCE_CASE_ADDRESS
 from .main_menu import is_main_menu
-from .patches import PICKUP_LOCATIONS, VENDOR_LOCATIONS
-from .patches.connection_warning import ConnectionWarning
-from .patches.loader_gate import LoaderBarrierLost, LoaderGate
-from .patches.mission_travel import MissionTravel
-from .patches.starting_case import StartingCase
-from .patches.titan_vendor import TitanOffers, TitanVendor
-from .patches.vendor_catalog import VendorCatalog
+from ..constants import (
+    CASES_BY_OPERATIVE,
+    CASE_MODULES,
+    EQUIPMENT_INTERNAL_TO_DISPLAY,
+    NATIVE_FINISH_CASES,
+    PICKUP_LOCATIONS,
+    VENDOR_LOCATIONS,
+    SACOperatives,
+    vendor_location_name,
+)
+from .patches import (
+    ConnectionWarning,
+    LoaderBarrierLost,
+    LoaderGate,
+    MissionTravel,
+    StartingCase,
+    TitanOffers,
+    TitanVendor,
+    VendorCatalog,
+)
 from .symbols import RuntimeSymbols
 
 
@@ -31,7 +38,6 @@ logger = logging.getLogger("CommonClient")
 class NativeRuntime:
     def __init__(self, pine, hooks, log, debug=None):
         self.pine, self.hooks, self.log = pine, hooks, log
-        # Diagnostics only shown while the client's /debug is on.
         self.debug = debug or logger.debug
         self.gate = LoaderGate(pine)
         self.awaiting_start = False
@@ -51,6 +57,7 @@ class NativeRuntime:
         self.connection_warning = ConnectionWarning(pine)
         self.ap_connected = False
         self.owned_cases = frozenset()
+        self.vendor_cases = frozenset()
         self.starting_case = StartingCase(pine, log)
         self.mission_travel = None
         self.on_mission_complete = lambda case_name: None
@@ -61,10 +68,6 @@ class NativeRuntime:
     def vendor_enabled_for_module(self, module):
         if module not in self.vendor_modules:
             return False
-        # These two DLLs are shared with Gadgetbots and Qwark respectively.
-        # Read the resident USA save flags, already set by Case Files / New
-        # Game before the loader gate. The incoming DLL's pGV is not yet bound.
-        # GLOBAL flag A9 = Asyanica Clank; C8 = Rionosis Qwark (save + 0x4E0).
         if module == 4:
             return bool(self.pine.read_int8(0x206C89) & 1)
         if module == 11:
@@ -82,9 +85,7 @@ class NativeRuntime:
                     self.gate.arm()
                 return False
             if self.awaiting_start:
-                if (p.read_int32(self.gate.STATE) == 4
-                        or p.read_int32(0x206324) != 0xFFFFFFFF
-                        or p.read_int32(0x206338) != 3):
+                if not self._gameplay_settled():
                     return False
                 if (p.read_int32(0x206328) != self.hooks.module
                         or (self.hooks.entitlement_table is not None
@@ -94,10 +95,8 @@ class NativeRuntime:
             if not self.gate.armed:
                 self.gate.arm()
             try:
-                target = self.gate.held_module()
+                target = self.gate.held_module(settled=True)
             except LoaderBarrierLost as exc:
-                # A fresh load cannot fix a barrier that disappears on every
-                # transition. Stop sync instead of repeatedly reloading.
                 self.gate.armed = False
                 self.hooks.installed = False
                 raise LoaderBarrierLost(
@@ -117,7 +116,7 @@ class NativeRuntime:
                         self.debug("[SAC] Loading is held while waiting for saved stealth "
                                  "progress from the AP server. Use /sac_info to inspect the wait.")
                         self._stealth_wait_logged = True
-                    return False  # Keep the loader parked until slot progress is known.
+                    return False
                 self._stealth_wait_logged = False
                 symbols = RuntimeSymbols(p)
                 symbols.refresh()
@@ -156,13 +155,16 @@ class NativeRuntime:
                 if self.progression is not None:
                     self.hooks.patches.extend(self.progression.prepare(
                         symbols, self.hooks, target, vendor_enabled=vendor_enabled))
+                self._require_held_module(target)
                 self.hooks.install_at_loader_gate(self.gate)
+                self._require_held_module(target)
                 if self.vendor_catalog is not None:
                     self.vendor_catalog.challenge_level = self.progression.ng_plus if self.progression is not None else 0
-                    self.vendor_catalog.sync_cases(self.owned_cases)
+                    self.vendor_catalog.sync_cases(self.vendor_cases)
                 if self.skins is not None:
                     self.skins.sync()
                 self.connection_warning.refresh(self.ap_connected)
+                self._require_held_module(target)
                 self.generation += 1
                 self.gate.release()
                 self.awaiting_start = True
@@ -178,8 +180,6 @@ class NativeRuntime:
             if self.hooks.installed and self.hooks.is_current():
                 if self.hooks.entitlement_table is not None and not p.read_int8(self.hooks.entitlement_table + 40):
                     return False
-                # Recheck after inspecting module-local memory: travel may
-                # have started during those PINE round trips.
                 if not self._gameplay_settled():
                     return False
                 mailbox = getattr(self.mission_travel, "completion_mailbox", None)
@@ -191,7 +191,7 @@ class NativeRuntime:
                 self.connection_warning.refresh(self.ap_connected)
                 if self.vendor_catalog is not None:
                     self.vendor_catalog.challenge_level = self.progression.ng_plus if self.progression is not None else 0
-                    self.vendor_catalog.sync_cases(self.owned_cases)
+                    self.vendor_catalog.sync_cases(self.vendor_cases)
                 if self.keycard_hunt is not None:
                     self.keycard_hunt.sync()
                 self.hooks.sync_checked(checked)
@@ -204,6 +204,10 @@ class NativeRuntime:
         except Exception:
             self.close()
             raise
+
+    def _require_held_module(self, target):
+        if self.gate.held_module() != target:
+            raise RuntimeError("Loaded module changed or left the loader barrier during hook setup")
 
     def _gameplay_settled(self, *, require_current=True):
         """Reject outgoing modules and every intermediate loader state."""
@@ -223,10 +227,8 @@ class NativeRuntime:
         if (module not in CASE_MODULES.values() or requested != 0xFFFFFFFF
                 or loader != 5 or game != 3):
             return
-        # Never replace travel that began while we were examining the state.
         if p.batch_read_int32(addresses) != state or is_main_menu(p):
             return
-        # Mark first: a lost write acknowledgement must not cause repeated reloads.
         self.reload_requested = True
         self.hooks.installed = False
         p.write_int32(FORCE_CASE_ADDRESS, module)

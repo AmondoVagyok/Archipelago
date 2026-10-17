@@ -29,13 +29,11 @@ class ItemInventory:
         self.pine.write_int8(addr, 1 if unlocked else 0)
 
     def strip_all(self) -> None:
-        """Zero every tracked item's unlocked bit."""
         for name in self.item_addrs:
             self.set(name, False)
         self.owned = dict.fromkeys(self.item_addrs, False)
 
     def apply_all(self, ap_owned: dict[str, bool]) -> None:
-        """Write true AP ownership for every tracked item."""
         for name in self.item_addrs:
             owned = ap_owned.get(name, False)
             if self.owned.get(name) != owned:

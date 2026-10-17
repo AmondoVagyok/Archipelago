@@ -1,9 +1,10 @@
 """Use AP ownership at the Treehouse door without writing pickup save bits."""
-from ...constants.keycards import KEYCARD_ITEMS
+from ...constants import KEYCARD_ITEMS
 from ..global_flags import GlobalFlags
 from ..symbols import require
 from . import mips as m
-from .asm import Patch, jump, packed, words
+from ..batch_io import read_blocks
+from .asm import Patch, capture, jump, packed, words
 from .gain_storage import GainStorage
 from .storage import plan_storage
 
@@ -54,8 +55,7 @@ class KeycardHunt:
             raise RuntimeError("Insufficient verified storage for Keycard Hunt")
         entry, table = addresses
         code = self.routine(table, getter, original)
-        for address, data in ((entry, code), (table, packed([self.mask]))):
-            edits.append(Patch(address, self.pine.read_bytes(address, len(data)), data))
+        edits.extend(capture(self.pine, [(entry, code), (table, packed([self.mask]))]))
         edits.append(Patch(getter, original, packed([jump(entry), m.NOP])))
         self.entry, self.table, self.code = entry, table, code
         self.pointer_address = flags.pointer_address
@@ -64,9 +64,9 @@ class KeycardHunt:
     def sync(self):
         if not self.enabled or self.table is None:
             return
-        if (self.pine.read_int32(0x206328) != 31
-                or self.pine.read_int32(0x206324) != 0xFFFFFFFF):
+        module, loading, code = read_blocks(self.pine, [(0x206328, 4), (0x206324, 4), (self.entry, len(self.code))])
+        if module != packed([31]) or loading != packed([0xFFFFFFFF]):
             return
-        if self.pine.read_bytes(self.entry, len(self.code)) != self.code:
+        if code != self.code:
             raise RuntimeError("Keycard Hunt code changed")
         self.pine.write_int32(self.table, self.mask)

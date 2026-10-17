@@ -6,21 +6,30 @@ from unittest.mock import Mock
 from BaseClasses import CollectionState
 from test.general import setup_multiworld
 
-from ..constants import CASE_NAME_TO_INFOBOT, SACCases
-from ..constants.stealth import STEALTH_CASES, STEALTH_MAX_PER_CASE, stealth_location_name
-from ..constants.weapon_progression import UNLOCK_TO_PROGRESSIVE
+from ..constants import (
+    CASE_NAME_TO_INFOBOT,
+    STEALTH_CASES,
+    STEALTH_MAX_PER_CASE,
+    UNLOCK_TO_PROGRESSIVE,
+    SACCases,
+    SACClankGadgets,
+    SACClankWeapons,
+    stealth_location_name,
+)
 from ..locations import LOCATION_NAME_TO_ID
-from ..constants.clank_gadgets import SACClankGadgets, SACClankWeapons
-from ..core.patches import PICKUP_LOCATIONS, VENDOR_LOCATIONS, LocationHooks
+from ..constants import PICKUP_LOCATIONS, VENDOR_LOCATIONS
+from ..core.patches import (
+    LocationHooks,
+    MissionTravel,
+    Progression,
+    TitanOffers,
+    TitanVendor,
+    VendorCatalog,
+    VendorPresentation,
+    WeaponMods,
+)
 from ..core.patches import mips as m
-from ..core.patches.mission_travel import MissionTravel
-from ..core.patches.progression import Progression
-from ..core.patches.titan_vendor import TitanOffers, TitanVendor
-from ..core.patches.vendor_catalog import VendorCatalog
-from ..core.patches.vendor_presentation import VendorPresentation
-from ..core.patches.weapon_mods import WeaponMods
-from ..core.stealth import END, StealthState
-from ..core.symbols import RuntimeSymbols
+from ..core import END, RuntimeSymbols, StealthState
 from ..world import SecretAgentClankWorld
 from .mips_cpu import CPU
 from .test_native_capture_plans import CaptureMemory
@@ -42,16 +51,13 @@ class StealthTests(unittest.TestCase):
             slot = mw.worlds[1].fill_slot_data()
             self.assertEqual(slot["stealth_takedown_checks"], setting)
             self.assertEqual(slot["stealth_cases"], expected)
-        # IDs exist for every stealth case and takedown up to the slider maximum.
         for case in STEALTH_CASES:
             for n in range(1, STEALTH_MAX_PER_CASE + 1):
                 self.assertIn(stealth_location_name(case, n), LOCATION_NAME_TO_ID)
-        # Without Clank the slider is ignored: no stealth locations, no options error.
-        for operatives in ({"Qwark": 1, "Ratchet": 1}, {"Qwark": 1, "Clank": 0}):
-            mw = setup_multiworld(SecretAgentClankWorld, options={"stealth_takedown_checks": 5,
-                "goal": "qwark_opera", "operatives": operatives})
-            self.assertFalse(any(l.parent_region.name == "Clank Stealth Takedowns" for l in mw.get_locations(1)))
-            self.assertEqual(mw.worlds[1].fill_slot_data()["stealth_cases"], {})
+        mw = setup_multiworld(SecretAgentClankWorld, options={"stealth_takedown_checks": 5,
+            "goal": "qwark_opera", "operatives": {"Qwark": 1, "Ratchet": 1}})
+        self.assertTrue(any(l.parent_region.name == "Clank Stealth Takedowns" for l in mw.get_locations(1)))
+        self.assertTrue(mw.worlds[1].fill_slot_data()["stealth_cases"])
 
     def test_access_requires_case_and_case_items(self):
         mw = setup_multiworld(SecretAgentClankWorld, options={"stealth_takedown_checks": 2, "infobots": "cases"})
@@ -67,12 +73,10 @@ class StealthTests(unittest.TestCase):
             state.collect(world.create_item(UNLOCK_TO_PROGRESSIVE.get(weapon, weapon)
                                             if world.options.progressive_weapons else weapon))
 
-        # Other stealth cases only need the case itself.
         museum = SACCases.BOLTAIRE_MUSEUM
         self.assertFalse(reachable(museum))
         state.collect(world.create_item(CASE_NAME_TO_INFOBOT[museum]))
         self.assertTrue(reachable(museum))
-        # Asyanica Rooftops also needs its case-complete items: Throwtie, Jetboots and the Omnikey.
         rooftops = SACCases.ASYANICA_ROOFTOPS
         state.collect(world.create_item(CASE_NAME_TO_INFOBOT[rooftops]))
         self.assertFalse(reachable(rooftops))
@@ -80,7 +84,6 @@ class StealthTests(unittest.TestCase):
         self.assertFalse(reachable(rooftops))
         state.collect(world.create_item(SACClankGadgets.JETBOOTS))
         self.assertFalse(reachable(rooftops))
-        # Galactic Bolt Reserve also needs Cufflink and the Omnikey.
         reserve = SACCases.GALACTIC_BOLT_RESERVE
         state.collect(world.create_item(CASE_NAME_TO_INFOBOT[reserve]))
         self.assertFalse(reachable(reserve))
@@ -119,10 +122,9 @@ class StealthTests(unittest.TestCase):
         s.load({alley: 1})
         s.poll()
         s.on_count.assert_called_once_with({museum: 4})
-        # Each case is capped at its own check count; other cases keep their own progress.
         self.assertEqual(s.checks(), (stealth_location_name(museum, 1), stealth_location_name(museum, 2),
                                       stealth_location_name(alley, 1)))
-        self.assertEqual(s.checks(), s.checks())  # checks retry until normal delivery accepts them
+        self.assertEqual(s.checks(), s.checks())
         mem.batch_write_int32([(0x1000, 0)])
         s.poll()
         self.assertEqual(mem.read_int32(0x1000), 4)
@@ -133,7 +135,7 @@ class StealthTests(unittest.TestCase):
         s.poll()
         self.assertIsNone(s.binding)
         with self.assertRaises(ValueError):
-            s.load(5)  # The old single global counter.
+            s.load(5)
         s.configure({}, reset=True)
         self.assertEqual(s.checks(), ())
 
@@ -214,9 +216,6 @@ class StealthTests(unittest.TestCase):
                     hooks.patches.extend(VendorCatalog(mem).prepare(symbols, hooks))
                     hooks.patches.extend(prog.prepare(symbols, hooks, module))
                     hooks.patches.extend(VendorPresentation(mem).prepare(symbols, hooks))
-                    # The pre-existing ConnectionWarning prologue signature
-                    # does not match these captures (second word is LUI).
-                    # Its unrelated installation is covered by its own tests.
                     spans = sorted((p.address, p.address + len(p.replacement)) for p in hooks.patches)
                     self.assertTrue(all(b <= c for (a,b),(c,d) in zip(spans, spans[1:])))
                     hooks._install_plan()

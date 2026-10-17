@@ -2,15 +2,30 @@ import struct
 import unittest
 from types import SimpleNamespace
 
-from ..constants.weapon_progression import PROGRESSIVE_TO_INTERNAL
-from ..core.inventories.weapons import WEAPON_ORDER
-from ..core.patches.progression import Progression
+from ..constants import PROGRESSIVE_TO_INTERNAL, WEAPON_ORDER
+from ..core.patches import Progression
 from .mips_cpu import CPU
 from .test_native_capture_plans import CaptureMemory
 from .test_runtime import Memory
 
 
 class ProgressionTests(unittest.TestCase):
+    def test_weapon_multiplier_scales_capped_award_and_preserves_level_up_path(self):
+        for multiplier in range(2, 11):
+            for award in (0, 1, 100):
+                for allow_level_up in (0, 1):
+                    with self.subTest(multiplier=multiplier, award=award, allow_level_up=allow_level_up):
+                        p = CaptureMemory()
+                        p.write_bytes(0x110000, Progression.weapon_gain_wrapper(0x120000, multiplier))
+                        p.write_int32(0x130064, 777)
+                        cpu = CPU(p)
+                        cpu.r[18], cpu.r[20], cpu.r[21] = award, 0x130000, allow_level_up
+                        cpu.run(0x110000, stop=0x12011C if allow_level_up else 0x12010C)
+                        self.assertEqual(cpu.r[18], award * multiplier)
+                        self.assertEqual(cpu.r[4], 777)
+                        self.assertEqual(cpu.r[20:22], [0x130000, allow_level_up])
+                        self.assertEqual(cpu.r[31], CPU.STOP)
+
     def test_compact_gain_wrapper_replays_prologue_in_jump_delay_slot(self):
         for register in (4, 5):
             for value in (-100, 0, 1, 12345):
@@ -36,7 +51,6 @@ class ProgressionTests(unittest.TestCase):
         for offset, word in enumerate((0x3C020021, 0x8C448000, 0x8C830ED4, 0x0003182B)):
             mem.batch_write_int32([(replay + 0x1C + offset * 4, word)])
         symbols = {"GADGET_g_GadgetList": 0x100000, "GLOBALVARS_IsInReplayMode__Fv": replay}
-        # A relocated module has a valid code signature but a null save pointer.
         self.assertEqual(pr.prepare(symbols, SimpleNamespace(patches=[]), 1, vendor_enabled=False), [])
         self.assertEqual(pr.save_pointer_address, pointer)
         self.assertIsNone(pr.ng_address)
@@ -81,7 +95,7 @@ class ProgressionTests(unittest.TestCase):
     def test_caps_ownership_and_duplicate_replay(self):
         p = Progression(Memory())
         for ng in (0, 1, 2):
-            p.configure({"progressive_weapons": True, "ng_plus": ng})
+            p.configure({"progressive_weapons": 2, "ng_plus": ng})
             p.receive([])
             self.assertFalse(any(p.ownership().values()))
             for name, internal in PROGRESSIVE_TO_INTERNAL.items():
@@ -106,7 +120,7 @@ class ProgressionTests(unittest.TestCase):
     def test_native_zero_based_level_and_xp_reset(self):
         mem = Memory()
         p = Progression(mem)
-        p.configure({"progressive_weapons": True, "ng_plus": 1})
+        p.configure({"progressive_weapons": 2, "ng_plus": 1})
         name = next(n for n, i in PROGRESSIVE_TO_INTERNAL.items() if i == "blaster")
         p.receive([name] * 5)
         p.base = 0x100000
@@ -126,8 +140,6 @@ class ProgressionTests(unittest.TestCase):
                     Progression(Memory()).configure({key: value})
 
     def test_emitted_gain_instructions_preserve_deductions(self):
-        # Execute the arithmetic prefix, including the branch delay slot;
-        # ensure both paths resume the untouched prologue and target+8.
         original = struct.pack("<2I", 0x27BDFFF0, 0xFFB00000)
         for reg in (4, 5):
             for value in (-100, 0, 1, 12345):
@@ -139,7 +151,7 @@ class ProgressionTests(unittest.TestCase):
                 while pc < 4:
                     word = code[pc]
                     op, rs, rt = word >> 26, (word >> 21) & 31, (word >> 16) & 31
-                    if op == 6:  # blez; execute addiu delay slot
+                    if op == 6:
                         delay = code[pc + 1]
                         self.assertEqual(delay >> 26, 9)
                         regs[(delay >> 16) & 31] = delay & 65535

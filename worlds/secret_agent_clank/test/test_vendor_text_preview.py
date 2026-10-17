@@ -1,11 +1,9 @@
-"""Native vendor text preview regression tests."""
 import struct
 import unittest
 from pathlib import Path
 
-from ..core.notifications import ItemNotifications
-from ..core.patches.vendor_text_preview import VendorTextPreview
-from ..core.symbols import RuntimeSymbols
+from ..core import ItemNotifications, RuntimeSymbols
+from ..core.patches import VendorTextPreview
 from .test_native_capture_plans import CaptureMemory
 
 

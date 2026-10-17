@@ -1,8 +1,7 @@
 """Refresh scouted vendor cosmetics without changing native transactions."""
 from importlib.resources import files
 
-from .patches.vendor_icon_preview import VendorIconPreview
-from .patches.vendor_presentation import VendorPresentation
+from .patches import VendorIconPreview, VendorPresentation
 
 
 class VendorRewards:
@@ -19,7 +18,6 @@ class VendorRewards:
         self.palette = root.joinpath("archipelago-icon.clut").read_bytes()
 
     def invalidate(self):
-        # Module storage may already be freed. Never restore through old pointers.
         self.icon = VendorIconPreview(self.pine)
         self.last_text = None
         self.rows.clear()
@@ -57,8 +55,6 @@ class VendorRewards:
             rewards = [(row, self.scouts.for_row(row)) for row in rows]
             ap_rows = any(row.node_type in (0, 3, 4) for row in rows)
             if not ap_rows and self.icon.installed:
-                # Ammo uses real weapon art, including the Shock Rocket
-                # texture borrowed for the AP logo on the purchase tab.
                 self.icon.restore()
                 self.rows.clear()
             if ap_rows and any(row.icon == self.icon.ICON_ID or reward is not None
@@ -83,8 +79,6 @@ class VendorRewards:
                 return
             row, reward = entry
             key = (pointer, row.index, row.node_type, row.weapon_id, row.mod_id, reward)
-            # Native hints can own the shared buffer while the vendor is open.
-            # Defer text replacement until their timer is clear.
             if self.text.mailbox is not None and not self.pine.read_int32(self.text.timer):
                 if key != self.last_text or self.pine.read_int32(self.text.mailbox) != (pointer + row.index * 0x1C if reward else 0):
                     self.text.publish(pointer + row.index * 0x1C, row, reward)

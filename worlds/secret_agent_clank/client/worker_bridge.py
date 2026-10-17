@@ -57,8 +57,6 @@ class GameWorker:
             operation = asyncio.create_task(asyncio.to_thread(
                 self._exchange, command, payload, asyncio.get_running_loop()))
             try:
-                # Cancellation must not release the lock while an exchange still
-                # owns the pipe. Otherwise a later RPC could consume its reply.
                 return await asyncio.shield(operation)
             except asyncio.CancelledError:
                 try:

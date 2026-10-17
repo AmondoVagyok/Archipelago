@@ -6,9 +6,8 @@ from unittest.mock import Mock
 from Options import OptionError
 from test.general import setup_multiworld
 
-from ..constants.missions import MISSION_COMPLETE_NAME
-from ..constants.planets import SACCases
-from ..core.core import Core
+from ..constants import MISSION_COMPLETE_NAME, SACCases
+from ..core import Core
 from ..options import Goal, PickAndMixGoals, SecretAgentClankOptions, sac_option_groups
 from ..universal_tracker import setup_options_from_slot_data
 from ..world import SecretAgentClankWorld
@@ -61,7 +60,7 @@ class PickAndMixTests(unittest.TestCase):
     def test_empty_and_disabled_goals_fail(self):
         with self.assertRaisesRegex(OptionError, 'at least one'):
             setup_multiworld(SecretAgentClankWorld, options={'goal': 'pick_and_mix'})
-        for name, operative in (('defeat_klunk', 'Clank'), ('qwark_opera', 'Qwark'),
+        for name, operative in (('qwark_opera', 'Qwark'),
                                 ('all_gadgetbots', 'Gadgetbots'), ('ratchet_prison_escape', 'Ratchet')):
             with self.subTest(goal=name), self.assertRaises(OptionError):
                 setup_multiworld(SecretAgentClankWorld, options={
@@ -78,11 +77,6 @@ class PickAndMixTests(unittest.TestCase):
         setup_options_from_slot_data(world)
         self.assertEqual(world.options.goal.value, Goal.option_pick_and_mix)
         self.assertEqual(world.options.pick_and_mix_goals.value, {'qwark_opera'})
-        # Seeds generated with the former checkbox still regenerate correctly.
-        slot['goal'] = Goal.option_defeat_klunk
-        slot['pick_and_mix'] = True
-        setup_options_from_slot_data(world)
-        self.assertEqual(world.options.goal.value, Goal.option_pick_and_mix)
         mw = setup_multiworld(SecretAgentClankWorld, options={
             'goal': 'defeat_klunk', 'pick_and_mix_goals': {'alien_codes'}})
         self.assertEqual([loc.name for loc in mw.get_locations(1) if loc.name.startswith('Victory:')],
@@ -122,11 +116,14 @@ class PickAndMixTests(unittest.TestCase):
         core.on_goal.assert_not_called()
 
     def test_generation_requires_both_goal_rules(self):
+        from ..locations import ALL_ALIEN_CODES_EVENT
         from ..constants.clank_gadgets import SACClankGadgets
         mw = setup_multiworld(SecretAgentClankWorld, options={
             'goal': 'pick_and_mix', 'pick_and_mix_goals': {'defeat_klunk', 'alien_codes'}})
         state = mw.get_all_state(False)
         self.assertTrue(mw.completion_condition[1](state))
-        # Alien Codes require these even when Klunk is reachable.
+        treehouse = mw.get_location(ALL_ALIEN_CODES_EVENT, 1)
         state.remove(mw.worlds[1].create_item(SACClankGadgets.THERM_OPTIC_SHADES))
+        self.assertFalse(treehouse.can_reach(state))
+        state.remove(treehouse.item)
         self.assertFalse(mw.get_location('Victory: Pick and Mix', 1).can_reach(state))

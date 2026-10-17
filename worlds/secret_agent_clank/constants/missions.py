@@ -1,4 +1,3 @@
-"""Story missions per case, and the "<case> Complete" locations used when Missions is level_completion."""
 from dataclasses import dataclass
 from enum import IntFlag
 from typing import NamedTuple
@@ -100,12 +99,10 @@ class SACMissionLocations:
 
 
 class SACMissionEntry(NamedTuple):
-    name: str      # SACMissionLocations constant
-    title_id: int  # native USA mission title ID, used to verify a resolved chapter
+    name: str
+    title_id: int
 
 
-# Each case's missions in native task order. Native case labels split shared
-# module slots; task addresses are resolved at runtime.
 CHAPTER_ENTRIES: dict[str, tuple[SACMissionEntry, ...]] = {
     SACCases.BOLTAIRE_MUSEUM: (
         SACMissionEntry(SACMissionLocations.BOLTAIRE_MUSEUM_ESCAPE_THE_RAVINE, 5501),
@@ -258,8 +255,6 @@ MISSION_COMPLETE_NAME: dict[str, str] = {
 
 MISSION_NAMES: tuple[str, ...] = tuple(entry.name for entries in CHAPTER_ENTRIES.values() for entry in entries)
 
-# These single-mission cases use the next case's intro as their retail finish
-# predicate. AP permits out-of-order travel, so capture their actual exit instead.
 NATIVE_FINISH_CASES = {
     24: SACCases.THE_QUASAR_FIELDS,
     29: SACCases.UNDERWATER_BUNKER,

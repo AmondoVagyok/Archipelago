@@ -1,7 +1,7 @@
 """Exact retail no-op debug stubs eligible for reclaimed hook storage."""
 from dataclasses import dataclass
 
-from ...constants.native_functions import DebugDrawFunctions
+from ...constants import DebugDrawFunctions
 from . import mips as m
 from .asm import packed
 from .mips import jr

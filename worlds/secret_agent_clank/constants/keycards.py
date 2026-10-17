@@ -4,8 +4,6 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True)
 class SACKeycardLocations:
-    """Keycard location names."""
-
     RED_KEYCARD = "Asyanica (Clank) - Asyanica Rooftops: Red Keycard at the Second Set of Police Cars"
     BLUE_KEYCARD = "Fort Sprocket (Gadgetbots) - Inside the A-Eye: Blue Keycard during Vaultbreakers"
     YELLOW_KEYCARD = "Spaceship Graveyard (Qwark) - Saint Qwark: Yellow Keycard before Cannon Save"

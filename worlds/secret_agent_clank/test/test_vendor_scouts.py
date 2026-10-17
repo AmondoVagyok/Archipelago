@@ -1,8 +1,8 @@
 import unittest
 from types import SimpleNamespace
 
-from ..client.vendor_scouts import VendorScouts
-from ..constants.planets import SACCases
+from ..client import VendorScouts
+from ..constants import SACCases
 from ..locations import BASE_VENDOR_LOCATIONS, LOCATION_NAME_TO_ID, MOD_VENDOR_LOCATIONS, TITAN_VENDOR_LOCATIONS
 
 
@@ -12,15 +12,15 @@ class VendorScoutTests(unittest.TestCase):
         self.scouts.locations = {(0, 5): 100, (3, 19): 101, (4, 5): 102}
 
     def test_only_enabled_locations_scouted_without_hints(self):
-        self.assertEqual(self.scouts.request({100, 102, 999}, owned_cases={SACCases.GALACTIC_BOLT_RESERVE}), {
+        self.assertEqual(self.scouts.request({100, 102, 999}, vendor_cases={SACCases.GALACTIC_BOLT_RESERVE}), {
             "cmd": "LocationScouts", "locations": [100, 102], "create_as_hint": 0})
 
     def test_scouts_unlock_only_the_matching_case(self):
         self.assertEqual(self.scouts.request({100, 101, 102})["locations"], [])
         self.assertEqual(self.scouts.request({100, 101, 102}, hint=True,
-            owned_cases={SACCases.THE_SHOWERS}), {
+            vendor_cases={SACCases.THE_SHOWERS}), {
                 "cmd": "LocationScouts", "locations": [101], "create_as_hint": 2})
-        self.assertEqual(self.scouts.request({100, 101, 102}, owned_cases={
+        self.assertEqual(self.scouts.request({100, 101, 102}, vendor_cases={
             SACCases.THE_SHOWERS, SACCases.GALACTIC_BOLT_RESERVE})["locations"], [100, 101, 102])
 
     def test_native_offer_resolves_recipient_game_item_without_price_changes(self):

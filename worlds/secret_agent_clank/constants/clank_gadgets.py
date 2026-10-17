@@ -1,4 +1,3 @@
-"""Clank item names."""
 from dataclasses import dataclass
 
 
@@ -11,13 +10,13 @@ class SACClankWeapons:
     FLAMETHROWERPEN   = "Blowtorch Briefcase (Clank)"
     HOLOKNUCKLES      = "Holo-Knuckles (Clank)"
     SUPERKICK         = "Clank Fu Kick (Clank)"
+    KICKBLAST         = "Clank Fu Hot Foot (Clank)"
     LIGHTNINGUMBRELLA = "Thunderstorm Umbrella (Clank)"
     KICKSPLOSION      = "Hot Foot 2.1 Beta (Clank)"
 
 
 @dataclass(frozen=True)
 class SACProgressiveClankWeapons:
-    """Progressive-item counterpart to SACClankWeapons."""
     THROWTIE          = "Progressive Tie-A-Rang (Clank)"
     CUFFLINK          = "Progressive Cufflink Bomb (Clank)"
     TANGLEVINE        = "Progressive Tanglevine Carnation (Clank)"
@@ -55,12 +54,10 @@ class SACClankGadgets:
     BOLTGRABBER        = "Bolt Grabber (Clank)"
 
 
-# case_id -> Clank gadgets picked up there that are not in the WEAPON_ORDER array.
 CLANK_GADGET_BY_CASE_ID: dict[int, tuple[str, ...]] = {
-    1: (SACClankGadgets.BLACK_OUT_PEN, SACClankGadgets.THERM_OPTIC_SHADES),  # Boltaire Museum
+    1: (SACClankGadgets.BLACK_OUT_PEN, SACClankGadgets.THERM_OPTIC_SHADES),
 }
 
-# Flattened in CLANK_GADGET_BY_CASE_ID order; this order fixes their item IDs.
 CLANK_GADGETS: tuple[str, ...] = tuple(
     gadget for gadgets in CLANK_GADGET_BY_CASE_ID.values() for gadget in gadgets
 )

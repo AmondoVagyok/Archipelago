@@ -1,9 +1,9 @@
-"""PINE connection to PCSX2 (connect, reconnect, teardown) and the poll loop that drives Core.tick()."""
 import asyncio
 
 from CommonClient import logger
 from Utils import async_start
 
+from ..constants import CASE_ID_TO_CASE
 from .constants import EXPECTED_GAME_ID, PINE_CONNECT_SETTLE_DELAY_S, POLL_INTERVAL
 
 
@@ -61,7 +61,7 @@ class PineMixin:
             )
             self.pine_connected = True
             try:
-                self._game_state = await self._worker.request("tick", self._checked_location_names())
+                self._store_game_state(await self._worker.request("tick", self._checked_location_names()))
             except Exception as exc:
                 logger.warning(
                     f"[SAC] Initial state read failed: {exc}. Use /reconnect once the game is fully loaded."
@@ -94,9 +94,15 @@ class PineMixin:
 
     async def _poll_game(self) -> None:
         async with self._pine_lock:
-            self._game_state = await self._worker.request("tick", self._checked_location_names())
+            self._store_game_state(await self._worker.request("tick", self._checked_location_names()))
         self._maybe_scout_vendor()
         await self._apply_received_items()
+
+    def _store_game_state(self, state) -> None:
+        self._game_state = state
+        case = CASE_ID_TO_CASE.get(state.get("case_id"))
+        if case is not None:
+            self.current_planet = case.planet
 
     def _append_location_by_name(self, name: str) -> bool:
         """Queue a location check; return False if `name` isn't a location in this seed."""

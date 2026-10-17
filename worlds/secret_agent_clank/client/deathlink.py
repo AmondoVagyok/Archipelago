@@ -12,7 +12,10 @@ class DeathLinkMixin:
         await self.update_death_link(enabled)
         logger.info(f"[SAC] DeathLink {'enabled' if enabled else 'disabled'}.")
 
-    def _send_death_link_from_sync(self, cause_state: int) -> None:
+    def _send_death_link_from_sync(self, death: dict[str, str | None]) -> None:
+        if death['planet']:
+            self.current_planet = death['planet']
+        cause = death['cause'] or 'died'
         if not self._death_link_enabled:
             return
         now = time.time()
@@ -21,6 +24,7 @@ class DeathLinkMixin:
         self._last_death_link = now
         source = self.auth or "Ratchet"
         planet_name = self.current_planet or "an unknown planet"
+        message = f"{source} {cause} on {planet_name}."
         self._debug_log("[SAC] DeathLink sent.")
         async_start(
             self.send_msgs([{
@@ -29,10 +33,11 @@ class DeathLinkMixin:
                 "data": {
                     "time": now,
                     "source": source,
-                    "cause": f"{source} died on {planet_name}.",
+                    "cause": message,
                 },
             }])
         )
+        async_start(self._worker.request("death_sent", message))
 
     async def _receive_death_link(self, data: dict[str, Any]) -> None:
         if not self.pine_connected:
@@ -45,4 +50,4 @@ class DeathLinkMixin:
         cause = data.get("cause") or f"{source} died"
         self._debug_log(f"[SAC] DeathLink received: {cause}")
         async with self._pine_lock:
-            await self._worker.request("death")
+            await self._worker.request("death", (source, cause))

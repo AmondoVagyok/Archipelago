@@ -2,12 +2,17 @@ import unittest
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
 
-from ..client.context import CommonContext, SACContext
-from ..core.patches import mips as m
-from ..core.patches.asm import packed
-from ..core.patches.connection_warning import HEARTBEAT_FRAMES, ConnectionWarning
+from ..client import SACContext
+from ..core import read_blocks
+from ..core.patches import HEARTBEAT_FRAMES, ConnectionWarning, mips as m, packed
 from .mips_cpu import CPU
 from .test_native_capture_plans import CaptureMemory
+
+
+def fake_storage(storage, original):
+    def triangle_storage(pine, symbols, extra=()):
+        return (storage, original, *read_blocks(pine, extra))
+    return triangle_storage
 
 
 class ConnectionWarningTests(unittest.TestCase):
@@ -58,7 +63,6 @@ class ConnectionWarningTests(unittest.TestCase):
         self.assertEqual(self.p.read_int32(self.warning.heartbeat), 0)
 
     def test_retail_prologue_replays_relocated_address_on_both_paths(self):
-        # Read from the running USA game: register saves follow this LUI.
         original = packed([0x27BDFFE0, 0x3C020053])
         code = self.warning.routine(self.warning.heartbeat, self.message,
             self.show, self.render, original, self.cooldown)
@@ -80,7 +84,7 @@ class ConnectionWarningTests(unittest.TestCase):
     def test_prepare_accepts_retail_lui_but_rejects_unexpected_instructions(self):
         symbols = {'HUD_ShowOneLiner__FPCcbi': self.show, 'HUD_RenderOneLiner__Fv': self.render}
         with patch('worlds.secret_agent_clank.core.patches.connection_warning.triangle_storage',
-                   return_value=(0x150000, bytes(352))), patch(
+                   side_effect=fake_storage(0x150000, bytes(352))), patch(
                    'worlds.secret_agent_clank.core.patches.connection_warning.ItemNotifications') as notifications:
             notifications.return_value.bind.return_value = True
             notifications.return_value.binding = (0, 0, self.cooldown)
@@ -100,7 +104,7 @@ class ConnectionWarningTests(unittest.TestCase):
         self.p.write_bytes(self.render, self.original)
         hooks = SimpleNamespace(patches=[], extra_ranges=[])
         with patch('worlds.secret_agent_clank.core.patches.connection_warning.triangle_storage',
-                   return_value=(0x150000, bytes(352))), patch(
+                   side_effect=fake_storage(0x150000, bytes(352))), patch(
                    'worlds.secret_agent_clank.core.patches.connection_warning.ItemNotifications') as notifications:
             notifications.return_value.bind.return_value = True
             notifications.return_value.binding = (0, 0, self.cooldown)
@@ -116,7 +120,7 @@ class ConnectionLifecycleTests(unittest.IsolatedAsyncioTestCase):
         context = SACContext.__new__(SACContext)
         context._stealth_load_task = None
         context._worker = SimpleNamespace(request=AsyncMock())
-        with patch.object(CommonContext, 'connection_closed', new_callable=AsyncMock) as closed:
+        with patch.object(SACContext.__bases__[-1], 'connection_closed', new_callable=AsyncMock) as closed:
             await context.connection_closed()
         closed.assert_awaited_once()
         import asyncio

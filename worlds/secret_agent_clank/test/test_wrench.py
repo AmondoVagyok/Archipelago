@@ -1,8 +1,8 @@
 import unittest
 from unittest.mock import Mock
 
-from ..core.core import Core
-from ..core.patches.wrench import WrenchProgression
+from ..core import Core
+from ..core.patches import WrenchProgression
 from .test_runtime import Memory
 
 

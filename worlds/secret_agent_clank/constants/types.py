@@ -1,4 +1,3 @@
-"""Shared record types: Case (one per case) and EventFlag (one native completion bit)."""
 from dataclasses import dataclass
 from typing import NamedTuple
 
@@ -7,8 +6,8 @@ from typing import NamedTuple
 class Case:
     name: str
     case_id: int
-    planet: str       # SACPlanets constant
-    operative: str    # SACOperatives constant
+    planet: str
+    operative: str
     menu_id: "int | None" = None
 
 

@@ -1,13 +1,10 @@
 import unittest
 from unittest.mock import Mock
 
-from ..constants.vendor import vendor_location_name
-from ..constants.weapons import EQUIPMENT_INTERNAL_TO_DISPLAY
-from ..core.core import Core
+from ..constants import EQUIPMENT_INTERNAL_TO_DISPLAY, PICKUP_LOCATIONS, VENDOR_LOCATIONS, vendor_location_name
+from ..core import Core
 from ..core.patches import (
     MARKER,
-    PICKUP_LOCATIONS,
-    VENDOR_LOCATIONS,
     Entitlements,
     GameFlags,
     LocationHooks,
@@ -20,7 +17,6 @@ from .test_runtime import Memory
 
 
 def run_routine(code, gadget, flag):
-    """Execute the emitted MIPS subset, including validation of delay slots."""
     program = words(code)
     registers = [0] * 32
     registers[4:7] = [gadget, 1, 1]
@@ -139,8 +135,6 @@ class LocationHookTests(unittest.TestCase):
                              {0: 0, 11: 1, 39: 1}.get(slot, 7))
 
     def test_hook_locations_exist_and_sources_do_not_overlap(self):
-        # Translate internal slot names to location names the way Core does;
-        # names already in display form pass through.
         self.assertFalse(set(PICKUP_LOCATIONS) & set(VENDOR_LOCATIONS))
         pickup_names = {EQUIPMENT_INTERNAL_TO_DISPLAY.get(n, n) for n in PICKUP_LOCATIONS.values()}
         vendor_names = {vendor_location_name(EQUIPMENT_INTERNAL_TO_DISPLAY.get(n, n)) for n in VENDOR_LOCATIONS.values()}
@@ -155,6 +149,10 @@ class LocationHookTests(unittest.TestCase):
                         SACLocationType.CLANK_GADGET, SACLocationType.GADGET_PICKUP}
         pickups = {name for name, loc in ALL_LOCATIONS.items() if loc.type in pickup_types}
         self.assertEqual(pickups, set(PICKUP_LOCATION_BY_INTERNAL.values()))
+
+    def test_every_pickup_location_is_hooked(self):
+        from ..constants.pickups import PICKUP_LOCATION_BY_INTERNAL
+        self.assertEqual(set(PICKUP_LOCATIONS.values()), set(PICKUP_LOCATION_BY_INTERNAL.values()))
 
     def test_code_and_marker_are_word_aligned(self):
         self.assertEqual(len(MARKER), 16)

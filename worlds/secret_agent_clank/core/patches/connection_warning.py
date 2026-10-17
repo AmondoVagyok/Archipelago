@@ -38,7 +38,7 @@ class ConnectionWarning:
             raise RuntimeError("Connection warning HUD layout changed")
         cooldown = notifications.binding[2]
         show, render = require(symbols, "HUD_ShowOneLiner__FPCcbi", "HUD_RenderOneLiner__Fv")
-        original = p.read_bytes(render, 8)
+        storage, native, original = triangle_storage(p, symbols, [(render, 8)])
         first, second = words(original)
         # Retail HUD_RenderOneLiner starts with the stack allocation followed
         # by LUI v0 (the relocated HUD address), before saving registers.
@@ -50,7 +50,6 @@ class ConnectionWarning:
             raise RuntimeError(
                 f"Connection warning render prologue changed at {render:#x}: "
                 f"{first:08x} {second:08x}")
-        storage, native = triangle_storage(p, symbols)
         # Vendor text uses the head of this verified no-op function. Reserve
         # only the tail; reject overlap with any other native patch.
         entry = storage + 152
@@ -61,7 +60,7 @@ class ConnectionWarning:
         payload = code.ljust(heartbeat - entry, b"\0") + packed([0]) + MESSAGE
         if entry + len(payload) > storage + len(native):
             raise RuntimeError("Connection warning message exceeds verified storage")
-        edits = [Patch(entry, p.read_bytes(entry, len(payload)), payload),
+        edits = [Patch(entry, native[entry - storage:entry - storage + len(payload)], payload),
                  Patch(render, original, packed([jump(entry), m.NOP]))]
         if not any(x.address == storage for x in hooks.patches):
             edits.insert(0, Patch(storage, native[:8], packed([m.jr(m.RA), m.NOP])))

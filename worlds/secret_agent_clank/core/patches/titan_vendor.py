@@ -1,9 +1,8 @@
 """Separate Titan transactions from gameplay levels at native vendor call sites."""
-from ...constants.native_functions import NativeFunctions
-from ...constants.weapon_progression import TITAN_LOCATIONS
-from ..inventories.weapons import WEAPON_ORDER
+from ...constants import TITAN_LOCATIONS, WEAPON_ORDER, NativeFunctions
 from ..symbols import require
-from .asm import Patch, jump, packed
+from ..batch_io import read_blocks
+from .asm import Patch, jump, packed, words
 from .patch import PatchSet
 
 
@@ -18,9 +17,9 @@ class TitanOffers(PatchSet):
             raise RuntimeError("Native vendor builder call changed")
         builder = (call & 0x3FFFFFF) << 2
         edits = []
-        for offset in (0x63C, 0x6D8):
-            site = builder + offset
-            if p.read_bytes(site, 12) != packed([0x8E02005C, 0x54540013, 0x26520001]):
+        sites = [builder + offset for offset in (0x63C, 0x6D8)]
+        for site, gate in zip(sites, read_blocks(p, [(site, 12) for site in sites])):
+            if gate != packed([0x8E02005C, 0x54540013, 0x26520001]):
                 raise RuntimeError("Native Titan offer gate changed")
             # The original BNE likely skips the offer unless its weapon is V4.
             # Always take that skip, preserving the weapon-loop increment delay.
@@ -54,13 +53,11 @@ class TitanVendor(PatchSet):
         )
         # Resolve the exact functions from verified existing call sites instead
         # of relying on optional export aliases.
-        original = p.read_bytes(buy + 0x164, 0x70)
-        assert p.read_int32(buy + 0x168) == 0x8E440010
-        assert p.read_int32(buy + 0x178) == 0x8E05005C
-        assert p.read_int32(buy + 0x184) == jump(set_power, True)
-        assert p.read_int32(buy + 0x188) == 0x24A50001
-        assert p.read_int32(buy + 0x160) == 0
-        builder_call = p.read_int32(buy + 0x338)
+        guard, original, builder = read_blocks(p, [(buy + 0x160, 4), (buy + 0x164, 0x70), (buy + 0x338, 4)])
+        code = words(original)
+        assert (code[1], code[5], code[8], code[9]) == (0x8E440010, 0x8E05005C, jump(set_power, True), 0x24A50001)
+        assert words(guard) == [0]
+        builder_call, = words(builder)
         assert builder_call >> 26 == 3
         builder = (builder_call & 0x3FFFFFF) << 2
         arena = buy + 0x164
@@ -82,15 +79,15 @@ class TitanVendor(PatchSet):
         assert len(payload) == 0x70
         edits = [Patch(arena, original, payload),
                  Patch(buy + 0x160, packed([0]), packed([0x8E440010]))]
-        for offset in (0x63C, 0x6D8):
-            site = builder + offset
-            assert p.read_bytes(site, 12) == packed([0x8E02005C, 0x54540013, 0x26520001])
-            assert p.read_int32(site - 16) == 0x0040802D  # move s0,v0
-            assert p.read_int32(site - 8) == 0x0240202D  # move a0,s2
-            assert p.read_int32(site - 4) == 0x0040882D  # move s1,v0
-            edits += [Patch(site, p.read_bytes(site, 8), packed([jump(reader, True), 0])),
-                      Patch(site - 16, p.read_bytes(site - 16, 8),
-                            packed([0x24050003, jump(get_def, True)]))]
+        sites = [builder + offset for offset in (0x63C, 0x6D8)]
+        for site, block in zip(sites, read_blocks(p, [(site - 16, 28) for site in sites])):
+            code = words(block)
+            assert code[4:] == [0x8E02005C, 0x54540013, 0x26520001]
+            assert code[0] == 0x0040802D  # move s0,v0
+            assert code[2] == 0x0240202D  # move a0,s2
+            assert code[3] == 0x0040882D  # move s1,v0
+            edits += [Patch(site, block[16:24], packed([jump(reader, True), 0])),
+                      Patch(site - 16, block[:8], packed([0x24050003, jump(get_def, True)]))]
         self.table = table
         hooks.tables["titan"] = table
         hooks.locations["titan"] = mapping
@@ -112,15 +109,17 @@ class TitanPrice(PatchSet):
             symbols, NativeFunctions.SCRNVENDOR_UPDATE_BROWSE_STATE, NativeFunctions.GADGET_GET_DATA_DEF, NativeFunctions.GADGET_GET_DEF_AT_LEVEL,
         )
         site = browse + 0x178
-        original = p.read_bytes(site, 8)
-        assert p.read_int32(site) == jump(current, True)
-        assert p.read_int32(site + 4) & 0xFFFF0000 == 0x3C100000
-        assert p.read_int32(site + 8) == 0x8C430030
+        block = p.read_bytes(site, 12)
+        original = block[:8]
+        call, load, read = words(block)
+        assert call == jump(current, True)
+        assert load & 0xFFFF0000 == 0x3C100000
+        assert read == 0x8C430030
         # This call is reached only for base (0) and Titan/Proto (4) rows;
         # ammo and mods have separate branches. Price base checks at V1 and
         # upgrades at V4, regardless of the AP item's received weapon tier.
         code = packed([0x8E03000C, 0x24050000, 0x10600002,
-                       p.read_int32(site + 4), 0x24050003, jump(fixed), 0])
+                       load, 0x24050003, jump(fixed), 0])
         address = allocate(code)
         self.patches = [Patch(site, original, packed([jump(address, True), 0]))]
         return self.patches

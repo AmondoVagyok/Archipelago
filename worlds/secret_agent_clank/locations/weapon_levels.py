@@ -1,38 +1,39 @@
 """Weapon level checks use a separate ID range; existing locations never move."""
 from BaseClasses import Region
-from rule_builder.rules import CanReachRegion, False_, Has
 
-from ..constants import CASES_BY_OPERATIVE, SACOperatives
-from ..constants.challenge_mode import PROGRESSIVE_CHALLENGE_MODE
-from ..constants.vendor import NG_PLUS_VENDOR_ITEMS
-from ..constants.weapon_progression import (
+from ..constants import (
+    EQUIPMENT_INTERNAL_TO_DISPLAY,
     LEVELLED_INTERNALS,
-    UNLOCK_TO_PROGRESSIVE,
+    NG_PLUS_VENDOR_ITEMS,
+    SACOperatives,
     checked_levels,
     level_location_name,
 )
-from ..constants.weapons import EQUIPMENT_INTERNAL_TO_DISPLAY
 from ..entities import SACLocation as Location
-from ..rules.rule_helpers import HasEnemyAccess, region_names
-from ..rules.vendor_access import VENDOR_ONLY_ITEM_NAMES
+from ..options import enabled_operatives
+from ..rules import VENDOR_ONLY_ITEM_NAMES, WeaponLevelRule
 from .model import SACLocation, SACLocationType
 
 WEAPON_LEVEL_LOCATIONS = {
     level_location_name(internal, level): SACLocation(
-        level_location_name(internal, level), SACLocationType.WEAPON_LEVEL,
+        level_location_name(internal, level), SACLocationType.WEAPON_LEVEL, WeaponLevelRule(internal, level),
     )
     for internal in LEVELLED_INTERNALS
     for level in checked_levels(internal, 4, 1)
 }
 
-CLANK_WEAPON_LEVEL_CASES: dict[str, tuple[str, ...]] = {
-    "throwTie": (),
-    "CuffLink": (),
-    "TangleVine": (),
-    "HoloKnuckles": (),
-    "FlamethrowerPen": (),
-    "LightningUmbrella": (),
-}
+def _enabled_weapons(world):
+    """(internal, display name, operative) for every weapon whose levels are checks in this world."""
+    for internal in LEVELLED_INTERNALS:
+        name = EQUIPMENT_INTERNAL_TO_DISPLAY[internal]
+        operative = SACOperatives.CLANK if name.endswith("(Clank)") else SACOperatives.RATCHET
+        if operative not in enabled_operatives(world.options):
+            continue
+        if name in NG_PLUS_VENDOR_ITEMS and not world.options.ng_plus.value:
+            continue
+        if not world.has_vendor and name in VENDOR_ONLY_ITEM_NAMES:
+            continue
+        yield internal, name, operative
 
 
 def create_weapon_level_locations(world, menu_region):
@@ -40,34 +41,9 @@ def create_weapon_level_locations(world, menu_region):
     if not mode:
         return
     region = Region("Weapon Levels", world.player, world.multiworld)
-    existing = region_names(world)
-    for internal in LEVELLED_INTERNALS:
-        name = EQUIPMENT_INTERNAL_TO_DISPLAY[internal]
-        operative = SACOperatives.CLANK if name.endswith("(Clank)") else SACOperatives.RATCHET
-        if operative not in world.options.operatives.value:
-            continue
-        if name in NG_PLUS_VENDOR_ITEMS and not world.options.ng_plus.value:
-            continue
-        if not world.has_vendor and name in VENDOR_ONLY_ITEM_NAMES:
-            continue
-        cases = CLANK_WEAPON_LEVEL_CASES.get(internal, ()) or tuple(
-            case.name for case in CASES_BY_OPERATIVE[operative])
-        access = False_()
-        for case in cases:
-            if case in existing:
-                access = access | CanReachRegion(case)
-        if operative == SACOperatives.CLANK:
-            # Levelling a Clank weapon needs enemies to use it on.
-            access = access & HasEnemyAccess(world)
-        for level in checked_levels(internal, mode, world.options.ng_plus.value):
-            definition = WEAPON_LEVEL_LOCATIONS[level_location_name(internal, level)]
-            location = Location(world.player, definition.name, world.location_name_to_id[definition.name], region)
-            weapon = (Has(UNLOCK_TO_PROGRESSIVE[name], level)
-                      if world.options.progressive_weapons else Has(name))
-            rule = access & weapon
-            if world.options.progressive_challenge_mode and level > 4:
-                rule = rule & Has(PROGRESSIVE_CHALLENGE_MODE)
-            world.set_rule(location, rule)
-            region.locations.append(location)
+    for internal, _name, _operative in _enabled_weapons(world):
+        names = [level_location_name(internal, level)
+                 for level in checked_levels(internal, mode, world.options.ng_plus.value)]
+        region.add_locations({name: world.location_name_to_id[name] for name in names}, Location)
     menu_region.connect(region)
     world.multiworld.regions.append(region)

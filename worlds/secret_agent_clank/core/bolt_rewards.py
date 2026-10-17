@@ -1,4 +1,3 @@
-"""Deliver AP currency once per received item."""
 from .address_maps import BOLTS_ADDRESS
 
 MAX_BOLTS = 9_000_000
@@ -8,7 +7,6 @@ MAX_BOLTS_PER_PACK = 200_000
 def reward_balance(balance, count):
     balance = min(MAX_BOLTS, balance)
     for _ in range(count):
-        # Each pack adds 20% of the balance, at most MAX_BOLTS_PER_PACK.
         updated = min(MAX_BOLTS, balance + min(balance // 5, MAX_BOLTS_PER_PACK))
         if updated == balance:
             break
@@ -29,7 +27,6 @@ class BoltRewards:
         self.pending = None
 
     def configure(self, *, starting_bolts=0, delivered=0, starting_delivered=False, pending=None):
-        """Load the server-stored delivery state and enable delivery."""
         if type(starting_bolts) is not int or not 0 <= starting_bolts <= 100_000:
             raise ValueError("Starting bolts must be between 0 and 100000")
         if type(delivered) is not int or delivered < 0:
@@ -47,8 +44,6 @@ class BoltRewards:
         )
 
     def deliver(self):
-        # Called only after the native runtime and current level are ready,
-        # and only once AP's stored delivered/pending state has arrived.
         if not self.enabled:
             return
         pending = self.pending
@@ -65,15 +60,11 @@ class BoltRewards:
                 self.delivered = pending["count"]
             self.pending = None
             self._save()
-        # Enforce the cap on bolts earned in-game too, not just AP rewards.
-        # Only once no write-ahead journal is open, so recovery stays exact.
         if self.pine.read_int32(BOLTS_ADDRESS) > MAX_BOLTS:
             self.pine.write_int32(BOLTS_ADDRESS, MAX_BOLTS)
         if not self.starting_delivered:
             before = self.pine.read_int32(BOLTS_ADDRESS)
             after = min(MAX_BOLTS, before + self.starting_bolts)
-            # Award once, preserving bolts already earned while connecting.
-            # Use the same write-ahead recovery as received percentage items.
             self.pending = {"kind": "starting", "before": before, "after": after}
             self._save()
             if after != before:

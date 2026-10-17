@@ -1,8 +1,7 @@
 import unittest
 from unittest.mock import Mock
 
-from ..core.core import Core
-from ..core.main_menu import MainMenuNotice, is_main_menu
+from ..core import Core, MainMenuNotice, is_main_menu
 from .test_runtime import Memory
 
 
@@ -47,7 +46,6 @@ class MainMenuTests(unittest.TestCase):
         core._read_native_locations = Mock()
         core.case.check_transition = Mock()
         core.tick()
-        # Routine status only appears with /debug on.
         debug.assert_called_once_with('[SAC] Start a new game')
         log.assert_not_called()
         core._read_native_locations.assert_not_called()

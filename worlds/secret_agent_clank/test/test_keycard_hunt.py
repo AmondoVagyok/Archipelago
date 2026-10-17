@@ -6,14 +6,11 @@ from Fill import distribute_items_restrictive
 from Options import OptionError
 from test.general import setup_multiworld
 
-from ..constants.keycards import KEYCARD_BITS, KEYCARD_ITEMS
-from ..constants.alien_codes import ALIEN_CODES_BY_MODULE
-from ..constants.clank_gadgets import SACClankGadgets
-from ..core.core import Core
-from ..core.inventories.keycards import KeycardInventory
-from ..core.inventories.alien_codes import AlienCodeInventory
-from ..core.patches.asm import packed
-from ..core.patches.keycard_hunt import KeycardHunt
+from ..constants import KEYCARD_BITS, KEYCARD_ITEMS, SACClankGadgets
+from ..core import Core, module_counts
+from ..core.inventories import AlienCodeInventory, KeycardInventory
+from ..core.patches import KeycardHunt, packed
+from ..locations import ALIEN_CODE_FLAGS, ALL_ALIEN_CODES_EVENT
 from ..universal_tracker import setup_options_from_slot_data
 from ..world import SecretAgentClankWorld
 from .mips_cpu import CPU
@@ -42,9 +39,6 @@ class KeycardHuntTests(unittest.TestCase):
                     self.assertEqual(bool(world.options.keycard_hunt), hunt)
                     distribute_items_restrictive(mw)
                     self.assertTrue(mw.fulfills_accessibility())
-                    del slot["keycard_hunt"]
-                    setup_options_from_slot_data(world)
-                    self.assertFalse(world.options.keycard_hunt)
 
     def test_chalice_needs_received_cards_and_alien_code_access(self):
         mw = setup_multiworld(SecretAgentClankWorld, options={
@@ -57,15 +51,18 @@ class KeycardHuntTests(unittest.TestCase):
         self.assertFalse(victory.can_reach(state))
         state = mw.get_all_state(False)
         self.assertTrue(victory.can_reach(state))
-        for name in (*KEYCARD_ITEMS, SACClankGadgets.THERM_OPTIC_SHADES):
+        for name in KEYCARD_ITEMS:
             with self.subTest(missing=name):
                 state.remove(world.create_item(name))
                 self.assertFalse(victory.can_reach(state))
                 state.collect(world.create_item(name))
+        treehouse = mw.get_location(ALL_ALIEN_CODES_EVENT, 1)
+        state.remove(world.create_item(SACClankGadgets.THERM_OPTIC_SHADES))
+        self.assertFalse(treehouse.can_reach(state))
+        state.remove(treehouse.item)
+        self.assertFalse(victory.can_reach(state))
 
     def test_hunt_lets_clank_alone_goal_on_the_chalice(self):
-        # Shuffled cards replace the Gadgetbots and Qwark keycard pickups;
-        # the Alien Codes and the Treehouse they open are all Clank's.
         options = {"goal": "chalice_of_power", "operatives": {"Clank": 1}}
         mw = setup_multiworld(SecretAgentClankWorld, seed=1, options={**options, "keycard_hunt": True})
         self.assertEqual([loc.name for loc in mw.get_locations(1) if loc.name.startswith("Victory:")],
@@ -116,13 +113,12 @@ class KeycardHuntTests(unittest.TestCase):
         cards.hunt = hunt
         cards.bind(symbols)
         self.assertEqual(set(cards.check()), {name for name, bit in KEYCARD_BITS.items() if bit == 1})
-        # Alien-code access must remain readable after the getter is hooked.
         count_getter, counts = 0x150000, 0x160000
         code = packed([0x2484FFFF, 0x3C020016, 0x24420000,
                        0x00042080, 0x00822021, 0x03E00008, 0x8C820000])
         p.data[count_getter:count_getter + len(code)] = code
-        for module, names in ALIEN_CODES_BY_MODULE.items():
-            p.write_int32(counts + (module - 1) * 4, len(names))
+        for module, count in module_counts(ALIEN_CODE_FLAGS).items():
+            p.write_int32(counts + (module - 1) * 4, count)
         symbols["GLOBALVARS_GetTotalAlienCodeCount__FUi"] = count_getter
         aliens = AlienCodeInventory(p)
         self.assertTrue(aliens.bind(symbols, flag_pointer_address=hunt.pointer_address))

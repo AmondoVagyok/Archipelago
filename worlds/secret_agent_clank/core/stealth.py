@@ -1,9 +1,8 @@
 """Count the successful End(StealthTakeDown) path per case, not the transient enemy list."""
 import struct
 
-from ..constants.stealth import STEALTH_MAX_PER_CASE, stealth_location_name
-from .patches import mips as m
-from .patches.asm import Patch, jump, packed
+from ..constants import STEALTH_MAX_PER_CASE, stealth_location_name
+from .patches import Patch, jump, mips as m, packed
 
 END = "End__15StealthTakeDown"
 KILL = "CLANKSTEALTH_GiveStealthKill__FP4Mobyf"
@@ -53,7 +52,7 @@ class StealthState:
             return []
         end, kill = symbols.get(END), symbols.get(KILL)
         if end is None and kill is None:
-            return []  # Modules without Clank's takedown implementation.
+            return []
         if end is None or kill is None:
             raise RuntimeError("Incomplete native stealth exports")
         # Both failure flags bypass the success-only call at End + 0xB0.
@@ -91,7 +90,6 @@ class StealthState:
             self.counts[case] = count
             self.on_count({case: count})
         elif count < known:
-            # Restore server progress after a reload/savestate rollback.
             self.pine.batch_write_int32([(counter, known)])
 
     def checks(self):

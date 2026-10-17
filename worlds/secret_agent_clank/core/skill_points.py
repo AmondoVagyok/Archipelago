@@ -1,8 +1,7 @@
-"""Skill point tracking; flags (all 65 confirmed live) are in constants/skillpoints.py."""
 from typing import TYPE_CHECKING
 
-from ..constants.skillpoints import SKILL_POINT_FLAGS
-from .inventories.case_events import EventFlagInventory
+from ..constants import SKILL_POINT_FLAGS
+from .inventories import EventFlagInventory
 
 if TYPE_CHECKING:
     from ..pypine import Pine

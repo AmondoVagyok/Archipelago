@@ -2,6 +2,8 @@
 import struct
 from dataclasses import dataclass
 
+from ..batch_io import read_blocks
+
 MARKER = b"SAC_LOC_HOOK_V1\0"
 
 
@@ -28,3 +30,8 @@ class Patch:
     address: int
     original: bytes
     replacement: bytes
+
+
+def capture(pine, edits):
+    originals = read_blocks(pine, [(address, len(replacement)) for address, replacement in edits])
+    return [Patch(address, original, replacement) for (address, replacement), original in zip(edits, originals)]

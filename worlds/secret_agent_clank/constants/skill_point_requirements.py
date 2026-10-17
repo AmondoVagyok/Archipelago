@@ -1,4 +1,3 @@
-"""User-curated skill point difficulty and additional operative requirements."""
 from enum import IntEnum
 
 from .operatives import SACOperatives
@@ -60,7 +59,6 @@ NORMAL_SKILL_POINTS = frozenset({
     SP.UNDERWATER_BUNKER_IM_NOT_THERE,
     SP.KLUNKS_LAIR_TURN_THE_TABLES,
 })
-# Everything not explicitly listed in Easy or Normal belongs to Hard.
 HARD_SKILL_POINTS = frozenset(SKILL_POINT_FLAGS) - EASY_SKILL_POINTS - NORMAL_SKILL_POINTS
 
 SKILL_POINT_DIFFICULTY = {
@@ -69,8 +67,6 @@ SKILL_POINT_DIFFICULTY = {
     **dict.fromkeys(HARD_SKILL_POINTS, SkillPointDifficulty.HARD),
 }
 
-# Operatives a skill point needs besides its own case's. The casino rhythm
-# mission embeds Gadgetbot combat sections.
 EXTRA_SKILL_POINT_OPERATIVES: dict[str, frozenset[str]] = {
     SP.HIGH_STAKES_ROOM_GADGEBOT_STANDS_ALONE: frozenset({SACOperatives.GADGETBOTS}),
 }

@@ -10,70 +10,59 @@ from .bases import SecretAgentClankTestBase
 
 
 class TestGeneration(SecretAgentClankTestBase):
-    """Smoke test: the world generates successfully with default options."""
     options = {}
 
 
 class TestGenerationWithSkillPoints(SecretAgentClankTestBase):
-    """Smoke test: the world generates successfully with Skill Points on."""
-    options = {"skill_points": True}
+    options = {"skill_points": "hard"}
 
 
 class TestGenerationWithCutscenes(SecretAgentClankTestBase):
-    """Smoke test: the world generates successfully with All Cutscenes on."""
     options = {"all_cutscenes": True}
 
 
 class TestGenerationInfobotsPlanets(SecretAgentClankTestBase):
-    """Smoke test: coarser planet-level Infobots tier."""
-    options = {"skill_points": True, "infobots": "planets"}
+    options = {"skill_points": "hard", "infobots": "planets"}
 
 
 class TestGenerationProgressivePlanet(SecretAgentClankTestBase):
-    """Smoke test: Progressive Planet replaces per-planet/per-case Infobots."""
-    options = {"skill_points": True, "infobots": "progressive_planet"}
+    options = {"skill_points": "hard", "infobots": "progressive_planet"}
 
 
 class TestGenerationCharacterItems(SecretAgentClankTestBase):
-    """Smoke test: Character Items on, all characters enabled."""
-    options = {"skill_points": True, "infobots": "character_unlocks"}
+    options = {"skill_points": "hard", "infobots": "character_unlocks"}
 
 
 class TestGenerationCharacterDisabled(SecretAgentClankTestBase):
-    """Smoke test: an operative disabled entirely via Operatives."""
     options = {
-        "skill_points": True,
+        "skill_points": "hard",
         "infobots": "character_unlocks",
-        "operatives": {"Ratchet": 1, "Clank": 1, "Gadgetbots": 1},  # Qwark omitted -- disabled
+        "operatives": {"Ratchet": 1, "Clank": 1, "Gadgetbots": 1},
     }
 
 
 class TestGenerationGoalQwarkOpera(SecretAgentClankTestBase):
-    """Smoke test: Qwark Opera goal."""
     options = {"goal": "qwark_opera"}
 
 
 class TestGenerationGoalAny(SecretAgentClankTestBase):
-    """Smoke test: Any goal (either victory condition)."""
     options = {"goal": "any"}
 
 
 class TestGenerationEverythingOn(SecretAgentClankTestBase):
-    """Smoke test: many options combined."""
     options = {
-        "skill_points": True,
+        "skill_points": "hard",
         "infobots": "character_unlocks",
         "goal": "any",
     }
 
 
 class TestGenerationWithKeycards(SecretAgentClankTestBase):
-    """Smoke test: combined collectible checks on."""
     options = {"keycards_and_alien_codes": True}
 
 
 class TestCombinedCollectibles(unittest.TestCase):
-    def test_toggle_controls_both_categories_and_tracker_preserves_legacy_seeds(self):
+    def test_toggle_controls_both_categories_and_tracker_restores_it(self):
         from ..options import SecretAgentClankOptions
         from ..universal_tracker import setup_options_from_slot_data
         self.assertNotIn('all_keycards', SecretAgentClankOptions.type_hints)
@@ -90,21 +79,15 @@ class TestCombinedCollectibles(unittest.TestCase):
             setup_options_from_slot_data(world)
             self.assertEqual(world.options.keycard_checks_enabled, enabled)
             self.assertEqual(world.options.alien_code_checks_enabled, enabled)
-            del slot['keycards_and_alien_codes']
-            for cards, codes in ((True, False), (False, True)):
-                slot.update(all_keycards=cards, all_alien_codes=codes)
-                setup_options_from_slot_data(world)
-                for category, expected in ((KEYCARD_LOCATIONS, cards), (ALIEN_CODE_LOCATIONS, codes)):
-                    self.assertTrue(all(loc.available(world.options) == expected for loc in category.values()))
 
     def test_collectibles_of_disabled_operatives_are_excluded(self):
         from ..constants import CASE_NAME_TO_OPERATIVE, SACOperatives
-        from ..constants.operatives import ALL_OPERATIVES
-        for disabled in (SACOperatives.GADGETBOTS, SACOperatives.CLANK):
+        from ..constants.operatives import OPTIONAL_OPERATIVES
+        for disabled in (SACOperatives.GADGETBOTS, SACOperatives.QWARK):
             with self.subTest(disabled=disabled):
-                operatives = {operative: int(operative != disabled) for operative in ALL_OPERATIVES}
+                operatives = {operative: int(operative != disabled) for operative in OPTIONAL_OPERATIVES}
                 mw = setup_multiworld(SecretAgentClankWorld, options={
-                    'keycards_and_alien_codes': True, 'operatives': operatives, 'goal': 'qwark_opera'})
+                    'keycards_and_alien_codes': True, 'operatives': operatives, 'goal': 'defeat_klunk'})
                 world = mw.worlds[1]
                 names = {loc.name for loc in mw.get_locations(1)}
                 for category in (KEYCARD_LOCATIONS, ALIEN_CODE_LOCATIONS):
@@ -115,28 +98,34 @@ class TestCombinedCollectibles(unittest.TestCase):
 
 
 class TestGoalCharacterMismatch(unittest.TestCase):
-    """Goal options requiring a disabled character must raise OptionError instead of silently generating an unbeatable seed."""
-
-    def test_defeat_klunk_requires_clank(self):
-        with self.assertRaises(OptionError):
-            setup_multiworld(SecretAgentClankWorld, options={"goal": "defeat_klunk", "operatives": {"Clank": 0}})
+    def test_clank_cannot_be_configured(self):
+        from BaseClasses import PlandoOptions
+        from ..options import Operatives, enabled_operatives
+        for value in ({"Clank": 0}, {"Clank": 1, "Qwark": 1}):
+            with self.subTest(value=value), self.assertRaises(OptionError):
+                Operatives.from_any(value).verify(SecretAgentClankWorld, "Tester", PlandoOptions.none)
+        option = Operatives.from_any({"Qwark": 1})
+        option.verify(SecretAgentClankWorld, "Tester", PlandoOptions.none)
+        self.assertEqual(dict(option.value), {"Qwark": 1})
+        world = setup_multiworld(SecretAgentClankWorld, options={"goal": "defeat_klunk", "operatives": {"Qwark": 1}}).worlds[1]
+        self.assertEqual(enabled_operatives(world.options), {"Clank", "Qwark"})
+        self.assertEqual(world.fill_slot_data()["operatives"], {"Clank": 1, "Qwark": 1})
 
     def test_qwark_opera_requires_qwark(self):
         with self.assertRaises(OptionError):
             setup_multiworld(SecretAgentClankWorld, options={"goal": "qwark_opera", "operatives": {"Qwark": 0}})
 
-    def test_any_requires_an_achievable_goal(self):
-        # Special Missions alone can complete no goal.
-        with self.assertRaisesRegex(OptionError, "no goal can be completed"):
-            setup_multiworld(
-                SecretAgentClankWorld, options={"goal": "any", "operatives": {"Special Missions": 1}},
-            )
+    def test_any_always_includes_defeat_klunk(self):
+        mw = setup_multiworld(SecretAgentClankWorld, options={"goal": "any", "operatives": {"Special Missions": 1}})
+        victories = sorted(loc.name for loc in mw.get_locations(1) if loc.name.startswith("Victory:"))
+        self.assertIn("Victory: Defeat Klunk", victories)
 
     def test_any_creates_a_victory_for_every_achievable_goal(self):
         mw = setup_multiworld(SecretAgentClankWorld, options={
             "goal": "any", "operatives": {"Ratchet": 1, "Gadgetbots": 1, "Special Missions": 1}})
         victories = sorted(loc.name for loc in mw.get_locations(1) if loc.name.startswith("Victory:"))
-        self.assertEqual(victories, ["Victory: All Gadgetbots", "Victory: Ratchet Prison Escape"])
+        self.assertEqual(victories, ["Victory: All Alien Codes", "Victory: All Gadgetbots",
+                                     "Victory: Defeat Klunk", "Victory: Ratchet Prison Escape"])
 
     def test_qwark_goals_split_butterqwark_from_every_qwark_case(self):
         from ..constants import CASE_NAME_TO_INFOBOT, CASES_BY_OPERATIVE, SACCases, SACOperatives
@@ -157,16 +146,13 @@ class TestGoalCharacterMismatch(unittest.TestCase):
                 self.assertTrue(victory.can_reach(state))
 
     def test_any_survives_with_only_clank(self):
-        # Operatives replaces the default, so list every operative that stays enabled.
         setup_multiworld(
             SecretAgentClankWorld,
-            options={"goal": "any", "operatives": {"Ratchet": 1, "Clank": 1, "Gadgetbots": 1}},
+            options={"goal": "any", "operatives": {"Ratchet": 1, "Gadgetbots": 1}},
         )
 
 
 class TestCollectibleGoals(unittest.TestCase):
-    """Collectible goals do not require optional AP reward locations."""
-
     def test_chalice_goal_without_keycard_locations(self):
         mw = setup_multiworld(SecretAgentClankWorld, options={"goal": "chalice_of_power"})
         self.assertFalse(set(KEYCARD_LOCATIONS) & {loc.name for loc in mw.get_locations(1)})
@@ -189,8 +175,6 @@ class TestCollectibleGoals(unittest.TestCase):
 
 
 class TestUniversalTrackerRegeneration(unittest.TestCase):
-    """Universal Tracker rebuilds the world from slot data alone; its logic must match the seed's."""
-
     @staticmethod
     def regenerate(slot, seed):
         from argparse import Namespace
@@ -202,7 +186,6 @@ class TestUniversalTrackerRegeneration(unittest.TestCase):
         mw.player_name = {1: "Tester1"}
         mw.set_seed(seed)
         args = Namespace()
-        # No YAML: every option starts at its default and slot data must restore it.
         for key, option in SecretAgentClankWorld.options_dataclass.type_hints.items():
             setattr(args, key, {1: option.from_any(option.default)})
         mw.set_options(args)
@@ -226,3 +209,19 @@ class TestUniversalTrackerRegeneration(unittest.TestCase):
         self.assertFalse(location.can_reach(state))
         state.collect(mw.worlds[1].create_item(PROGRESSIVE_WRENCH_ITEM_NAME))
         self.assertTrue(location.can_reach(state))
+
+
+class TestTreehouseEvent(unittest.TestCase):
+    def test_treehouse_is_received_once_every_alien_code_is_reachable(self):
+        from ..locations import ALL_ALIEN_CODES_EVENT
+        from ..constants.planets import SACCases
+        for codes_enabled in (False, True):
+            with self.subTest(keycards_and_alien_codes=codes_enabled):
+                mw = setup_multiworld(SecretAgentClankWorld, options={"keycards_and_alien_codes": codes_enabled})
+                event = mw.get_location(ALL_ALIEN_CODES_EVENT, 1)
+                self.assertIsNone(event.address)
+                self.assertEqual(event.item.name, SACCases.HIGH_TREEHOUSE)
+                self.assertTrue(event.locked)
+                state = mw.get_all_state(False)
+                self.assertTrue(state.has(SACCases.HIGH_TREEHOUSE, 1))
+                self.assertFalse(event.can_reach(CollectionState(mw)))

@@ -6,7 +6,8 @@ weapon_progression.py. Every purchase is named by its SACVendor constant.
 from dataclasses import dataclass
 
 from .clank_gadgets import SACClankGadgets, SACClankWeapons, SACProtoWeapons
-from .weapons import SACRatchetWeapons, SACTitanWeapons
+from .weapon_order import WEAPON_ORDER, WeaponSlot
+from .weapons import EQUIPMENT_DISPLAY_TO_INTERNAL, SACRatchetWeapons, SACTitanWeapons
 
 
 @dataclass(frozen=True)
@@ -16,7 +17,7 @@ class SACVendorWeapons:
     PLASMAWHIP        = SACRatchetWeapons.PLASMAWHIP
     PORKBOMB          = SACRatchetWeapons.PORKBOMB
     RYNO              = SACRatchetWeapons.RYNO
-    KICKBLAST         = SACRatchetWeapons.KICKBLAST
+    KICKBLAST         = SACClankWeapons.KICKBLAST
     HOLOKNUCKLES      = SACClankWeapons.HOLOKNUCKLES
     LIGHTNINGUMBRELLA = SACClankWeapons.LIGHTNINGUMBRELLA
     SUPERKICK         = SACClankWeapons.SUPERKICK
@@ -30,11 +31,9 @@ VENDOR_WEAPONS: tuple[str, ...] = tuple(
     value for name, value in vars(SACVendorWeapons).items() if not name.startswith("_")
 )
 
-# Purchases introduced only in challenge mode.
 NG_PLUS_VENDOR_ITEMS = frozenset({SACRatchetWeapons.RYNO, SACClankWeapons.KICKSPLOSION})
 
 class SACVendor:
-    """String constants for Agency Vendor purchases"""
     BOLTAIRE_MUSEUM_HOLO_KNUCKLES = "Boltaire (Clank) - Boltaire Museum: Agency Vendor: Holo-Knuckles - 23,000"
     BOLTAIRE_MUSEUM_CLANK_FU_KICK = "Boltaire (Clank) - Boltaire Museum: Agency Vendor: Clank Fu Kick - 7,000"
     ASYANICA_ROOFTOPS_DUAL_LACERATOR_SEEKER = "Asyanica (Clank) - Asyanica Rooftops: Agency Vendor: Dual Lacerators Seeker Mod - 15,000"
@@ -60,7 +59,6 @@ class SACVendor:
     PRISON_BREAKOUT_SHOCK_ROCKET_TASER = "Prison Planet (Ratchet) - Prison Breakout!: Agency Vendor: Shock Rocket Taser Mod - 35,000"
     PRISON_BREAKOUT_PLASMA_WHIP_FLAME_TRAILS = "Prison Planet (Ratchet) - Prison Breakout!: Agency Vendor: Plasma Whip Flame Trails Mod - 35,000"
 
-    # Challenge mode vendor locations
     BOLTAIRE_MUSEUM_PROTO_WHIRLWIND_THROWTIE = "Boltaire (Clank) - Boltaire Museum: Agency Vendor: Proto Whirlwind Throwtie - 400,000"
     BOLTAIRE_MUSEUM_CLANK_PROTO_HARDLIGHT_FIST = "Boltaire (Clank) - Boltaire Museum: Agency Vendor: Proto Hardlight Fist - 200,000"
     BOLTAIRE_MUSEUM_TITAN_DUAL_VINDICATORS = "Boltaire (Clank) - Boltaire Museum: Agency Vendor: Titan Dual Vindicators - 400,000"
@@ -82,7 +80,6 @@ class SACVendor:
     CHALLENGE_MODE_THUNDERSTORM_UMBRELLA_THUNDERCLOUD = "Challenge Mode (Clank): Agency Vendor: Thunderstorm Umbrella Thundercloud Mod - 200,000"
 
 
-# Equipment display name -> SACVendor location; weapon mods map theirs in weapon_mods.py.
 VENDOR_LOCATION_NAMES: dict[str, str] = {
     SACClankGadgets.CLANKPDA: SACVendor.AZCOTAL_ALLEY_AGENCY_PDA,
     SACClankWeapons.HOLOKNUCKLES: SACVendor.BOLTAIRE_MUSEUM_HOLO_KNUCKLES,
@@ -94,7 +91,7 @@ VENDOR_LOCATION_NAMES: dict[str, str] = {
     SACRatchetWeapons.RYNO: SACVendor.CHALLENGE_MODE_RYNO,
     SACClankWeapons.KICKSPLOSION: SACVendor.CHALLENGE_MODE_HOT_FOOT_21_BETA,
     SACRatchetWeapons.PLASMAWHIP: SACVendor.VENANTONIO_LABS_PLASMA_WHIP,
-    SACRatchetWeapons.KICKBLAST: SACVendor.VENANTONIO_LABS_CLANK_FU_HOT_FOOT,
+    SACClankWeapons.KICKBLAST: SACVendor.VENANTONIO_LABS_CLANK_FU_HOT_FOOT,
     SACClankWeapons.LIGHTNINGUMBRELLA: SACVendor.VENANTONIO_LABS_THUNDERSTORM_UMBRELLA,
     SACTitanWeapons.SHOCKROCKET: SACVendor.GALACTIC_BOLT_RESERVE_TITAN_ELECTRO_ROCKET,
     SACTitanWeapons.PLASMAWHIP: SACVendor.VENANTONIO_LABS_TITAN_PLASMA_CORD,
@@ -118,3 +115,8 @@ def vendor_location_name(display_name: str) -> str:
 
 
 NG_PLUS_VENDOR_LOCATIONS = frozenset(vendor_location_name(name) for name in NG_PLUS_VENDOR_ITEMS)
+
+VENDOR_LOCATIONS = {
+    WeaponSlot(WEAPON_ORDER.index(EQUIPMENT_DISPLAY_TO_INTERNAL[name])): EQUIPMENT_DISPLAY_TO_INTERNAL[name]
+    for name in VENDOR_WEAPONS
+}
