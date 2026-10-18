@@ -45,6 +45,30 @@ class CaptureMemory(Memory):
 
 
 class NativeCapturePlansTests(unittest.TestCase):
+    def test_repeat_xp_patches_match_captured_ratchet_and_clank_code(self):
+        captures = [Path(__file__).parents[1] / ".research" / name for name in
+                    ("SAC.p2s.ram", "prison_skin_live.bin", "sac_finished.p2s.ram")]
+        if not any(capture.exists() for capture in captures):
+            self.skipTest("Local research RAM captures not present")
+        for capture in captures:
+            if not capture.exists():
+                continue
+            with self.subTest(capture=capture.name):
+                p = CaptureMemory()
+                p.data[:] = capture.read_bytes()
+                before = bytes(p.data)
+                symbols = RuntimeSymbols.parse(p.data[:0x1000000], 0)
+                edits = Progression(p).replay_xp_patches(symbols)
+                self.assertEqual(len(edits), 2)
+                self.assertEqual(bytes(p.data), before)
+                for edit in edits:
+                    self.assertEqual(p.read_bytes(edit.address, 4), edit.original)
+                    p.write_bytes(edit.address, edit.replacement)
+                    self.assertEqual(p.read_int32(edit.address), 0x3C013F80)
+                for edit in reversed(edits):
+                    p.write_bytes(edit.address, edit.original)
+                self.assertEqual(bytes(p.data), before)
+
     def test_line_storage_rejects_changes_in_body_and_callee(self):
         capture = Path(__file__).parents[1] / ".research/SAC.p2s.ram"
         if not capture.exists():

@@ -10,6 +10,52 @@ from .test_runtime import Memory
 
 
 class ProgressionTests(unittest.TestCase):
+    def replay_fixture(self):
+        from ..core.patches.asm import packed
+        p = CaptureMemory()
+        arena, moby = 0x110000, 0x120000
+        p.write_bytes(arena + 0x98, packed([
+            0x3C013F80, 0x4481A000, 0x10400003, 0x8E440000,
+            0x3C013E80, 0x4481A000]))
+        p.write_bytes(moby + 0x188, packed([
+            0x14400005, 0, 0x3C013E80, 0x44810000,
+            0, 0x4600A502, 0x4600A024, 0x44080000]))
+        symbols = {"Arena_PreCalcXPForChallenge__FP4Moby": arena,
+                   "MOBY_ComputeWeaponXP__FPC4MobyRC10DamageInfo": moby}
+        return p, symbols, arena, moby
+
+    def test_repeat_xp_matches_first_clear_and_preserves_multiplier(self):
+        # A new module image on each visit must receive the same edits.
+        for visit in range(2):
+            p, symbols, arena, moby = self.replay_fixture()
+            for patch in Progression(p).replay_xp_patches(symbols):
+                p.write_bytes(patch.address, patch.replacement)
+            for wins in (0, 1, 2, 20):
+                cpu = CPU(p)
+                cpu.r[2] = wins
+                cpu.run(arena + 0x98, stop=arena + 0xB0)
+                self.assertEqual(cpu.float(20), 1.0, (visit, wins))
+            for first_kill in (0, 1):
+                cpu = CPU(p)
+                cpu.r[2] = first_kill
+                cpu.set_float(20, 100.0)
+                cpu.run(moby + 0x188, stop=moby + 0x1A0)
+                self.assertEqual(cpu.float(20), 100.0)
+                for multiplier in (1, 5, 10):
+                    p.write_bytes(0x130000, Progression.weapon_gain_wrapper(0x140000, multiplier))
+                    cpu.r[18], cpu.r[20], cpu.r[21] = int(cpu.float(20)), 0x150000, 1
+                    cpu.run(0x130000, stop=0x14011C)
+                    self.assertEqual(cpu.r[18], 100 * multiplier)
+
+    def test_repeat_xp_rejects_changed_native_code_without_writes(self):
+        for offset, label in ((0x110098, "Arena"), (0x120188, "Enemy")):
+            p, symbols, _, _ = self.replay_fixture()
+            p.data[offset] ^= 1
+            before = bytes(p.data)
+            with self.assertRaisesRegex(RuntimeError, label + " repeat XP layout changed"):
+                Progression(p).replay_xp_patches(symbols)
+            self.assertEqual(bytes(p.data), before)
+
     def test_weapon_multiplier_scales_capped_award_and_preserves_level_up_path(self):
         for multiplier in range(2, 11):
             for award in (0, 1, 100):

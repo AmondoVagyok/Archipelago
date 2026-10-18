@@ -32,6 +32,30 @@ from .titan_vendor import TitanPrice
 
 
 class Progression(PatchSet):
+    def replay_xp_patches(self, symbols):
+        """Keep first-clear XP budgets on repeat challenges and enemy kills."""
+        edits = []
+        arena = symbols.get("Arena_PreCalcXPForChallenge__FP4Moby")
+        if arena is not None:
+            code = self.pine.read_bytes(arena + 0x98, 24)
+            words = struct.unpack("<6I", code)
+            if (words[:3] != (0x3C013F80, 0x4481A000, 0x10400003)
+                    or words[3] & 0xFFFF0000 != 0x8E440000
+                    or words[4:] != (0x3C013E80, 0x4481A000)):
+                raise RuntimeError("Arena repeat XP layout changed")
+            # f20 is 1.0 for a first clear, 0.25 after a previous win.
+            edits.append(Patch(arena + 0xA8, code[16:20], packed([0x3C013F80])))
+        moby = symbols.get("MOBY_ComputeWeaponXP__FPC4MobyRC10DamageInfo")
+        if moby is not None:
+            code = self.pine.read_bytes(moby + 0x188, 32)
+            if code != packed([0x14400005, 0, 0x3C013E80, 0x44810000,
+                               0, 0x4600A502, 0x4600A024, 0x44080000]):
+                raise RuntimeError("Enemy repeat XP layout changed")
+            # The shared reward helper reduces repeat kills to one quarter.
+            # Change only the factor; preserve death counts and reward dispatch.
+            edits.append(Patch(moby + 0x190, code[8:12], packed([0x3C013F80])))
+        return edits
+
     @staticmethod
     def weapon_gain_wrapper(target, multiplier):
         # s2 now contains the native award, after level scaling and the per-hit
@@ -211,7 +235,7 @@ class Progression(PatchSet):
             ranges.append((give + 0x60, give + 0x278))
         if buy is not None and vendor_enabled:
             ranges.append((buy + 0x1FC, buy + 0x338))
-        edits = []
+        edits = self.replay_xp_patches(symbols)
         if (self.enabled and not self.manual) or (module == 31 and self.max_challenge_mode):
             xp = require(symbols, NativeFunctions.GADGET_GETS_XP)
             if entry[xp] != packed([0x27BDFFB0, 0xFFB30028]):
