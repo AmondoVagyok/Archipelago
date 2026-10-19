@@ -1,8 +1,11 @@
+from rule_builder.rules import Has
+
 from ..constants import (
     SACCases,
     SACCutsceneLocations,
     SACMissionLocations,
     SACRatchetChallengeLocations,
+    SACRatchetWeapons,
     SACSkillPointLocations,
     SACTitaniumBoltLocations,
     SACVendor,
@@ -23,7 +26,8 @@ REGION = CaseRegion(SACCases.PRISON_BREAKOUT, (
     SACLocation(SACMissionLocations.PRISON_BREAKOUT_COMPLETE, SACLocationType.CASE_COMPLETE),
     SACLocation(SACMissionLocations.PRISON_BREAKOUT_THE_GREAT_ESCAPE, SACLocationType.MISSION),
     SACLocation(SACMissionLocations.PRISON_BREAKOUT_AND_NOW_JUSTICE_FOR_ALL, SACLocationType.MISSION),
-    SACLocation(SACSkillPointLocations.PRISON_BREAKOUT_WHIP_IT_GOOD, SACLocationType.SKILL_POINT),
+    SACLocation(SACSkillPointLocations.PRISON_BREAKOUT_WHIP_IT_GOOD, SACLocationType.SKILL_POINT,
+                rule=Has(SACRatchetWeapons.PLASMAWHIP)),
     SACLocation(SACSkillPointLocations.PRISON_BREAKOUT_HANGING_JUDGE, SACLocationType.SKILL_POINT),
     SACLocation(SACCutsceneLocations.PRISON_BREAKOUT_ENTER_CUTSCENE, SACLocationType.CUTSCENE),
     SACLocation(SACVendor.PRISON_BREAKOUT_SHOCK_ROCKET_TASER, SACLocationType.MOD_VENDOR, _VENDOR),

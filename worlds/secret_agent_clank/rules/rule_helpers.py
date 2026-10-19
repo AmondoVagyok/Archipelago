@@ -15,7 +15,6 @@ from ..constants import (
     PROGRESSIVE_CHALLENGE_MODE,
     PROGRESSIVE_CHARACTER_ITEM_NAME,
     PROGRESSIVE_PLANET_ITEM_NAME,
-    UNLOCK_TO_PROGRESSIVE,
     SACCases,
     SACClankGadgets,
     SACClankWeapons,
@@ -78,12 +77,6 @@ CLANK_ENEMY_CASES: dict[str, tuple[str, ...]] = {
 }
 
 
-def _unlock_name(world: "SecretAgentClankWorld", name: str) -> str:
-    if world.options.progressive_weapons and name in UNLOCK_TO_PROGRESSIVE:
-        return UNLOCK_TO_PROGRESSIVE[name]
-    return name
-
-
 @dataclasses.dataclass(init=False)
 class AtLeast(NestedRule["SecretAgentClankWorld"], game="Secret Agent Clank"):
     """True when at least `count` of the child rules are true."""
@@ -141,7 +134,7 @@ class EnemyCaseRule(Rule[TWorld], game="Secret Agent Clank"):
         rule = CanReachRegion(self.cases)
         items = CLANK_ENEMY_CASES.get(self.cases, ())
         if items:
-            rule = rule & HasAll(*(_unlock_name(world, item) for item in items))
+            rule = rule & HasAll(*items)
         return rule.resolve(world)
 
 

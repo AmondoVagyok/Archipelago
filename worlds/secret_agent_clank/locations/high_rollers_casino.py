@@ -28,7 +28,7 @@ REGION = CaseRegion(SACCases.HIGH_ROLLERS_CASINO, (
                 flag_bit=0),
     SACLocation(SACMissionLocations.HIGH_ROLLERS_CASINO_COMPLETE, SACLocationType.CASE_COMPLETE, _complete),
     SACLocation(SACMissionLocations.HIGH_ROLLERS_CASINO_EXPLORE_PARADISE, SACLocationType.MISSION, _BASE),
-    SACLocation(SACMissionLocations.HIGH_ROLLERS_CASINO_PARADISE_EXPLOITED, SACLocationType.MISSION, _BASE),
+    SACLocation(SACMissionLocations.HIGH_ROLLERS_CASINO_PARADISE_EXPLOITED, SACLocationType.MISSION, _complete),
     SACLocation(SACSkillPointLocations.HIGH_ROLLERS_CASINO_BEAT_THE_HOUSE, SACLocationType.SKILL_POINT, _BASE),
     SACLocation(SACCutsceneLocations.HIGH_ROLLERS_CASINO_ENTER_CUTSCENE, SACLocationType.CUTSCENE, True_()),
     SACLocation(SACCutsceneLocations.HIGH_ROLLERS_CASINO_COMPLETE_CUTSCENE, SACLocationType.CUTSCENE, _complete),

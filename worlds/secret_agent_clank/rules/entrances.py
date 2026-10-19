@@ -9,7 +9,6 @@ from ..constants import (
     CASE_NAME_TO_CASE,
     CASE_NAME_TO_INFOBOT,
     CLANK_NG_CAP,
-    UNLOCK_TO_PROGRESSIVE,
     SACCases,
     SACClankGadgets,
     SACClankWeapons,
@@ -35,9 +34,7 @@ KLUNKS_LAIR_WEAPON_COUNT = 3
 class KlunksLairRule(Rule[TWorld], game="Secret Agent Clank"):
     @override
     def _instantiate(self, world: TWorld) -> Rule.Resolved:
-        weapons = (UNLOCK_TO_PROGRESSIVE.get(weapon, weapon) if world.options.progressive_weapons else weapon
-                   for weapon in KLUNKS_LAIR_WEAPONS)
-        rule = HasFromListUnique(*weapons, count=KLUNKS_LAIR_WEAPON_COUNT)
+        rule = HasFromListUnique(*KLUNKS_LAIR_WEAPONS, count=KLUNKS_LAIR_WEAPON_COUNT)
         if world.options.ng_plus.value or world.options.progressive_challenge_mode:
             rule = rule & Has(SACClankGadgets.CLANKPDA) & ClankNanotechRule(CLANK_NG_CAP)
         return rule.resolve(world)

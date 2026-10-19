@@ -1,4 +1,4 @@
-from rule_builder.rules import Has, HasAll
+from rule_builder.rules import Has, HasAll, Or
 
 from ..constants import (
     SACAlienCodeLocations,
@@ -15,11 +15,10 @@ from ..constants import (
 from ..rules import ProgressiveChallengeModeRule, VendorCaseRule
 from .model import CaseRegion, SACLocation, SACLocationType
 
-_FINISH_MISSION_ITEMS = (SACClankGadgets.BLACK_OUT_PEN, SACClankWeapons.THROWTIE, SACClankGadgets.JETBOOTS)
-_FINISH_MISSION = HasAll(*_FINISH_MISSION_ITEMS)
+_FINISH_MISSION = Has(SACClankGadgets.BLACK_OUT_PEN) & Or(SACClankWeapons.THROWTIE, SACClankGadgets.JETBOOTS)
 
 
-_VENDOR = VendorCaseRule(SACCases.BOLTAIRE_MUSEUM)
+_VENDOR = VendorCaseRule(SACCases.BOLTAIRE_MUSEUM) & Has(SACClankGadgets.BLACK_OUT_PEN)
 _CHALLENGE_VENDOR = _VENDOR & ProgressiveChallengeModeRule()
 
 REGION = CaseRegion(SACCases.BOLTAIRE_MUSEUM, (
@@ -44,10 +43,10 @@ REGION = CaseRegion(SACCases.BOLTAIRE_MUSEUM, (
     SACLocation(SACAlienCodeLocations.BOLTAIRE_MUSEUM_THE_LEGENDS,
                 SACLocationType.ALIEN_CODE, Has(SACClankGadgets.THERM_OPTIC_SHADES), flag_bit=1),
     SACLocation(SACAlienCodeLocations.BOLTAIRE_MUSEUM_RONNS_SECRET,
-                SACLocationType.ALIEN_CODE, HasAll(*_FINISH_MISSION_ITEMS, SACClankGadgets.THERM_OPTIC_SHADES),
+                SACLocationType.ALIEN_CODE, _FINISH_MISSION & Has(SACClankGadgets.THERM_OPTIC_SHADES),
                 flag_bit=0),
     SACLocation(SACAlienCodeLocations.BOLTAIRE_MUSEUM_BENS_SECRET,
-                SACLocationType.ALIEN_CODE, HasAll(*_FINISH_MISSION_ITEMS, SACClankGadgets.THERM_OPTIC_SHADES),
+                SACLocationType.ALIEN_CODE, _FINISH_MISSION & Has(SACClankGadgets.THERM_OPTIC_SHADES),
                 flag_bit=2),
     SACLocation(SACVendor.BOLTAIRE_MUSEUM_HOLO_KNUCKLES, SACLocationType.VENDOR, _VENDOR),
     SACLocation(SACVendor.BOLTAIRE_MUSEUM_CLANK_FU_KICK, SACLocationType.VENDOR, _VENDOR),
