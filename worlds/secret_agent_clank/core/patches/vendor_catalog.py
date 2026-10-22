@@ -77,6 +77,21 @@ class VendorCatalog(PatchSet):
             self.pine.batch_write_int8(writes)
         self._synced_cases = state
 
+    def sync_locations(self, available):
+        """Use the seed's resolved location rules; never change purchase flags."""
+        state = frozenset(available)
+        if getattr(self, "_synced_locations", None) == state:
+            return
+        current = self.pine.batch_read_int8([address for address, _, _ in self.location_descriptors])
+        writes = []
+        for (address, name, unchecked), value in zip(self.location_descriptors, current):
+            desired = unchecked if name in state else 255
+            if value != desired:
+                writes.append((address, desired))
+        if writes:
+            self.pine.batch_write_int8(writes)
+        self._synced_locations = state
+
     def prepare(self, symbols, hooks):
         p = self.pine
         buy, begin, add, end = require(symbols, NativeFunctions.SCRNVENDOR_PROCESS_PURCHASE,
@@ -112,11 +127,15 @@ class VendorCatalog(PatchSet):
         descriptors = catalog_start + len(code)
         code = self.routine(descriptors, *args)
         self._synced_cases = None
+        self._synced_locations = None
         self.case_descriptors = []
+        self.location_descriptors = []
         self.challenge_descriptors = set()
         index = 0
         for kind in ("vendor", "mods", "titan"):
             for name in hooks.locations.get(kind, {}).values():
+                self.location_descriptors.append((descriptors + index * 8 + 7,
+                                                  name, 3 if kind == "titan" else 1))
                 self.case_descriptors.append((descriptors + index * 8 + 7,
                                               VENDOR_CASES[name], 3 if kind == "titan" else 1))
                 if name in CHALLENGE_VENDOR_LOCATIONS:

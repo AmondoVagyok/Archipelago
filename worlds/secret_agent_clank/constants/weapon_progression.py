@@ -6,6 +6,7 @@ RYNO V4 cap: https://ratchet-galaxy.com/en/games/psp/secret-agent-clank/inventor
 Six Clank weapons and nine Ratchet weapons; no PDAs, tools, or Clank Fu moves.
 """
 from .clank_gadgets import SACClankWeapons, SACProgressiveClankWeapons, SACProtoWeapons
+from .option_choices import WeaponLevelChecksOptions
 from .vendor import vendor_location_name
 from .weapons import (
     EQUIPMENT_DISPLAY_TO_INTERNAL,
@@ -53,7 +54,13 @@ def max_level(internal, ng_plus):
 def checked_levels(internal, mode, ng_plus):
     """Shared generation/runtime selection, including the RYNO exception."""
     cap = max_level(internal, ng_plus)
-    candidates = {0: (), 1: (4,), 2: (8,), 3: (4, 8), 4: range(2, 9)}[mode]
+    candidates = {
+        WeaponLevelChecksOptions.OFF: (),
+        WeaponLevelChecksOptions.LEVEL_4: (4,),
+        WeaponLevelChecksOptions.LEVEL_8: (8,),
+        WeaponLevelChecksOptions.LEVEL_4_AND_8: (4, 8),
+        WeaponLevelChecksOptions.ALL: range(2, 9),
+    }[mode]
     return tuple(level for level in candidates if level <= cap)
 
 

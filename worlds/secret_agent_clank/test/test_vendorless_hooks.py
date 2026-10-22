@@ -52,6 +52,25 @@ class VendorlessHooksTests(unittest.TestCase):
             self.assertEqual(self.p.read_int32(self.base + 4 * 0x74 + 0x70), 7)
         self.assertEqual(self.p.read_int8(hooks.entitlement_table + 40), 2)
 
+    def test_mid_level_entitlement_change_updates_live_ownership(self):
+        storage = 0x160000
+        self.p.write_bytes(storage, b"\xAA" * 352)
+        hooks = LocationHooks(self.p)
+        with patch("worlds.secret_agent_clank.core.patches.equipment_only.triangle_storage",
+                   side_effect=fake_storage(storage, bytes(self.p.data[storage:storage + 352]))):
+            hooks.prepare(self.symbols, pickup_locations={}, vendor_locations={},
+                          entitlements={2: False, 3: True}, vendor_enabled=False)
+        hooks._install_plan()
+        for slot in range(40):
+            self.p.write_int32(self.base + slot * 0x74 + 0x70, 7)
+        hooks.sync_entitlements({2: False, 3: True})
+        self.assertEqual(self.p.read_int32(self.base + 2 * 0x74 + 0x70), 7)
+        hooks.sync_entitlements({2: True, 3: True})
+        self.assertEqual(self.p.read_int32(self.base + 2 * 0x74 + 0x70), 1)
+        self.assertEqual(self.p.read_int32(self.base + 3 * 0x74 + 0x70), 7)
+        self.assertEqual(self.p.read_int32(self.base + 4 * 0x74 + 0x70), 7)
+        self.assertEqual(self.p.read_int8(hooks.entitlement_table + 2), 2)
+
     def test_pickup_checks_need_no_vendor_exports_or_vendor_tables(self):
         give, wait, wait_pickup, get, put = 0x170000, 0x180000, 0x190000, 0x1A0000, 0x1B0000
         self.symbols.update({F.WEAPON_PICKUP_GIVE_WEAPON: give,

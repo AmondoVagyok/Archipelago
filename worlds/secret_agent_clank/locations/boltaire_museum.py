@@ -1,4 +1,4 @@
-from rule_builder.rules import Has, HasAll, Or
+from rule_builder.rules import Has, HasAll, HasAny
 
 from ..constants import (
     SACAlienCodeLocations,
@@ -15,10 +15,10 @@ from ..constants import (
 from ..rules import ProgressiveChallengeModeRule, VendorCaseRule
 from .model import CaseRegion, SACLocation, SACLocationType
 
-_FINISH_MISSION = Has(SACClankGadgets.BLACK_OUT_PEN) & Or(SACClankWeapons.THROWTIE, SACClankGadgets.JETBOOTS)
+_FINISH_MISSION = Has(SACClankGadgets.BLACK_OUT_PEN) & HasAny(SACClankWeapons.THROWTIE, SACClankGadgets.JETBOOTS)
 
 
-_VENDOR = VendorCaseRule(SACCases.BOLTAIRE_MUSEUM) & Has(SACClankGadgets.BLACK_OUT_PEN)
+_VENDOR = VendorCaseRule(SACCases.BOLTAIRE_MUSEUM)
 _CHALLENGE_VENDOR = _VENDOR & ProgressiveChallengeModeRule()
 
 REGION = CaseRegion(SACCases.BOLTAIRE_MUSEUM, (
@@ -33,7 +33,7 @@ REGION = CaseRegion(SACCases.BOLTAIRE_MUSEUM, (
     SACLocation(SACTitaniumBoltLocations.BOLTAIRE_MUSEUM_2,
                 SACLocationType.TITANIUM_BOLT, HasAll(SACClankGadgets.JETBOOTS, SACClankGadgets.BLACK_OUT_PEN),
                 flag_bit=1),
-    SACLocation(SACMissionLocations.BOLTAIRE_MUSEUM_COMPLETE, SACLocationType.CASE_COMPLETE),
+    SACLocation(SACMissionLocations.BOLTAIRE_MUSEUM_COMPLETE, SACLocationType.CASE_COMPLETE, _FINISH_MISSION),
     SACLocation(SACMissionLocations.BOLTAIRE_MUSEUM_ESCAPE_THE_RAVINE, SACLocationType.MISSION),
     SACLocation(SACMissionLocations.BOLTAIRE_MUSEUM_GET_INSIDE_THE_MUSEUM, SACLocationType.MISSION),
     SACLocation(SACMissionLocations.BOLTAIRE_MUSEUM_NOT_THE_GUIDED_TOUR, SACLocationType.MISSION, _FINISH_MISSION),

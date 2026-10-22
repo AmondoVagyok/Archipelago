@@ -32,7 +32,7 @@ REGION = CaseRegion(SACCases.VENANTONIO_LABS, (
     SACLocation(SACTitaniumBoltLocations.VENANTONIO_LABS_2, SACLocationType.TITANIUM_BOLT, _BRIEFCASE_JETBOOTS,
                 flag_bit=1),
     SACLocation(SACMissionLocations.VENANTONIO_LABS_COMPLETE, SACLocationType.CASE_COMPLETE, _FINISH),
-    SACLocation(SACMissionLocations.VENANTONIO_LABS_CRASHING_THE_PARTY, SACLocationType.MISSION, _BRIEFCASE_JETBOOTS),
+    SACLocation(SACMissionLocations.VENANTONIO_LABS_CRASHING_THE_PARTY, SACLocationType.MISSION, _FINISH),
     SACLocation(SACMissionLocations.VENANTONIO_LABS_OUT_OF_THE_FRYING_PAN, SACLocationType.MISSION, _FINISH),
     SACLocation(SACSkillPointLocations.VENANTONIO_LABS_ALL_SLIME_MUST_BURN,
                 SACLocationType.SKILL_POINT, HasAll(*_BASE_ITEMS, SACClankWeapons.FLAMETHROWERPEN)),

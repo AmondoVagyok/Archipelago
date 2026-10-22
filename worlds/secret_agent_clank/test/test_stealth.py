@@ -88,10 +88,10 @@ class StealthTests(unittest.TestCase):
         state.collect(world.create_item(CASE_NAME_TO_INFOBOT[reserve]))
         self.assertFalse(reachable(reserve))
         collect_weapon(SACClankWeapons.CUFFLINK)
-        self.assertFalse(reachable(reserve))
+        self.assertTrue(reachable(reserve))
+        self.assertFalse(reachable(rooftops))
         state.collect(world.create_item(SACClankGadgets.OMNIKEY))
         self.assertTrue(reachable(rooftops))
-        self.assertTrue(reachable(reserve))
 
     def test_native_counter_caps_preserves_arguments_and_tail_calls(self):
         mem = CaptureMemory()

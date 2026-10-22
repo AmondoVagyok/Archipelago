@@ -11,7 +11,9 @@ from ...constants import (
     TITAN_LOCATIONS,
     WEAPON_ORDER,
     NativeFunctions,
+    ProgressiveWeaponsOptions,
     SACOperatives,
+    WeaponLevelChecksOptions,
     checked_levels,
     level_location_name,
     max_level,
@@ -90,7 +92,7 @@ class Progression(PatchSet):
         self.mission_failure = None
         self.enabled = False
         self.manual = False
-        self.check_mode = 0
+        self.check_mode = WeaponLevelChecksOptions.OFF
         self.nanotech_checks_enabled = False
         self.ratchet_nanotech_checks_enabled = False
         self.cap_address = None
@@ -107,13 +109,14 @@ class Progression(PatchSet):
         self.pending_definitions = ()
 
     def configure(self, data):
-        mode = int(data.get("progressive_weapons", 0))
-        if mode not in (0, 1, 2):
+        mode = int(data.get("progressive_weapons", ProgressiveWeaponsOptions.OFF))
+        if mode not in (ProgressiveWeaponsOptions.OFF, ProgressiveWeaponsOptions.MANUAL,
+                        ProgressiveWeaponsOptions.AUTOMATIC):
             raise ValueError("progressive_weapons must be off, manual, or automatic")
-        self.enabled = mode != 0
-        self.manual = mode == 1
-        self.check_mode = int(data.get("weapon_level_checks", 0))
-        if self.check_mode not in range(5):
+        self.enabled = mode != ProgressiveWeaponsOptions.OFF
+        self.manual = mode == ProgressiveWeaponsOptions.MANUAL
+        self.check_mode = int(data.get("weapon_level_checks", WeaponLevelChecksOptions.OFF))
+        if self.check_mode not in range(WeaponLevelChecksOptions.OFF, WeaponLevelChecksOptions.ALL + 1):
             raise ValueError("weapon_level_checks must be between 0 and 4")
         self.nanotech_checks_enabled = bool(data.get("nanotech_checks", False))
         self.ratchet_nanotech_checks_enabled = bool(data.get("ratchet_nanotech_checks", False))

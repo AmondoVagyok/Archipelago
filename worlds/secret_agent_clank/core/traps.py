@@ -11,6 +11,9 @@ TRAP_BITS = {
     SACTraps.BOLT_CONFUSION: 1 << 5,
     SACTraps.WEAPON_SWITCHING: 1 << 6,
 }
+ALL_TRAP_BITS = 0
+for _bits in TRAP_BITS.values():
+    ALL_TRAP_BITS |= _bits
 RATCHET_PACK_BIT = 1 << 10
 
 
@@ -100,6 +103,17 @@ class Traps:
         self.remaining.clear()
         self.managed = self.original = 0
         self.last_tick = None
+
+    def reset(self, symbols):
+        """Switch every trap cheat off and zero their timers, even ones a previous session left on."""
+        address = self.address(symbols)
+        if address is None:
+            return False
+        self.pine.write_int32(address, self.pine.read_int32(address) & ~ALL_TRAP_BITS)
+        self.remaining.clear()
+        self.managed = self.original = 0
+        self.last_tick = None
+        return True
 
     def tick(self, symbols, playing):
         now = self.clock()

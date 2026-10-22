@@ -94,7 +94,7 @@ class WeaponPickup(PatchSet):
                 address=routines[kind, record], table=tables[kind],
                 fallback=setter if record else getter, record=record).replacement)
         init_edits = []
-        entitlement_table = None
+        entitlement_table = base = None
         if entitlements is not None:
             if any(not 0 <= slot < 40 or type(value) is not bool for slot, value in entitlements.items()):
                 raise ValueError("Entitlements require gadget ids 0..39 and boolean ownership")
@@ -129,7 +129,7 @@ class WeaponPickup(PatchSet):
         edits.extend(init_edits)
         plan = PatchPlan(
             patches=capture(p, edits), locations=locations, tables=tables, reported=reported,
-            marker_address=arena, module=module, entitlement_table=entitlement_table,
+            marker_address=arena, module=module, entitlement_table=entitlement_table, gadget_base=base,
         )
         self.patches = plan.patches
         self.plan = plan

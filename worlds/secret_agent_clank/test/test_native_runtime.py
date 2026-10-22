@@ -2,12 +2,11 @@ import struct
 import unittest
 from unittest.mock import Mock, patch
 
-from ..constants import MISSION_COMPLETE_NAME, SACCases, SACClankGadgets
+from ..constants import MISSION_COMPLETE_NAME, GoalOptions, SACCases, SACClankGadgets
 from ..core import CASE_LABELS, Core, NativeRuntime, module_counts
 from ..core.inventories import AlienCodeInventory, KeycardInventory, MissionInventory
 from ..core.patches import MARKER, LoaderBarrierLost, LoaderGate, LocationHooks
 from ..locations import ALIEN_CODE_FLAGS, ALIEN_CODE_LOCATIONS, KEYCARD_LOCATIONS
-from ..options import Goal
 from .test_runtime import Memory
 
 
@@ -137,6 +136,15 @@ class NativeRuntimeTests(unittest.TestCase):
         self.runtime.vendor_catalog.reset_mock()
         self.hooks.is_current.return_value = False
         self.runtime.service(set(), {})
+        self.runtime.vendor_catalog.sync_cases.assert_not_called()
+
+    def test_active_runtime_uses_individual_rules_when_present(self):
+        self.hooks.installed = True
+        self.hooks.is_current.return_value = True
+        self.runtime.vendor_catalog = Mock()
+        self.runtime.available_vendor_locations = frozenset({'test offer'})
+        self.assertTrue(self.runtime.service(set(), {}))
+        self.runtime.vendor_catalog.sync_locations.assert_called_once_with(frozenset({'test offer'}))
         self.runtime.vendor_catalog.sync_cases.assert_not_called()
 
     def test_close_expires_watchdog_only_in_current_game_module(self):
@@ -399,7 +407,7 @@ class AlienFlagTests(unittest.TestCase):
         self.assertFalse(cards.chalice_collected)
         core = Core(p)
         core.keycards = cards
-        core.goal = Goal.option_chalice_of_power
+        core.goal = GoalOptions.CHALICE_OF_POWER
         core.on_goal = Mock()
         core._check_goal()
         core.on_goal.assert_not_called()
@@ -414,16 +422,16 @@ class AlienFlagTests(unittest.TestCase):
         core.keycards.flags.read = lambda index: bytes([1]) if index == 0xCB else bytes([0])
         core.keycards.check()
         core.on_goal = Mock()
-        for goal in (Goal.option_ratchet_prison_escape, Goal.option_all_gadgetbots,
-                     Goal.option_alien_codes, Goal.option_qwark_opera):
+        for goal in (GoalOptions.RATCHET_PRISON_ESCAPE, GoalOptions.ALL_GADGETBOTS,
+                     GoalOptions.ALIEN_CODES, GoalOptions.QWARK_OPERA):
             core.goal = goal
             core._check_goal()
         core.on_goal.assert_not_called()
-        core.goal = Goal.option_chalice_of_power
+        core.goal = GoalOptions.CHALICE_OF_POWER
         core._check_goal()
         core._check_goal()
         core.on_goal.assert_called_once()
-        core._goal_sent, core.goal = False, Goal.option_any
+        core._goal_sent, core.goal = False, GoalOptions.ANY
         core._check_goal()
         self.assertEqual(core.on_goal.call_count, 2)
 

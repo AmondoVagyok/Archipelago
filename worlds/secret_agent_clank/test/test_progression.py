@@ -2,7 +2,7 @@ import struct
 import unittest
 from types import SimpleNamespace
 
-from ..constants import PROGRESSIVE_TO_INTERNAL, WEAPON_ORDER
+from ..constants import PROGRESSIVE_TO_INTERNAL, WEAPON_ORDER, ProgressiveWeaponsOptions
 from ..core.patches import Progression
 from .mips_cpu import CPU
 from .test_native_capture_plans import CaptureMemory
@@ -141,7 +141,7 @@ class ProgressionTests(unittest.TestCase):
     def test_caps_ownership_and_duplicate_replay(self):
         p = Progression(Memory())
         for ng in (0, 1, 2):
-            p.configure({"progressive_weapons": 2, "ng_plus": ng})
+            p.configure({"progressive_weapons": ProgressiveWeaponsOptions.AUTOMATIC, "ng_plus": ng})
             p.receive([])
             self.assertFalse(any(p.ownership().values()))
             for name, internal in PROGRESSIVE_TO_INTERNAL.items():
@@ -166,7 +166,7 @@ class ProgressionTests(unittest.TestCase):
     def test_native_zero_based_level_and_xp_reset(self):
         mem = Memory()
         p = Progression(mem)
-        p.configure({"progressive_weapons": 2, "ng_plus": 1})
+        p.configure({"progressive_weapons": ProgressiveWeaponsOptions.AUTOMATIC, "ng_plus": 1})
         name = next(n for n, i in PROGRESSIVE_TO_INTERNAL.items() if i == "blaster")
         p.receive([name] * 5)
         p.base = 0x100000

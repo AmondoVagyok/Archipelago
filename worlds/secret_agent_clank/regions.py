@@ -13,6 +13,7 @@ from .constants import (
     TITAN_LOCATIONS,
     VENDOR_CASES,
     VENDOR_WEAPONS,
+    GoalOptions,
     SACCases,
     SACClankGadgets,
     SACOperatives,
@@ -140,7 +141,7 @@ def _create_victory(world, case_regions, disabled_operatives):
     def add_victory(name, region, rule):
         region.add_event(name, "Victory", rule, location_type=SACLocation, item_type=SACItem)
 
-    if world.options.goal != Goal.option_pick_and_mix:
+    if world.options.goal != GoalOptions.PICK_AND_MIX:
         _create_goal_conditions(world, case_regions, disabled_operatives,
                                 world.options.goal.value, add_victory)
         return
@@ -158,30 +159,30 @@ def _create_victory(world, case_regions, disabled_operatives):
 
 
 INDIVIDUAL_GOALS: tuple[int, ...] = (
-    Goal.option_defeat_klunk, Goal.option_qwark_opera, Goal.option_all_gadgetbots,
-    Goal.option_ratchet_prison_escape, Goal.option_these_are_the_real_adventures_of_captain_qwark,
-    Goal.option_alien_codes, Goal.option_chalice_of_power,
+    GoalOptions.DEFEAT_KLUNK, GoalOptions.QWARK_OPERA, GoalOptions.ALL_GADGETBOTS,
+    GoalOptions.RATCHET_PRISON_ESCAPE, GoalOptions.THESE_ARE_THE_REAL_ADVENTURES_OF_CAPTAIN_QWARK,
+    GoalOptions.ALIEN_CODES, GoalOptions.CHALICE_OF_POWER,
 )
 GOAL_TITLES: dict[int, str] = {
-    Goal.option_defeat_klunk: "Defeat Klunk",
-    Goal.option_qwark_opera: "Qwark Opera",
-    Goal.option_all_gadgetbots: "All Gadgetbots",
-    Goal.option_ratchet_prison_escape: "Ratchet Prison Escape",
-    Goal.option_these_are_the_real_adventures_of_captain_qwark: "These Are the Real Adventures of Captain Qwark",
-    Goal.option_alien_codes: "All Alien Codes",
-    Goal.option_chalice_of_power: "Collect the Chalice of Power",
+    GoalOptions.DEFEAT_KLUNK: "Defeat Klunk",
+    GoalOptions.QWARK_OPERA: "Qwark Opera",
+    GoalOptions.ALL_GADGETBOTS: "All Gadgetbots",
+    GoalOptions.RATCHET_PRISON_ESCAPE: "Ratchet Prison Escape",
+    GoalOptions.THESE_ARE_THE_REAL_ADVENTURES_OF_CAPTAIN_QWARK: "These Are the Real Adventures of Captain Qwark",
+    GoalOptions.ALIEN_CODES: "All Alien Codes",
+    GoalOptions.CHALICE_OF_POWER: "Collect the Chalice of Power",
 }
 _GOAL_OPERATIVES: dict[int, str] = {
-    Goal.option_qwark_opera: SACOperatives.QWARK,
-    Goal.option_all_gadgetbots: SACOperatives.GADGETBOTS,
-    Goal.option_ratchet_prison_escape: SACOperatives.RATCHET,
-    Goal.option_these_are_the_real_adventures_of_captain_qwark: SACOperatives.QWARK,
+    GoalOptions.QWARK_OPERA: SACOperatives.QWARK,
+    GoalOptions.ALL_GADGETBOTS: SACOperatives.GADGETBOTS,
+    GoalOptions.RATCHET_PRISON_ESCAPE: SACOperatives.RATCHET,
+    GoalOptions.THESE_ARE_THE_REAL_ADVENTURES_OF_CAPTAIN_QWARK: SACOperatives.QWARK,
 }
 
 
 def _collectibles(goal: int, keycard_hunt=False) -> tuple:
     """Physical keycards the Chalice needs inside the Treehouse, unless they are shuffled."""
-    if goal == Goal.option_chalice_of_power and not keycard_hunt:
+    if goal == GoalOptions.CHALICE_OF_POWER and not keycard_hunt:
         return tuple(KEYCARD_LOCATIONS.values())
     return ()
 
@@ -191,7 +192,7 @@ def _goal_unavailable(goal: int, case_regions: dict[str, Region], disabled_opera
     operative = _GOAL_OPERATIVES.get(goal)
     if operative in disabled_operatives:
         return f"requires {operative}, but {operative} is disabled via the Operatives option"
-    if goal in (Goal.option_alien_codes, Goal.option_chalice_of_power):
+    if goal in (GoalOptions.ALIEN_CODES, GoalOptions.CHALICE_OF_POWER):
         for location in _collectibles(goal, keycard_hunt):
             if location.case not in case_regions:
                 return f"requires disabled case {location.case}"
@@ -203,7 +204,7 @@ def _create_goal_conditions(
     goal: int, add_victory,
 ) -> None:
     player_name = world.multiworld.get_player_name(world.player)
-    if goal == Goal.option_any:
+    if goal == GoalOptions.ANY:
         goals = [g for g in INDIVIDUAL_GOALS if _goal_unavailable(g, case_regions, disabled_operatives, bool(world.options.keycard_hunt)) is None]
         if not goals:
             raise OptionError(f"{player_name}'s Secret Agent Clank: Goal is Any, but no goal can be "
@@ -219,9 +220,9 @@ def _create_goal_conditions(
 
 def _add_goal_victory(world: "SecretAgentClankWorld", case_regions: dict[str, Region], goal: int, add_victory) -> None:
     title = f"Victory: {GOAL_TITLES[goal]}"
-    if goal in (Goal.option_alien_codes, Goal.option_chalice_of_power):
+    if goal in (GoalOptions.ALIEN_CODES, GoalOptions.CHALICE_OF_POWER):
         rule = Has(SACCases.HIGH_TREEHOUSE)
-        if goal == Goal.option_chalice_of_power:
+        if goal == GoalOptions.CHALICE_OF_POWER:
             if world.options.keycard_hunt:
                 rule = rule & HasAll(*KEYCARD_ITEMS)
             else:
@@ -230,15 +231,15 @@ def _add_goal_victory(world: "SecretAgentClankWorld", case_regions: dict[str, Re
                                     for location in _collectibles(goal)))
         region = case_regions[next(iter(ALIEN_CODE_LOCATIONS.values())).case]
         add_victory(title, region, rule)
-    elif goal == Goal.option_ratchet_prison_escape:
+    elif goal == GoalOptions.RATCHET_PRISON_ESCAPE:
         rule = And(*(CanReachLocation(name) for name in RATCHET_CHALLENGE_LOCATIONS))
         add_victory(title, case_regions[SACCases.PRISON_BREAKOUT], rule)
     else:
         cases = {
-            Goal.option_defeat_klunk: (CASE_NAME_TO_CASE[SACCases.KLUNKS_LAIR],),
-            Goal.option_qwark_opera: (CASE_NAME_TO_CASE[SACCases.MADAM_BUTTERQWARK],),
-            Goal.option_all_gadgetbots: CASES_BY_OPERATIVE[SACOperatives.GADGETBOTS],
-            Goal.option_these_are_the_real_adventures_of_captain_qwark: CASES_BY_OPERATIVE[SACOperatives.QWARK],
+            GoalOptions.DEFEAT_KLUNK: (CASE_NAME_TO_CASE[SACCases.KLUNKS_LAIR],),
+            GoalOptions.QWARK_OPERA: (CASE_NAME_TO_CASE[SACCases.MADAM_BUTTERQWARK],),
+            GoalOptions.ALL_GADGETBOTS: CASES_BY_OPERATIVE[SACOperatives.GADGETBOTS],
+            GoalOptions.THESE_ARE_THE_REAL_ADVENTURES_OF_CAPTAIN_QWARK: CASES_BY_OPERATIVE[SACOperatives.QWARK],
         }[goal]
         rule = And(*(CaseAccessRule(case.name) for case in cases))
         add_victory(title, case_regions[cases[0].name], rule)

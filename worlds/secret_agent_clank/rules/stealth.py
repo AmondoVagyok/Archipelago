@@ -10,8 +10,7 @@ STEALTH_CASE_RULES = {
     SACCases.ASYANICA_ROOFTOPS: HasAll(SACClankWeapons.THROWTIE, SACClankGadgets.JETBOOTS, SACClankGadgets.OMNIKEY),
     SACCases.VENANTONIO_LABS: Has(SACClankWeapons.CUFFLINK) & HasAny(SACClankWeapons.FLAMETHROWERPEN,
                                                                       SACClankGadgets.OMNIKEY),
-    SACCases.GALACTIC_BOLT_RESERVE: HasAll(SACClankWeapons.CUFFLINK, SACClankWeapons.THROWTIE,
-                                           SACClankGadgets.JETBOOTS, SACClankGadgets.OMNIKEY),
+    SACCases.GALACTIC_BOLT_RESERVE: HasAll(SACClankWeapons.CUFFLINK, SACClankWeapons.THROWTIE, SACClankGadgets.JETBOOTS),
     SACCases.SPACESHIP_GRAVEYARD: Has(SACClankGadgets.JETBOOTS) & HasProjectileWeapon(),
 }
 

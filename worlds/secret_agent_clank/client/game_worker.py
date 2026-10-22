@@ -4,12 +4,13 @@ import traceback
 
 from rule_builder.rules import False_
 
-from ..constants import CASE_ID_TO_CASE
+from ..constants import CASE_ID_TO_CASE, GoalOptions, InfobotsOptions, MissionsOptions
 from ..core import Core
 from ..locations import LOCATION_NAME_TO_ID
 from ..options import Goal
 from ..pypine import Pine
 from ..rules import VENDOR_REQUIREMENTS
+from ..vendor_logic import VendorLogic
 from .constants import EXPECTED_GAME_ID
 from .vendor_scouts import VendorScouts
 
@@ -37,7 +38,7 @@ class GameRuntime:
             death_amnesty=lambda: int(self.data.get('death_amnesty', 0)),
             death_link_enabled=lambda: bool(self.data.get('death_link', False)),
             on_goal=lambda: self.event('goal', None),
-            missions_all=lambda: self.data.get('all_missions', 0) == 1,
+            missions_all=lambda: self.data.get('all_missions', MissionsOptions.LEVEL_COMPLETION) == MissionsOptions.ALL,
             on_bolt_state_changed=lambda delivered, pending: self.event('bolts', (delivered, pending)),
         )
         self.core.stealth.on_count = lambda counts: self.event('stealth', counts)
@@ -80,16 +81,18 @@ class GameRuntime:
             w.native_runtime.ap_connected = True
             w.native_runtime.starting_case.configure(data)
             w.progression.configure(data)
+            w.vendor_logic = VendorLogic(data['vendor_rules']) if 'vendor_rules' in data else None
+            w.native_runtime.available_vendor_locations = frozenset() if w.vendor_logic is not None else None
             w.keycards.hunt.enabled = bool(data.get("keycard_hunt", False))
             w.skins.configure(data)
             w.weapon_mods.configure(data)
             w.wrench.enabled = bool(data.get('progressive_wrench', False))
             w.planet_cases = data.get('planet_cases')
-            w.character_unlocks = int(data.get('infobots', 1)) == 3
+            w.character_unlocks = int(data.get('infobots', InfobotsOptions.CASES)) == InfobotsOptions.CHARACTER_UNLOCKS
             w.traps.durations.update(data.get('trap_duration', {}))
-            w.goal = int(data.get('goal', 0))
+            w.goal = int(data.get('goal', GoalOptions.DEFEAT_KLUNK))
             w.pick_and_mix_goals = (tuple(Goal.from_any(name).value for name in data.get('pick_and_mix_goals', ()))
-                                    if w.goal == Goal.option_pick_and_mix else None)
+                                    if w.goal == GoalOptions.PICK_AND_MIX else None)
             w._goal_sent = False
             w.native_runtime.vendor_locations = self.allowed
             w.skill_points.allowed_locations = self.allowed
@@ -119,6 +122,8 @@ class GameRuntime:
             w.sync_from_ap(set(payload))
             w.tick()
             return {'vendor_active': w.vendor.active, 'vendor_cases': tuple(w.vendor_cases),
+                    'vendor_locations': (tuple(w.native_runtime.available_vendor_locations)
+                                         if w.native_runtime.available_vendor_locations is not None else None),
                     'case_id': w.case.case_id}
         elif command == 'sync':
             w.sync_from_ap(set(payload))
@@ -131,6 +136,8 @@ class GameRuntime:
             w.notifications.enqueue_sent(*payload)
         elif command == 'trap':
             return w.activate_trap(payload) if self.connected else False
+        elif command == 'reset_traps':
+            return w.reset_traps() if self.connected else False
         elif command == 'death':
             if not self.connected:
                 return False

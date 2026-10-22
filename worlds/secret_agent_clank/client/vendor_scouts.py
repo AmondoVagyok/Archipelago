@@ -48,7 +48,13 @@ class VendorScouts:
             (4, WEAPON_ORDER.index(internal)): location_ids[name]
             for internal, name in TITAN_LOCATIONS.items() if name in location_ids})
         self.rewards = {}
-    def request(self, server_locations, hint: bool = False, vendor_cases=()):
+        self.location_ids = location_ids
+
+    def request(self, server_locations, hint: bool = False, vendor_cases=(), vendor_locations=None):
+        if vendor_locations is not None:
+            locations = sorted({self.location_ids[name] for name in vendor_locations
+                                if name in self.location_ids} & set(server_locations))
+            return {"cmd": "LocationScouts", "locations": locations, "create_as_hint": 2 if hint else 0}
         locations = sorted({location for row, location in self.locations.items()
                             if VENDOR_ROW_CASES[row] in vendor_cases}
                            & set(server_locations))

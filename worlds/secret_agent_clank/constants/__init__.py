@@ -32,6 +32,17 @@ from .nanotech import (
 )
 from .native_functions import DebugDrawFunctions, NativeFunctions
 from .native_modules import CASE_MODULES
+from .option_choices import (
+    ClankSkinOptions,
+    GoalOptions,
+    InfobotsOptions,
+    MissionsOptions,
+    ProgressiveWeaponsOptions,
+    QwarkSkinOptions,
+    RatchetSkinOptions,
+    SkillPointsOptions,
+    WeaponLevelChecksOptions,
+)
 from .operatives import ALL_OPERATIVES, OPTIONAL_OPERATIVES, PROGRESSIVE_CHARACTER_ITEM_NAME, SACOperatives
 from .pickups import CHALLENGE_MODE_PICKUP_LOCATIONS, PICKUP_LOCATION_BY_INTERNAL, PICKUP_LOCATIONS, SACPickups
 from .planets import (
@@ -205,10 +216,17 @@ __all__ = [
     "WEAPON_MODS",
     "WEAPON_ORDER",
     "Case",
+    "ClankSkinOptions",
     "DebugDrawFunctions",
     "EventFlag",
+    "GoalOptions",
+    "InfobotsOptions",
     "MissionFlag",
+    "MissionsOptions",
     "NativeFunctions",
+    "ProgressiveWeaponsOptions",
+    "QwarkSkinOptions",
+    "RatchetSkinOptions",
     "SACAlienCodeLocations",
     "SACCases",
     "SACCheats",
@@ -234,6 +252,8 @@ __all__ = [
     "SACTraps",
     "SACVendor",
     "SACVendorWeapons",
+    "SkillPointsOptions",
+    "WeaponLevelChecksOptions",
     "WeaponMod",
     "checked_levels",
     "enabled_challenge_mods",

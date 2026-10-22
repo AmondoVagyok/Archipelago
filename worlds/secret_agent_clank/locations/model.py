@@ -12,8 +12,9 @@ from ..constants import (
     EXTRA_SKILL_POINT_OPERATIVES,
     NG_PLUS_VENDOR_LOCATIONS,
     SKILL_POINT_DIFFICULTY,
+    MissionsOptions,
 )
-from ..options import Missions, enabled_operatives
+from ..options import enabled_operatives
 
 if TYPE_CHECKING:
     from ..options import SecretAgentClankOptions
@@ -74,9 +75,9 @@ class SACLocation:
             case SACLocationType.GADGET_PICKUP:
                 return self.name not in CHALLENGE_MODE_PICKUP_LOCATIONS or bool(options.ng_plus.value)
             case SACLocationType.CASE_COMPLETE:
-                return options.all_missions.value != Missions.option_all
+                return options.all_missions.value != MissionsOptions.ALL
             case SACLocationType.MISSION:
-                return options.all_missions.value == Missions.option_all
+                return options.all_missions.value == MissionsOptions.ALL
             case SACLocationType.SKILL_POINT:
                 return (options.skill_points.value >= SKILL_POINT_DIFFICULTY[self.name]
                         and self.operatives <= enabled_operatives(options))

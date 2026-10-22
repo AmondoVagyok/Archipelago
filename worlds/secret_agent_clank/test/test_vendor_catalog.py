@@ -2,7 +2,7 @@ import struct
 import unittest
 from pathlib import Path
 
-from ..constants import PICKUP_LOCATIONS, VENDOR_LOCATIONS, WEAPON_MODS, SACCases as C
+from ..constants import PICKUP_LOCATIONS, VENDOR_LOCATIONS, WEAPON_MODS, ProgressiveWeaponsOptions, SACCases as C
 from ..core.patches import (
     LocationHooks,
     Progression,
@@ -118,7 +118,7 @@ class VendorCatalogTests(unittest.TestCase):
             hooks.patches.extend(mods.prepare(symbols, hooks, 3, set(), True))
             hooks.patches.extend(TitanVendor(p).prepare(symbols, hooks, set()) if ng else TitanOffers(p).prepare(symbols))
             progression = Progression(p)
-            progression.configure({'ng_plus': ng, 'progressive_weapons': 2})
+            progression.configure({'ng_plus': ng, 'progressive_weapons': ProgressiveWeaponsOptions.AUTOMATIC})
             hooks.patches.extend(VendorCatalog(p).prepare(symbols, hooks))
             hooks.patches.extend(progression.prepare(symbols, hooks, 3))
             spans = sorted((p.address, p.address + len(p.replacement)) for p in hooks.patches)

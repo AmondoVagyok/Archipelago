@@ -15,7 +15,7 @@ from .planets import SACCases as C
 from .vendor import VENDOR_WEAPONS, vendor_location_name
 from .weapon_mods import VENDOR_MODS
 from .weapon_order import WEAPON_ORDER
-from .weapon_progression import TITAN_LOCATIONS
+from .weapon_progression import PROGRESSIVE_TO_UNLOCK, TITAN_LOCATIONS
 from .weapons import EQUIPMENT_DISPLAY_TO_INTERNAL
 from .weapons import SACRatchetWeapons as R
 
@@ -62,6 +62,9 @@ VENDOR_REQUIREMENT_ITEMS: dict[str, tuple[str, ...]] = {
 def vendor_unlocked_cases(owned_cases, received_names) -> frozenset[str]:
     """Owned cases whose own vendor the player can reach with `received_names`."""
     received = set(received_names)
+    # Match World.collect: the first progressive weapon grants its base unlock.
+    received.update({PROGRESSIVE_TO_UNLOCK[name] for name in received
+                     if name in PROGRESSIVE_TO_UNLOCK})
     return frozenset(case for case in owned_cases
                      if case in VENDOR_REQUIREMENT_ITEMS and received.issuperset(VENDOR_REQUIREMENT_ITEMS[case]))
 

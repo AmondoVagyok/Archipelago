@@ -14,7 +14,21 @@ from Options import (
     Toggle,
 )
 
-from .constants import OPTIONAL_OPERATIVES, STEALTH_MAX_PER_CASE, TRAP_DURATIONS, SACOperatives
+from .constants import (
+    OPTIONAL_OPERATIVES,
+    STEALTH_MAX_PER_CASE,
+    TRAP_DURATIONS,
+    ClankSkinOptions,
+    GoalOptions,
+    InfobotsOptions,
+    MissionsOptions,
+    ProgressiveWeaponsOptions,
+    QwarkSkinOptions,
+    RatchetSkinOptions,
+    SkillPointsOptions,
+    WeaponLevelChecksOptions,
+    SACOperatives,
+)
 
 
 class ClankSkin(Choice):
@@ -23,15 +37,15 @@ class ClankSkin(Choice):
     later in-game selections are preserved.
     """
     display_name = "Clank Skin"
-    option_in_game = 0
-    option_suit = 11
-    option_cowboy = 12
-    option_klunk = 13
-    option_70s_clank = 14
-    option_cop_clank = 15
-    option_blender = 16
-    option_zoni = 17
-    default = 0
+    option_in_game = ClankSkinOptions.IN_GAME
+    option_suit = ClankSkinOptions.SUIT
+    option_cowboy = ClankSkinOptions.COWBOY
+    option_klunk = ClankSkinOptions.KLUNK
+    option_70s_clank = ClankSkinOptions.CLANK_70S
+    option_cop_clank = ClankSkinOptions.COP_CLANK
+    option_blender = ClankSkinOptions.BLENDER
+    option_zoni = ClankSkinOptions.ZONI
+    default = ClankSkinOptions.IN_GAME
 
 
 class RatchetSkin(Choice):
@@ -41,17 +55,17 @@ class RatchetSkin(Choice):
     later in-game selections are preserved.
     """
     display_name = "Ratchet Skin"
-    option_in_game = 0
-    option_prison_scrubs = 1
-    option_towel = 2
-    option_super_incognito = 3
-    option_tropical_vacation = 4
-    option_plundering_pirate_captain = 5
-    option_ratchetzilla = 6
-    option_kung_fu_ratchet = 8
-    option_zombie_ratchet = 9
-    option_dan = 10
-    default = 0
+    option_in_game = RatchetSkinOptions.IN_GAME
+    option_prison_scrubs = RatchetSkinOptions.PRISON_SCRUBS
+    option_towel = RatchetSkinOptions.TOWEL
+    option_super_incognito = RatchetSkinOptions.SUPER_INCOGNITO
+    option_tropical_vacation = RatchetSkinOptions.TROPICAL_VACATION
+    option_plundering_pirate_captain = RatchetSkinOptions.PLUNDERING_PIRATE_CAPTAIN
+    option_ratchetzilla = RatchetSkinOptions.RATCHETZILLA
+    option_kung_fu_ratchet = RatchetSkinOptions.KUNG_FU_RATCHET
+    option_zombie_ratchet = RatchetSkinOptions.ZOMBIE_RATCHET
+    option_dan = RatchetSkinOptions.DAN
+    default = RatchetSkinOptions.IN_GAME
 
 
 class QwarkSkin(Choice):
@@ -61,20 +75,20 @@ class QwarkSkin(Choice):
     selections are preserved.
     """
     display_name = "Qwark Skin"
-    option_in_game = 0
-    option_regular = 18
-    option_cowboy = 19
-    option_maid_qwark = 20
-    option_lucha_libre_qwark = 21
-    default = 0
+    option_in_game = QwarkSkinOptions.IN_GAME
+    option_regular = QwarkSkinOptions.REGULAR
+    option_cowboy = QwarkSkinOptions.COWBOY
+    option_maid_qwark = QwarkSkinOptions.MAID_QWARK
+    option_lucha_libre_qwark = QwarkSkinOptions.LUCHA_LIBRE_QWARK
+    default = QwarkSkinOptions.IN_GAME
 
 
 class Missions(Choice):
     """Controls the granularity of story-mission location checks."""
     display_name = "Missions"
-    option_level_completion = 0
-    option_all = 1
-    default = 0
+    option_level_completion = MissionsOptions.LEVEL_COMPLETION
+    option_all = MissionsOptions.ALL
+    default = MissionsOptions.LEVEL_COMPLETION
 
 
 class AllCutscenes(Toggle):
@@ -88,11 +102,11 @@ class SkillPoints(Choice):
     Checks requiring disabled operatives are excluded.
     """
     display_name = "Skill Points"
-    option_off = 0
-    option_easy = 1
-    option_normal = 2
-    option_hard = 3
-    default = 0
+    option_off = SkillPointsOptions.OFF
+    option_easy = SkillPointsOptions.EASY
+    option_normal = SkillPointsOptions.NORMAL
+    option_hard = SkillPointsOptions.HARD
+    default = SkillPointsOptions.OFF
 
 
 class RandomSkillPoints(Toggle):
@@ -137,11 +151,11 @@ class SendScoutedLocations(DefaultOnToggle):
 class Infobots(Choice):
     """Choose how access is unlocked."""
     display_name = "Infobots"
-    option_planets = 0
-    option_cases = 1
-    option_progressive_planet = 2
-    option_character_unlocks = 3
-    default = 1
+    option_planets = InfobotsOptions.PLANETS
+    option_cases = InfobotsOptions.CASES
+    option_progressive_planet = InfobotsOptions.PROGRESSIVE_PLANET
+    option_character_unlocks = InfobotsOptions.CHARACTER_UNLOCKS
+    default = InfobotsOptions.CASES
 
 
 class Operatives(OptionCounter):
@@ -168,16 +182,16 @@ class Goal(Choice):
     - Pick and Mix: Complete every goal you select in Pick and Mix Goals.
     """
     display_name = "Goal"
-    option_defeat_klunk    = 0
-    option_qwark_opera     = 1
-    option_all_gadgetbots   = 2
-    option_ratchet_prison_escape = 3
-    option_these_are_the_real_adventures_of_captain_qwark = 4
-    option_alien_codes      = 5
-    option_chalice_of_power = 6
-    option_any             = 7
-    option_pick_and_mix    = 8
-    default = 0
+    option_defeat_klunk = GoalOptions.DEFEAT_KLUNK
+    option_qwark_opera = GoalOptions.QWARK_OPERA
+    option_all_gadgetbots = GoalOptions.ALL_GADGETBOTS
+    option_ratchet_prison_escape = GoalOptions.RATCHET_PRISON_ESCAPE
+    option_these_are_the_real_adventures_of_captain_qwark = GoalOptions.THESE_ARE_THE_REAL_ADVENTURES_OF_CAPTAIN_QWARK
+    option_alien_codes = GoalOptions.ALIEN_CODES
+    option_chalice_of_power = GoalOptions.CHALICE_OF_POWER
+    option_any = GoalOptions.ANY
+    option_pick_and_mix = GoalOptions.PICK_AND_MIX
+    default = GoalOptions.DEFEAT_KLUNK
 
 
 
@@ -219,10 +233,10 @@ class ProgressiveWeapons(Choice):
     Only upgradeable weapons participate.
     """
     display_name = "Progressive Weapons"
-    option_off = 0
-    option_manual = 1
-    option_automatic = 2
-    default = 0
+    option_off = ProgressiveWeaponsOptions.OFF
+    option_manual = ProgressiveWeaponsOptions.MANUAL
+    option_automatic = ProgressiveWeaponsOptions.AUTOMATIC
+    default = ProgressiveWeaponsOptions.OFF
 
 
 class WeaponLevelChecks(Choice):
@@ -230,12 +244,12 @@ class WeaponLevelChecks(Choice):
     V5-V8 require NG+. The RYNO stops at V4. Gadgets and Clank Fu moves are excluded.
     """
     display_name = "Weapon Level Checks"
-    option_off = 0
-    option_level_4 = 1
-    option_level_8 = 2
-    option_level_4_and_8 = 3
-    option_all = 4
-    default = 0
+    option_off = WeaponLevelChecksOptions.OFF
+    option_level_4 = WeaponLevelChecksOptions.LEVEL_4
+    option_level_8 = WeaponLevelChecksOptions.LEVEL_8
+    option_level_4_and_8 = WeaponLevelChecksOptions.LEVEL_4_AND_8
+    option_all = WeaponLevelChecksOptions.ALL
+    default = WeaponLevelChecksOptions.OFF
 
 
 class StealthTakedownChecks(Range):

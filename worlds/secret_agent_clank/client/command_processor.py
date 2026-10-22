@@ -49,6 +49,22 @@ class SACCommandProcessor(ClientCommandProcessor):
         async_start(self._worker_command("diagnostic", ("sac_info",)))
         return True
 
+    def _cmd_reset_trap(self) -> bool:
+        """Turn off every active trap and clear its remaining time."""
+        async_start(self._reset_traps())
+        return True
+
+    async def _reset_traps(self) -> None:
+        try:
+            reset = await self.ctx._worker.request("reset_traps")
+        except Exception as exc:
+            logger.warning(f"[SAC] reset_trap: {exc}")
+            return
+        if reset:
+            logger.info("[SAC] Traps reset.")
+        else:
+            logger.warning("[SAC] Could not reset traps; load into a case first.")
+
     def _cmd_toggle_deathlink(self) -> bool:
         """Turn DeathLink on or off for this session."""
         async_start(self.ctx._set_death_link_enabled(not self.ctx._death_link_enabled))

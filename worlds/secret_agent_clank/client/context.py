@@ -259,6 +259,7 @@ class SACContext(PineMixin, DeathLinkMixin, CommonContext):
         request = self.vendor_scouts.request(
             server_locations, hint=bool(self.slot_data.get("send_scouted_locations", True)),
             vendor_cases=self._game_state.get("vendor_cases", ()),
+            vendor_locations=self._game_state.get("vendor_locations"),
         )
         new_ids = [lid for lid in request["locations"] if lid not in self._scouted_location_ids]
         if not new_ids:

@@ -2,7 +2,6 @@
 import logging
 from collections.abc import Callable, Sequence
 
-from ..options import Goal
 from .address_maps import BOLTS_ADDRESS, CHALLENGE_MODE_ADDRESS
 from .bolt_rewards import BoltRewards
 from .inventories import (
@@ -32,6 +31,7 @@ from ..constants import (
     VENDOR_LOCATIONS,
     VENDOR_LOCATION_NAMES,
     WEAPON_ORDER,
+    GoalOptions,
     SACCases,
     SACCheats,
     SACMissionLocations,
@@ -100,7 +100,7 @@ class Core:
         self.alien_codes    = AlienCodeInventory(pine)
         self.keycards = KeycardInventory(pine)
         self.native_runtime.keycard_hunt = self.keycards.hunt
-        self.goal = 0
+        self.goal = GoalOptions.DEFEAT_KLUNK
         self.pick_and_mix_goals = None
         self.character_unlocks = False
         self.planet_cases: dict[str, list[str]] | None = None
@@ -110,6 +110,7 @@ class Core:
         self._ap_owned: dict[str, dict[str, bool]] = {"ratchet": {}, "clank": {}}
         self._owned_cases: set[str] = set()
         self._vendor_cases: frozenset[str] = frozenset()
+        self.vendor_logic = None
         self._inventory_initialized = False
         self._checked_items: set[str] = set()
 
@@ -168,6 +169,8 @@ class Core:
         self.native_runtime.owned_cases = frozenset(self._owned_cases)
         self._vendor_cases = vendor_unlocked_cases(self._owned_cases, received_names)
         self.native_runtime.vendor_cases = self._vendor_cases
+        self.native_runtime.available_vendor_locations = (
+            self.vendor_logic.available(received_names) if self.vendor_logic is not None else None)
 
     def _invalidate_level(self) -> None:
         self.traps.last_tick = None
@@ -272,6 +275,11 @@ class Core:
         if not self.case.is_ready or not self._inventory_initialized:
             return False
         return self.traps.activate(trap_name, self.case.symbols)
+
+    def reset_traps(self) -> bool:
+        if not self.case.is_ready:
+            return False
+        return self.traps.reset(self.case.symbols)
 
     @property
     def owned_cases(self) -> frozenset[str]:
@@ -423,15 +431,15 @@ class Core:
                          for case in CASES_BY_OPERATIVE[SACOperatives.GADGETBOTS])
         ratchet = all(self.ratchet_challenges.completed.values())
         conditions = {
-            Goal.option_defeat_klunk: klunk,
-            Goal.option_qwark_opera: butterqwark,
-            Goal.option_all_gadgetbots: gadgetbots,
-            Goal.option_ratchet_prison_escape: ratchet,
-            Goal.option_these_are_the_real_adventures_of_captain_qwark: all_qwark,
-            Goal.option_chalice_of_power: self.keycards.chalice_collected,
-            Goal.option_alien_codes: self.alien_codes.all_found,
+            GoalOptions.DEFEAT_KLUNK: klunk,
+            GoalOptions.QWARK_OPERA: butterqwark,
+            GoalOptions.ALL_GADGETBOTS: gadgetbots,
+            GoalOptions.RATCHET_PRISON_ESCAPE: ratchet,
+            GoalOptions.THESE_ARE_THE_REAL_ADVENTURES_OF_CAPTAIN_QWARK: all_qwark,
+            GoalOptions.CHALICE_OF_POWER: self.keycards.chalice_collected,
+            GoalOptions.ALIEN_CODES: self.alien_codes.all_found,
         }
-        conditions[Goal.option_any] = any(conditions.values())
+        conditions[GoalOptions.ANY] = any(conditions.values())
         reached = (bool(self.pick_and_mix_goals) and
                    all(conditions.get(goal, False) for goal in self.pick_and_mix_goals)
                    if self.pick_and_mix_goals is not None else conditions.get(self.goal, False))

@@ -15,12 +15,13 @@ from ..constants import (
     PROGRESSIVE_CHALLENGE_MODE,
     PROGRESSIVE_CHARACTER_ITEM_NAME,
     PROGRESSIVE_PLANET_ITEM_NAME,
+    InfobotsOptions,
     SACCases,
     SACClankGadgets,
     SACClankWeapons,
 )
 from ..items import PROGRESSIVE_WRENCH_ITEM_NAME
-from ..options import Infobots, enabled_operatives
+from ..options import enabled_operatives
 
 if TYPE_CHECKING:
     from ..world import SecretAgentClankWorld
@@ -37,7 +38,7 @@ class HasPlanet(Rule[TWorld], game="Secret Agent Clank"):
     @override
     def _instantiate(self, world: TWorld) -> Rule.Resolved:
         rule = True_()
-        if world.options.infobots == Infobots.option_planets and self.planet in PLANET_ACCESS_ITEM_NAME:
+        if world.options.infobots == InfobotsOptions.PLANETS and self.planet in PLANET_ACCESS_ITEM_NAME:
             rule = Has(PLANET_ACCESS_ITEM_NAME[self.planet])
         return rule.resolve(world)
 
@@ -49,9 +50,9 @@ class HasCase(Rule[TWorld], game="Secret Agent Clank"):
     @override
     def _instantiate(self, world: TWorld) -> Rule.Resolved:
         rule = True_()
-        if world.options.infobots == Infobots.option_cases and self.cases in CASE_NAME_TO_INFOBOT:
+        if world.options.infobots == InfobotsOptions.CASES and self.cases in CASE_NAME_TO_INFOBOT:
             rule = Has(CASE_NAME_TO_INFOBOT[self.cases])
-        elif world.options.infobots == Infobots.option_progressive_planet:
+        elif world.options.infobots == InfobotsOptions.PROGRESSIVE_PLANET:
             rule = HasProgressivePlanet(world, self.cases)
         return rule.resolve(world)
 
@@ -171,7 +172,7 @@ class HasCharacter(Rule[TWorld], game="Secret Agent Clank"):
     def _instantiate(self, world: TWorld) -> Rule.Resolved:
         case = CASE_NAME_TO_CASE[self.cases]
         item = PROGRESSIVE_CHARACTER_ITEM_NAME.get(case.operative)
-        if world.options.infobots != Infobots.option_character_unlocks or item is None:
+        if world.options.infobots != InfobotsOptions.CHARACTER_UNLOCKS or item is None:
             return True_().resolve(world)
         return Has(item, list(CASES_BY_OPERATIVE[case.operative]).index(case) + 1).resolve(world)
 

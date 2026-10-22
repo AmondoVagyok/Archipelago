@@ -3,6 +3,9 @@ from . import mips as m
 from .asm import jump, packed
 from .patch import Patch
 
+GADGET_STRIDE = 0x74
+GADGET_OWNED_OFFSET = 0x70
+
 
 class Entitlements(Patch):
     def __init__(self, pine):
@@ -13,7 +16,7 @@ class Entitlements(Patch):
         self.address = self.table = None
         self.original = self.replacement = b""
         for value, size in ((address, 80), (table, 41),
-                            (gadget_base, 40 * 0x74), (fallback, 4)):
+                            (gadget_base, 40 * GADGET_STRIDE), (fallback, 4)):
             if type(value) is not int or not 0x100000 <= value <= 0x2000000 - size:
                 raise ValueError("Invalid entitlement routine address")
         if address % 4 or gadget_base % 4 or fallback % 4:
@@ -40,7 +43,7 @@ class Entitlements(Patch):
     @staticmethod
     def _build_routine(table, gadget_base, fallback):
         """Apply managed AP ownership immediately before native object init."""
-        owned = gadget_base + 0x70
+        owned = gadget_base + GADGET_OWNED_OFFSET
         return packed([
             *m.li32(m.T0, table),                          # t0 = table
             *m.li32(m.T1, owned),                          # t1 = owned
@@ -49,7 +52,7 @@ class Entitlements(Patch):
             m.beq(m.T3, m.ZERO, 2), m.addiu(m.T3, m.T3, -1),  # unmanaged skips store; delay subtracts 1
             m.sw(m.T3, 0, m.T1),                            # *t1 = t3
             m.addiu(m.T0, m.T0, 1),                         # next table slot
-            m.bne(m.T0, m.T2, -6), m.addiu(m.T1, m.T1, 0x74),  # loop; delay advances GadgetData slot
+            m.bne(m.T0, m.T2, -6), m.addiu(m.T1, m.T1, GADGET_STRIDE),  # loop; delay advances GadgetData slot
             m.lbu(m.T3, 0, m.T0), m.addiu(m.T3, m.T3, 1), m.sb(m.T3, 0, m.T0),  # invocation counter
             jump(fallback), 0,
         ])

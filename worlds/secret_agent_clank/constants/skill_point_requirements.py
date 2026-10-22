@@ -1,13 +1,6 @@
-from enum import IntEnum
-
 from .operatives import SACOperatives
+from .option_choices import SkillPointsOptions
 from .skillpoints import SACSkillPointLocations as SP, SKILL_POINT_FLAGS
-
-
-class SkillPointDifficulty(IntEnum):
-    EASY = 1
-    NORMAL = 2
-    HARD = 3
 
 
 EASY_SKILL_POINTS = frozenset({
@@ -62,9 +55,9 @@ NORMAL_SKILL_POINTS = frozenset({
 HARD_SKILL_POINTS = frozenset(SKILL_POINT_FLAGS) - EASY_SKILL_POINTS - NORMAL_SKILL_POINTS
 
 SKILL_POINT_DIFFICULTY = {
-    **dict.fromkeys(EASY_SKILL_POINTS, SkillPointDifficulty.EASY),
-    **dict.fromkeys(NORMAL_SKILL_POINTS, SkillPointDifficulty.NORMAL),
-    **dict.fromkeys(HARD_SKILL_POINTS, SkillPointDifficulty.HARD),
+    **dict.fromkeys(EASY_SKILL_POINTS, SkillPointsOptions.EASY),
+    **dict.fromkeys(NORMAL_SKILL_POINTS, SkillPointsOptions.NORMAL),
+    **dict.fromkeys(HARD_SKILL_POINTS, SkillPointsOptions.HARD),
 }
 
 EXTRA_SKILL_POINT_OPERATIVES: dict[str, frozenset[str]] = {

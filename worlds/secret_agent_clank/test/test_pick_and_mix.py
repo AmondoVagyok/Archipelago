@@ -6,7 +6,7 @@ from unittest.mock import Mock
 from Options import OptionError
 from test.general import setup_multiworld
 
-from ..constants import MISSION_COMPLETE_NAME, SACCases
+from ..constants import MISSION_COMPLETE_NAME, GoalOptions, SACCases
 from ..core import Core
 from ..options import Goal, PickAndMixGoals, SecretAgentClankOptions, sac_option_groups
 from ..universal_tracker import setup_options_from_slot_data
@@ -20,14 +20,14 @@ class QwarkGoalDetectionTests(unittest.TestCase):
         core = Core(Memory())
         core.on_goal = Mock()
         core.missions._reported.add(MISSION_COMPLETE_NAME[SACCases.MADAM_BUTTERQWARK])
-        core.goal = Goal.option_these_are_the_real_adventures_of_captain_qwark
+        core.goal = GoalOptions.THESE_ARE_THE_REAL_ADVENTURES_OF_CAPTAIN_QWARK
         core._check_goal()
         core.on_goal.assert_not_called()
-        core.goal = Goal.option_qwark_opera
+        core.goal = GoalOptions.QWARK_OPERA
         core._check_goal()
         core.on_goal.assert_called_once()
         core._goal_sent = False
-        core.goal = Goal.option_these_are_the_real_adventures_of_captain_qwark
+        core.goal = GoalOptions.THESE_ARE_THE_REAL_ADVENTURES_OF_CAPTAIN_QWARK
         core.missions._reported.update(MISSION_COMPLETE_NAME[case.name]
                                        for case in CASES_BY_OPERATIVE[SACOperatives.QWARK])
         core._check_goal()
@@ -37,7 +37,7 @@ class QwarkGoalDetectionTests(unittest.TestCase):
         from ..constants.missions import SACMissionLocations
         core = Core(Memory())
         core.on_goal = Mock()
-        core.goal = Goal.option_qwark_opera
+        core.goal = GoalOptions.QWARK_OPERA
         core.missions.completed[SACMissionLocations.MADAM_BUTTERQWARK_QWARKOGRAPHY_CH_3] = True
         core._check_goal()
         core.on_goal.assert_called_once()
@@ -45,7 +45,7 @@ class QwarkGoalDetectionTests(unittest.TestCase):
 
 class PickAndMixTests(unittest.TestCase):
     def test_option_layout_has_dropdown_and_no_toggle(self):
-        self.assertEqual(Goal.from_any('pick_and_mix').value, Goal.option_pick_and_mix)
+        self.assertEqual(Goal.from_any('pick_and_mix').value, GoalOptions.PICK_AND_MIX)
         self.assertNotIn('pick_and_mix', SecretAgentClankOptions.type_hints)
         self.assertEqual(sac_option_groups[0].options, [Goal, PickAndMixGoals])
 
@@ -72,10 +72,10 @@ class PickAndMixTests(unittest.TestCase):
         world = mw.worlds[1]
         slot = world.fill_slot_data()
         mw.re_gen_passthrough = {world.game: slot}
-        world.options.goal.value = Goal.option_defeat_klunk
+        world.options.goal.value = GoalOptions.DEFEAT_KLUNK
         world.options.pick_and_mix_goals.value = set()
         setup_options_from_slot_data(world)
-        self.assertEqual(world.options.goal.value, Goal.option_pick_and_mix)
+        self.assertEqual(world.options.goal.value, GoalOptions.PICK_AND_MIX)
         self.assertEqual(world.options.pick_and_mix_goals.value, {'qwark_opera'})
         mw = setup_multiworld(SecretAgentClankWorld, options={
             'goal': 'defeat_klunk', 'pick_and_mix_goals': {'alien_codes'}})
@@ -84,7 +84,7 @@ class PickAndMixTests(unittest.TestCase):
 
     def test_client_requires_every_selected_goal_and_sends_once(self):
         core = Core(Memory())
-        core.pick_and_mix_goals = (Goal.option_defeat_klunk, Goal.option_chalice_of_power)
+        core.pick_and_mix_goals = (GoalOptions.DEFEAT_KLUNK, GoalOptions.CHALICE_OF_POWER)
         core.on_goal = Mock()
         core.keycards.chalice_collected = True
         core._check_goal()

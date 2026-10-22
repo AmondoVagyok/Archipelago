@@ -2,6 +2,7 @@
 from ...constants import EQUIPMENT_INTERNAL_TO_DISPLAY, NativeFunctions, vendor_location_name
 from ..batch_io import read_blocks, write_blocks
 from .asm import MARKER, packed
+from .entitlements import GADGET_OWNED_OFFSET, GADGET_STRIDE
 from .vendor_only import VendorOnly
 from .weapon_pickup import WeaponPickup
 from .equipment_only import EquipmentOnly
@@ -21,6 +22,7 @@ class LocationHooks:
         self.reported = set()
         self.installed = False
         self.entitlement_table = None
+        self.gadget_base = None
         self.extra_ranges = []
         self.gain_storage_prepared = False
         self.catalog_only_ranges = []
@@ -56,6 +58,7 @@ class LocationHooks:
         self.marker_address = plan.marker_address
         self.module = plan.module
         self.entitlement_table = plan.entitlement_table
+        self.gadget_base = plan.gadget_base
         self.extra_ranges = plan.extra_ranges
         return len(self.patches)
 
@@ -154,7 +157,8 @@ class LocationHooks:
         self.reported.update(checked)
 
     def sync_entitlements(self, entitlements):
-        """Keep the pre-object-init snapshot current for native restarts too."""
+        """Keep the pre-object-init snapshot current for native restarts too, and apply changed
+        ownership to the live gadget list so items received mid-level appear without a reload."""
         if self.entitlement_table is None or not self.installed:
             return
         flags = bytearray(40)
@@ -163,8 +167,14 @@ class LocationHooks:
                 raise ValueError("Invalid AP entitlement")
             flags[slot] = 2 if value else 1
         current = self._read_if_current([(self.entitlement_table, 40)])
-        if current is not None and current[0] != flags:
-            self.pine.write_bytes(self.entitlement_table, bytes(flags))
+        if current is None or current[0] == flags:
+            return
+        self.pine.write_bytes(self.entitlement_table, bytes(flags))
+        # Same store the object-init routine makes: owned = flag - 1, for managed slots only.
+        live = [(self.gadget_base + slot * GADGET_STRIDE + GADGET_OWNED_OFFSET, flag - 1)
+                for slot, flag in enumerate(flags) if flag and flag != current[0][slot]]
+        if live:
+            self.pine.batch_write_int32(live)
 
     def restore(self):
         if not self.installed:

@@ -15,6 +15,7 @@ class EquipmentOnly:
     def prepare(self, symbols, checked, entitlements):
         p = self.pine
         init_sites = []
+        base = None
         if entitlements is not None:
             base, init, load, restart = require(
                 symbols, "GADGET_g_GadgetList", NativeFunctions.MOBY_INIT_MOBYS,
@@ -47,5 +48,5 @@ class EquipmentOnly:
         edits.insert(0, Patch(storage, original[:len(data)], bytes(data)))
         return PatchPlan(patches=edits, locations={}, tables={}, reported=set(checked),
                          marker_address=marker, module=int.from_bytes(module, "little"),
-                         entitlement_table=table,
+                         entitlement_table=table, gadget_base=base,
                          extra_ranges=[(storage + len(data), storage + 152)])

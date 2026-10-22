@@ -52,7 +52,7 @@ class VendorOnly(PatchSet):
             data.extend(GameFlags(p).prepare(
                 address=setter, table=arena + 16, fallback=put, record=True).replacement)
         init_edits = []
-        entitlement_table = None
+        entitlement_table = base = None
         if entitlements is not None:
             base, init, load, restart = require(symbols,
                 "GADGET_g_GadgetList", NativeFunctions.MOBY_INIT_MOBYS, NativeFunctions.LEVEL_LOAD_LEVEL, NativeFunctions.LEVEL_RESTART,
@@ -81,7 +81,7 @@ class VendorOnly(PatchSet):
         edits.extend(init_edits)
         plan = PatchPlan(
             patches=capture(p, edits), locations=plan_locations, tables=tables, reported=reported,
-            marker_address=arena, module=module, entitlement_table=entitlement_table,
+            marker_address=arena, module=module, entitlement_table=entitlement_table, gadget_base=base,
         )
         self.patches = plan.patches
         self.plan = plan

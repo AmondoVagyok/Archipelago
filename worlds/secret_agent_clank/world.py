@@ -23,6 +23,7 @@ from .constants import (
     PROGRESSIVE_TO_UNLOCK,
     RATCHET_WEAPONS,
     UNLOCK_TO_PROGRESSIVE,
+    InfobotsOptions,
     SACCases,
     SACOperatives,
     WeaponMod,
@@ -40,10 +41,11 @@ from .items import (
     WEAPON_ITEM_TABLE,
 )
 from .locations import CASE_REGIONS, LOCATIONS, LOCATION_NAME_TO_ID, stealth_case_counts
-from .options import Infobots, SecretAgentClankOptions, enabled_operatives, sac_option_groups
+from .options import SecretAgentClankOptions, enabled_operatives, sac_option_groups
 from .regions import create_regions
 from .rules import VENDOR_ONLY_ITEM_NAMES, region_names, set_entrance_rules
 from .universal_tracker import setup_options_from_slot_data
+from .vendor_logic import export_vendor_rules
 
 try:
     from worlds.dynamicpine import DynamicPineGame
@@ -169,14 +171,14 @@ class SecretAgentClankWorld(World):
         return room
 
     def _starting_items(self, cases) -> list[str]:
-        if self.options.infobots == Infobots.option_progressive_planet:
+        if self.options.infobots == InfobotsOptions.PROGRESSIVE_PLANET:
             planet_cases = self.planet_cases
             counts: dict[str, int] = {}
             for case in cases:
                 order = planet_cases[case.planet]
                 counts[case.planet] = max(counts.get(case.planet, 0), order.index(case.name) + 1)
             return [PROGRESSIVE_PLANET_ITEM_NAME[planet] for planet, count in counts.items() for _ in range(count)]
-        if self.options.infobots == Infobots.option_planets:
+        if self.options.infobots == InfobotsOptions.PLANETS:
             return list(dict.fromkeys(
                 PLANET_ACCESS_ITEM_NAME.get(case.planet, CASE_NAME_TO_INFOBOT[case.name]) for case in cases))
         return [CASE_NAME_TO_INFOBOT[case.name] for case in cases]
@@ -184,7 +186,7 @@ class SecretAgentClankWorld(World):
     def _choose_starting_cases(self, candidates):
         """Two random distinct starting cases, at least one Clank's, preferring pairs that open
         at least MIN_START_ROOM locations between them before any item is received."""
-        if self.options.infobots == Infobots.option_progressive_planet:
+        if self.options.infobots == InfobotsOptions.PROGRESSIVE_PLANET:
             # A later case would also open every case before it on its planet,
             # so start on cases that are first in their planet's unlock order.
             planet_cases = self.planet_cases
@@ -268,23 +270,23 @@ class SecretAgentClankWorld(World):
             self.multiworld.push_precollected(self.create_item(name))
         starting_cases = {self.starting_case, self.second_starting_case}
 
-        if self.options.infobots == Infobots.option_progressive_planet:
+        if self.options.infobots == InfobotsOptions.PROGRESSIVE_PLANET:
             for planet, cases in self.planet_cases.items():
                 item = PROGRESSIVE_PLANET_ITEM_NAME[planet]
                 pool += [item] * (len(cases) - starting_items.count(item))
-        elif self.options.infobots == Infobots.option_cases:
+        elif self.options.infobots == InfobotsOptions.CASES:
             pool += [
                 CASE_NAME_TO_INFOBOT[case.name] for case in active_cases
                 if case.name not in starting_cases
             ]
-        elif self.options.infobots == Infobots.option_planets:
+        elif self.options.infobots == InfobotsOptions.PLANETS:
             active_planets = {case.planet for case in active_cases}
             pool += [item for planet, item in PLANET_ACCESS_ITEM_NAME.items()
                      if planet in active_planets and item not in starting_items]
             if CASE_NAME_TO_INFOBOT[SACCases.BOLTAIRE_MUSEUM] not in starting_items:
                 pool.append(CASE_NAME_TO_INFOBOT[SACCases.BOLTAIRE_MUSEUM])
 
-        if self.options.infobots == Infobots.option_character_unlocks:
+        if self.options.infobots == InfobotsOptions.CHARACTER_UNLOCKS:
             for character, item_name in PROGRESSIVE_CHARACTER_ITEM_NAME.items():
                 if character in enabled_operatives(self.options):
                     pool += [item_name] * len(CASES_BY_OPERATIVE.get(character, ()))
@@ -309,6 +311,7 @@ class SecretAgentClankWorld(World):
 
     def fill_slot_data(self) -> dict[str, Any]:
         return {
+            "vendor_rules": export_vendor_rules(self),
             "planet_cases": self.planet_cases,
             "starting_case": self.starting_case,
             "second_starting_case": self.second_starting_case,

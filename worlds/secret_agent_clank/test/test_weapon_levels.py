@@ -12,7 +12,9 @@ from ..constants import (
     LEVELLED_INTERNALS,
     PROGRESSIVE_TO_INTERNAL,
     WEAPON_ORDER,
+    ProgressiveWeaponsOptions,
     SACCases,
+    WeaponLevelChecksOptions,
     checked_levels,
     level_location_name,
     max_level,
@@ -46,7 +48,7 @@ class WeaponLevelTests(unittest.TestCase):
         self.assertEqual(checked_levels("throwTie", 3, 1), (4, 8))
 
     def test_progressive_modes_survive_slot_data(self):
-        self.assertEqual(ProgressiveWeapons.from_any("manual").value, 1)
+        self.assertEqual(ProgressiveWeapons.from_any("manual").value, ProgressiveWeaponsOptions.MANUAL)
         for mode, manual in ((2, False), (1, True)):
             p = Progression(Memory())
             p.configure({"progressive_weapons": mode})
@@ -75,11 +77,11 @@ class WeaponLevelTests(unittest.TestCase):
         world = m.worlds[1]
         slot = world.fill_slot_data()
         m.re_gen_passthrough = {world.game: slot}
-        world.options.progressive_weapons.value = 0
-        world.options.weapon_level_checks.value = 0
+        world.options.progressive_weapons.value = ProgressiveWeaponsOptions.OFF
+        world.options.weapon_level_checks.value = WeaponLevelChecksOptions.OFF
         setup_options_from_slot_data(world)
-        self.assertEqual(world.options.progressive_weapons.value, 1)
-        self.assertEqual(world.options.weapon_level_checks.value, 1)
+        self.assertEqual(world.options.progressive_weapons.value, ProgressiveWeaponsOptions.MANUAL)
+        self.assertEqual(world.options.weapon_level_checks.value, WeaponLevelChecksOptions.LEVEL_4)
 
     def test_disabled_characters_and_ng_only_checks(self):
         for ng in (0, 1):
@@ -161,7 +163,7 @@ class WeaponLevelTests(unittest.TestCase):
 
     def test_manual_preserves_earned_levels_freezes_xp_and_bridges_ng(self):
         p = Progression(Memory())
-        p.configure({"progressive_weapons": 1, "ng_plus": 1, "weapon_level_checks": 4})
+        p.configure({"progressive_weapons": ProgressiveWeaponsOptions.MANUAL, "ng_plus": 1, "weapon_level_checks": WeaponLevelChecksOptions.ALL})
         p.base, p.cap_address = 0x100000, 0x120000
         slot = p.base + WEAPON_ORDER.index("blaster") * 0x74
         name = next(n for n, i in PROGRESSIVE_TO_INTERNAL.items() if i == "blaster")

@@ -76,6 +76,17 @@ class TrapTests(unittest.TestCase):
         self.assertEqual(self.memory.read_int32(0x110000), 0)
         self.assertFalse(self.traps.remaining)
 
+    def test_reset_clears_all_traps_including_unmanaged(self):
+        self.traps.activate(SACTraps.MIRRORED_LEVELS, {})
+        stale = TRAP_BITS[SACTraps.BIG_HEADED] | TRAP_BITS[SACTraps.WEAPON_SWITCHING]
+        self.memory.write_int32(0x100000, self.memory.read_int32(0x100000) | stale | RATCHET_PACK_BIT)
+        self.assertTrue(self.traps.reset({}))
+        self.assertEqual(self.memory.read_int32(0x100000), RATCHET_PACK_BIT)
+        self.assertFalse(self.traps.remaining)
+        self.assertEqual(self.traps.managed, 0)
+        self.traps.address.return_value = None
+        self.assertFalse(self.traps.reset({}))
+
     def test_ratchet_pack_survives_trap_expiry_and_restore(self):
         self.memory.write_int32(0x100000, 1 << 12)
         self.assertTrue(self.traps.grant_ratchet_pack({}))

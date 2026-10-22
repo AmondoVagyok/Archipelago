@@ -6,6 +6,7 @@ from ..constants import (
     LEVELLED_INTERNALS,
     NG_PLUS_VENDOR_ITEMS,
     SACOperatives,
+    WeaponLevelChecksOptions,
     checked_levels,
     level_location_name,
 )
@@ -38,7 +39,7 @@ def _enabled_weapons(world):
 
 def create_weapon_level_locations(world, menu_region):
     mode = world.options.weapon_level_checks.value
-    if not mode:
+    if mode == WeaponLevelChecksOptions.OFF:
         return
     region = Region("Weapon Levels", world.player, world.multiworld)
     for internal, _name, _operative in _enabled_weapons(world):

@@ -5,6 +5,7 @@ import unittest
 from unittest.mock import Mock, patch
 
 from ..client import GameRuntime, GameWorker
+from ..constants import GoalOptions, MissionsOptions
 from ..core import death_sent_text, death_text
 from .test_runtime import Memory
 
@@ -150,15 +151,14 @@ class GameRuntimeTests(unittest.TestCase):
         self.pine.disconnect.assert_called_once()
 
     def test_configuration_events_and_slot_reset_keep_the_single_pine(self):
-        from ..options import Goal
         from ..constants.missions import MISSION_COMPLETE_NAME
         from ..constants.planets import SACCases
         identity = ('seed', 0, 1)
         self.runtime.dispatch('configure', (identity, {
-            'goal': Goal.option_pick_and_mix, 'pick_and_mix_goals': ['defeat_klunk', 'chalice_of_power'],
-            'death_link': True, 'all_missions': 1}, {'check'}))
+            'goal': GoalOptions.PICK_AND_MIX, 'pick_and_mix_goals': ['defeat_klunk', 'chalice_of_power'],
+            'death_link': True, 'all_missions': MissionsOptions.ALL}, {'check'}))
         core = self.runtime.core
-        self.assertEqual(core.pick_and_mix_goals, (Goal.option_defeat_klunk, Goal.option_chalice_of_power))
+        self.assertEqual(core.pick_and_mix_goals, (GoalOptions.DEFEAT_KLUNK, GoalOptions.CHALICE_OF_POWER))
         self.assertTrue(core.missions_all())
         core.keycards.chalice_collected = True
         core.missions._reported.add(MISSION_COMPLETE_NAME[SACCases.KLUNKS_LAIR])

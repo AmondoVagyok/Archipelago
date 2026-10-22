@@ -58,6 +58,7 @@ class NativeRuntime:
         self.ap_connected = False
         self.owned_cases = frozenset()
         self.vendor_cases = frozenset()
+        self.available_vendor_locations = None
         self.starting_case = StartingCase(pine, log)
         self.mission_travel = None
         self.on_mission_complete = lambda case_name: None
@@ -160,7 +161,7 @@ class NativeRuntime:
                 self._require_held_module(target)
                 if self.vendor_catalog is not None:
                     self.vendor_catalog.challenge_level = self.progression.ng_plus if self.progression is not None else 0
-                    self.vendor_catalog.sync_cases(self.vendor_cases)
+                    self._sync_vendor_access()
                 if self.skins is not None:
                     self.skins.sync()
                 self.connection_warning.refresh(self.ap_connected)
@@ -191,7 +192,7 @@ class NativeRuntime:
                 self.connection_warning.refresh(self.ap_connected)
                 if self.vendor_catalog is not None:
                     self.vendor_catalog.challenge_level = self.progression.ng_plus if self.progression is not None else 0
-                    self.vendor_catalog.sync_cases(self.vendor_cases)
+                    self._sync_vendor_access()
                 if self.keycard_hunt is not None:
                     self.keycard_hunt.sync()
                 self.hooks.sync_checked(checked)
@@ -204,6 +205,12 @@ class NativeRuntime:
         except Exception:
             self.close()
             raise
+
+    def _sync_vendor_access(self):
+        if self.available_vendor_locations is None:
+            self.vendor_catalog.sync_cases(self.vendor_cases)
+        else:
+            self.vendor_catalog.sync_locations(self.available_vendor_locations)
 
     def _require_held_module(self, target):
         if self.gate.held_module() != target:

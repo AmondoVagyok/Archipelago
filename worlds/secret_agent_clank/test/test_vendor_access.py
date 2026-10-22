@@ -20,6 +20,7 @@ from ..constants import (
     SACCases,
     SACClankGadgets,
     SACClankWeapons,
+    SACProgressiveClankWeapons,
     SACPickups,
     SACRatchetWeapons,
     vendor_location_name,
@@ -182,6 +183,16 @@ class VendorAccessTests(unittest.TestCase):
                          {SACCases.ASYANICA_ROOFTOPS})
         self.assertEqual(vendor_unlocked_cases(owned, [SACClankGadgets.HOLOMONOCLE, SACClankWeapons.CUFFLINK]),
                          {SACCases.ASYANICA_ROOFTOPS, SACCases.HIGH_ROLLERS_CASINO})
+
+    def test_casino_vendor_accepts_progressive_cufflink_unlock(self):
+        owned = {SACCases.HIGH_ROLLERS_CASINO}
+        progressive = SACProgressiveClankWeapons.CUFFLINK
+        self.assertEqual(vendor_unlocked_cases(owned, [progressive]), set())
+        self.assertEqual(vendor_unlocked_cases(owned, [SACClankGadgets.HOLOMONOCLE]), set())
+        self.assertEqual(vendor_unlocked_cases(set(), [SACClankGadgets.HOLOMONOCLE, progressive]), set())
+        for count in (1, 4, 8):
+            self.assertEqual(vendor_unlocked_cases(
+                owned, [SACClankGadgets.HOLOMONOCLE] + [progressive] * count), owned)
 
     def test_planet_mode_can_unlock_museum_stock_from_another_start(self):
         m = setup_multiworld(SecretAgentClankWorld, steps=("generate_early", "create_regions"), seed=12345,
