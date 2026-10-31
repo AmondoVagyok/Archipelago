@@ -340,7 +340,7 @@ gemlik_sitting_ducks_rule = gemlik_qwark_rule & Has(RAC1ITEM.VISIBOMB)
 # Oltanis
 oltanis_main_bolt_rule = has_grindboots & Has(RAC1ITEM.SWINGSHOT)
 oltanis_final_bolt_rule = has_grindboots & has_magneboots & Has(RAC1ITEM.SWINGSHOT)
-oltanis_shattered_glass = oltanis_final_bolt_rule & has_medium_range_weapon
+oltanis_shattered_glass = (oltanis_final_bolt_rule & has_medium_range_weapon) | Has(RAC1ITEM.VISIBOMB)
 
 # Quartu
 quartu_infiltrate_rule = can_ground_pound & HasAll(RAC1ITEM.HOLOGUISE, RAC1ITEM.SWINGSHOT)

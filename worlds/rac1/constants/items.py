@@ -46,7 +46,7 @@ class RAC1ITEM:
     HYDRO_PACK = "Hydro-Pack"
     O2_MASK = "O2 Mask"
     SONIC_SUMMONER = "Sonic Summoner"
-    PILOTS_HELMET = "Pilots Helmet"
+    PILOTS_HELMET = "Pilot's Helmet"
     GRINDBOOTS = "Grindboots"
     MAGNEBOOTS = "Magneboots"
     HOVERBOARD = "Hoverboard"
