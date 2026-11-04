@@ -12,6 +12,7 @@ from ..constants import (
 from .model import CaseRegion, SACLocation, SACLocationType
 
 _BASE_ITEMS = (SACClankGadgets.JETBOOTS, SACClankGadgets.OMNIKEY, SACClankWeapons.THROWTIE)
+_JETBOOTS_SHADE = HasAll(SACClankGadgets.JETBOOTS, SACClankGadgets.THERM_OPTIC_SHADES)
 _BASE = HasAll(*_BASE_ITEMS)
 
 REGION = CaseRegion(SACCases.UNDERWATER_BUNKER, (
@@ -23,7 +24,7 @@ REGION = CaseRegion(SACCases.UNDERWATER_BUNKER, (
     SACLocation(SACSkillPointLocations.UNDERWATER_BUNKER_IM_NOT_THERE,
                 SACLocationType.SKILL_POINT, HasAll(*_BASE_ITEMS, SACClankGadgets.BLACK_OUT_PEN)),
     SACLocation(SACAlienCodeLocations.UNDERWATER_BUNKER_VESSUPS_SECRET,
-                SACLocationType.ALIEN_CODE, HasAll(*_BASE_ITEMS, SACClankGadgets.THERM_OPTIC_SHADES), flag_bit=0),
+                SACLocationType.ALIEN_CODE, _JETBOOTS_SHADE, flag_bit=0),
     SACLocation(SACAlienCodeLocations.UNDERWATER_BUNKER_ADAMS_SECRET,
                 SACLocationType.ALIEN_CODE, HasAll(*_BASE_ITEMS, SACClankGadgets.THERM_OPTIC_SHADES), flag_bit=1),
     SACLocation(SACAlienCodeLocations.UNDERWATER_BUNKER_JEFFS_SECRET,
