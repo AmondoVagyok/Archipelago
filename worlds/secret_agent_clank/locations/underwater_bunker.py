@@ -12,7 +12,8 @@ from ..constants import (
 from .model import CaseRegion, SACLocation, SACLocationType
 
 _BASE_ITEMS = (SACClankGadgets.JETBOOTS, SACClankGadgets.OMNIKEY, SACClankWeapons.THROWTIE)
-_VESSUPS_SECRET_LOGIC = HasAny(SACClankWeapons.FLAMETHROWERPEN, SACClankGadgets.BLACK_OUT_PEN)
+_VESSUPS_SECRET_LOGIC = (Has(SACClankGadgets.THERM_OPTIC_SHADES) &
+                         HasAny(SACClankWeapons.FLAMETHROWERPEN, SACClankGadgets.BLACK_OUT_PEN))
 _BASE = HasAll(*_BASE_ITEMS) & HasAny(SACClankWeapons.FLAMETHROWERPEN, SACClankGadgets.BLACK_OUT_PEN)
 _BASE_SHADES = _BASE & Has(SACClankGadgets.THERM_OPTIC_SHADES)
 
